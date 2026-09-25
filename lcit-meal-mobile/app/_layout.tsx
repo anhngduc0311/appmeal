@@ -41,6 +41,27 @@ function RootNavigation() {
           }}
         />
         <Stack.Screen
+          name="meal/[id]"
+          options={{
+            headerShown: false,
+            title: 'Chi tiết suất ăn',
+          }}
+        />
+        <Stack.Screen
+          name="meal-options/index"
+          options={{
+            headerShown: false,
+            title: 'Yêu cầu cắt suất',
+          }}
+        />
+        <Stack.Screen
+          name="profile/edit"
+          options={{
+            headerShown: false,
+            title: 'Chỉnh sửa hồ sơ',
+          }}
+        />
+        <Stack.Screen
           name="management/index"
           options={{
             headerShown: false,

@@ -76,7 +76,41 @@ export default function AccountScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Nút sửa thông tin */}
+        <Button
+          title="Chỉnh sửa thông tin & Đổi mật khẩu"
+          variant="outline"
+          size="sm"
+          leftIcon={<Ionicons name="create-outline" size={16} color={colors.primary} />}
+          onPress={() => router.push('/profile/edit' as any)}
+          style={{ marginTop: spacing.md }}
+        />
       </Card>
+
+      {/* Menu Nghiệp vụ Suất ăn */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Nghiệp vụ suất ăn</Text>
+        <Card
+          variant="elevated"
+          padding="lg"
+          onPress={() => router.push('/meal-options' as any)}
+          style={styles.adminEntryCard}
+        >
+          <View style={styles.menuItemRow}>
+            <View style={[styles.menuIconBox, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="calendar-outline" size={22} color="#B45309" />
+            </View>
+            <View style={styles.menuTextCol}>
+              <Text style={styles.menuItemTitle}>Yêu cầu cắt suất ăn</Text>
+              <Text style={styles.menuItemSubtitle}>
+                Cắt suất theo ngày / khoảng và xem lịch sử yêu cầu
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          </View>
+        </Card>
+      </View>
 
       {/* Khu vực Quản trị / Quản lý (Chỉ hiển thị với Admin & Manager) */}
       {isStaffManager && (

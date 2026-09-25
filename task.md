@@ -69,12 +69,12 @@ lcit-meal-mobile/
 | T17 | Thông báo | Inbox cá nhân, badge chưa đọc, chi tiết, đánh dấu từng mục/tất cả đã đọc |
 | T18 | Tài khoản | Hồ sơ, vai trò, sửa thông tin/mật khẩu theo contract, đăng xuất |
 
-- [ ] Hoàn thành T09–T12 với dữ liệu mẫu.
-- [ ] Hoàn thành T13–T15 với dữ liệu mẫu và đủ trạng thái thành công/thất bại/chờ xử lý.
-- [ ] Hoàn thành T16–T18 với dữ liệu mẫu.
-- [ ] Kiểm tra một luồng demo liên tục: đăng nhập → xem lịch → đăng ký khách → cắt suất → xem thanh toán → đọc thông báo → đăng xuất.
+- [x] Hoàn thành T09–T12 với dữ liệu mẫu.
+- [x] Hoàn thành T13–T15 với dữ liệu mẫu và đủ trạng thái thành công/thất bại/chờ xử lý.
+- [x] Hoàn thành T16–T18 với dữ liệu mẫu.
+- [x] Kiểm tra một luồng demo liên tục: đăng nhập → xem lịch → đăng ký khách → cắt suất → xem thanh toán → đọc thông báo → đăng xuất.
 
-Điều kiện hoàn thành: tất cả màn hình của bản đầu tiên có thể tương tác; thao tác mock cập nhật dữ liệu nhất quán giữa trang chủ, lịch và chi tiết; chế độ demo được nhận biết rõ.
+Điều kiện hoàn thành: tất cả màn hình của bản đầu tiên có thể tương tác; thao tác mock cập nhật dữ liệu nhất quán giữa trang chủ, lịch và chi tiết; chế độ demo được nhận biết rõ. (ĐÃ HOÀN THÀNH)
 
 ## 5. Giai đoạn 3 — Kết nối backend
 

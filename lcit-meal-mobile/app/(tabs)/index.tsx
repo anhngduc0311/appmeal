@@ -144,6 +144,7 @@ export default function HomeScreen() {
             dateStr={todayStr}
             meal={todayMeal}
             registration={todayReg}
+            onPress={() => todayMeal && router.push(`/meal/${todayMeal.id}` as any)}
             onRegister={handleRegisterToday}
             onCancel={() => setCancelModalVisible(true)}
             onUpdateGuests={(_mealId, guests) => {

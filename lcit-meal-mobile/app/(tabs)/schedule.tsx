@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
@@ -30,6 +31,7 @@ import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 
 export default function ScheduleScreen() {
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [filterMode, setFilterMode] = useState<'all' | 'registered' | 'cancelled'>('all');
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
@@ -198,6 +200,7 @@ export default function ScheduleScreen() {
                 dateStr={meal.mealDate}
                 meal={meal}
                 registration={reg}
+                onPress={() => router.push(`/meal/${meal.id}` as any)}
                 onRegister={handleRegister}
                 onCancel={handleOpenCancel}
                 onUpdateGuests={handleOpenGuestCounter}
