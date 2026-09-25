@@ -629,6 +629,25 @@ CREATE TABLE IF NOT EXISTS `holiday_event` (
   CONSTRAINT `chk_holiday_event_status` CHECK (`status` IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Quản lý ngày nghỉ/sự kiện đặc biệt';
 
+-- Keep the original state only for rows actually cancelled by a holiday.
+CREATE TABLE IF NOT EXISTS holiday_event_meal (
+  event_id INT UNSIGNED NOT NULL,
+  meal_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (event_id, meal_id),
+  FOREIGN KEY (event_id) REFERENCES holiday_event(id) ON DELETE CASCADE,
+  FOREIGN KEY (meal_id) REFERENCES meal(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS holiday_event_registration (
+  event_id INT UNSIGNED NOT NULL,
+  registration_id INT UNSIGNED NOT NULL,
+  previous_status VARCHAR(20) NOT NULL,
+  PRIMARY KEY (event_id, registration_id),
+  FOREIGN KEY (event_id) REFERENCES holiday_event(id) ON DELETE CASCADE,
+  FOREIGN KEY (registration_id) REFERENCES meal_registration(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

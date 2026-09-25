@@ -22,8 +22,9 @@ export function useMyNotifications() {
 }
 
 export function useUnseenNotificationCount() {
-  const { useMockData } = useAuth();
+  const { useMockData, isAuthenticated, role } = useAuth();
   return useQuery<number, Error>({
+    enabled: isAuthenticated && role !== 'kitchen',
     queryKey: NOTIFICATION_QUERY_KEYS.unseenCount(useMockData),
     queryFn: () => notificationService.getUnseenCount(useMockData),
     refetchInterval: 30000, // Tự động làm mới mỗi 30 giây

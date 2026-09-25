@@ -161,7 +161,7 @@ export const Badge: React.FC<BadgeProps> = ({
           textStyle,
         ]}
       >
-        {displayLabel || config.label}
+        {label || customLabel || config.label}
       </Text>
     </View>
   );

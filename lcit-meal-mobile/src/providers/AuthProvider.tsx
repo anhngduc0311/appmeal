@@ -99,15 +99,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(
     async (credentials: LoginRequest) => {
-      setIsLoading(true);
-      try {
-        queryClient.clear(); // Xóa cache của tài khoản trước đó
-        const res = await authService.login(credentials, useMockData);
-        setUser(res.user);
-        setToken(res.token);
-      } finally {
-        setIsLoading(false);
-      }
+      // The login screen owns its pending/error state. Keep navigation mounted.
+      const res = await authService.login(credentials, useMockData);
+      queryClient.clear();
+      setUser(res.user);
+      setToken(res.token);
     },
     [useMockData]
   );

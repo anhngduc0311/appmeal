@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-25T07:27:00.983Z",
+  "timestamp": "2026-09-25T07:41:14.815Z",
   "database": "disposable schema; config only copied",
   "results": [
     {
@@ -172,8 +172,7 @@
     },
     {
       "name": "Web origin 8081 allowed by CORS",
-      "status": "FAIL",
-      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'http://localhost:8081'\n"
+      "status": "PASS"
     },
     {
       "name": "Duplicate meal rejected",
@@ -201,8 +200,7 @@
     },
     {
       "name": "Reject guestCount 1.5",
-      "status": "FAIL",
-      "error": "POST /meal-registrations: expected 400, got 201; "
+      "status": "PASS"
     },
     {
       "name": "Update guests keeps same registration",
@@ -210,8 +208,7 @@
     },
     {
       "name": "Other employee cannot read registration",
-      "status": "FAIL",
-      "error": "GET /meal-registrations/290: expected 403, got 200; "
+      "status": "PASS"
     },
     {
       "name": "Other employee cannot cancel registration",
@@ -219,8 +216,7 @@
     },
     {
       "name": "Employee cannot register for another user",
-      "status": "FAIL",
-      "error": "POST /meal-registrations: expected 403, got 201; "
+      "status": "PASS"
     },
     {
       "name": "Cancel registration",
@@ -236,23 +232,31 @@
     },
     {
       "name": "Other employee cannot read cancellation request",
-      "status": "FAIL",
-      "error": "GET /meal-options/8: expected 403, got 200; "
+      "status": "PASS"
     },
     {
       "name": "Employee cannot cancel meals for another user",
-      "status": "FAIL",
-      "error": "POST /meal-options: expected 403, got 201; "
+      "status": "PASS"
     },
     {
       "name": "Holiday restore preserves voluntary cancellation",
-      "status": "FAIL",
-      "error": "PATCH /holiday-events/1/restore: expected 200, got 500; Check constraint 'chk_holiday_event_status' is violated."
+      "status": "PASS"
     },
     {
-      "name": "Failed holiday restore does not reactivate cancelled registration",
-      "status": "FAIL",
-      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'confirmed'\n- 'cancelled'\n"
+      "name": "Holiday restore leaves voluntary cancellation unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Overlapping holidays restore only their own registrations after last holiday",
+      "status": "PASS"
+    },
+    {
+      "name": "Holiday restoration rolls back every change on database failure",
+      "status": "PASS"
+    },
+    {
+      "name": "Cancellation submitted during holiday remains cancelled after restore",
+      "status": "PASS"
     },
     {
       "name": "Create payment",
@@ -260,8 +264,7 @@
     },
     {
       "name": "Payment business date survives API serialization",
-      "status": "FAIL",
-      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '2026-10-01'\n- '2026-10-02'\n            ^\n"
+      "status": "PASS"
     },
     {
       "name": "Personal payments contain own invoice",
@@ -281,13 +284,31 @@
     },
     {
       "name": "Reject negative payment update",
-      "status": "FAIL",
-      "error": "PUT /payments/27: expected 400, got 200; "
+      "status": "PASS"
     },
     {
       "name": "Reject negative paid amount",
-      "status": "FAIL",
-      "error": "PATCH /payments/28/mark-paid: expected 400, got 200; "
+      "status": "PASS"
+    },
+    {
+      "name": "Reject invalid payment amount null",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject invalid payment amount \"\"",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject invalid payment amount \"not-a-number\"",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject invalid payment amount true",
+      "status": "PASS"
+    },
+    {
+      "name": "CORS rejects unknown web origin",
+      "status": "PASS"
     },
     {
       "name": "Read and mark personal notifications",
@@ -323,8 +344,7 @@
     },
     {
       "name": "Registration cutoff enforced for today",
-      "status": "FAIL",
-      "error": "POST /meal-registrations: expected 400, got 201; "
+      "status": "PASS"
     },
     {
       "name": "Logout revokes token",

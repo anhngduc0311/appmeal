@@ -38,7 +38,7 @@ class MealOptionController {
 
   get = async (req, res, next) => {
     try {
-      const mealOption = await this.mealOptionService.get(req.params.id);
+      const mealOption = await this.mealOptionService.getForActor(req.params.id, getActor(req));
 
       return ApiResponse.success(res, mealOption);
     } catch (error) {

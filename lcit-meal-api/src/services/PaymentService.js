@@ -73,13 +73,19 @@ class PaymentService {
       throw new AppError("paymentDate là bắt buộc", 400);
     }
 
-    if (data.amount === undefined || Number(data.amount) < 0) {
-      throw new AppError("amount không hợp lệ", 400);
+    this.validateAmount(data.amount, 'amount');
+  }
+
+  validateAmount(value, field) {
+    if ((typeof value !== 'number' && typeof value !== 'string') ||
+        String(value).trim() === '' || !Number.isFinite(Number(value)) || Number(value) < 0) {
+      throw new AppError(`${field} phải là số không âm hợp lệ`, 400);
     }
   }
 
   async update(id, data, actor = {}) {
     const payment = await this.get(id);
+    if (data.amount !== undefined) this.validateAmount(data.amount, 'amount');
 
     const updated = await this.paymentRepository.update(id, {
       paymentDate: data.paymentDate || payment.paymentDate,
@@ -109,6 +115,7 @@ class PaymentService {
 
     const paidAmount =
       data.paidAmount !== undefined ? data.paidAmount : payment.amount;
+    this.validateAmount(paidAmount, 'paidAmount');
 
     const marked = await this.paymentRepository.markPaid(id, {
       paidAmount,

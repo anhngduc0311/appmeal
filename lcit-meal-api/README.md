@@ -23,6 +23,7 @@ SQL viết tay trong tầng repository.
 ```bash
 npm install
 cp .env.example .env    # nếu chưa có, tạo file .env theo mẫu mục 3
+npm run migrate        # sau khi import schema: thêm bảng lưu vết hủy bởi lịch nghỉ
 npm run dev             # chạy dev (nodemon, tự restart khi sửa code)
 npm start               # chạy production
 ```
@@ -142,9 +143,12 @@ Trạng thái `meal_registration.status`:
 - **Mở lại** sự kiện → mở lại bếp ăn **và khôi phục** các đăng ký đã bị hủy về
   `confirmed`, đồng thời thông báo cho những người được khôi phục.
 
-  > Hệ thống không lưu vết "đăng ký nào bị hủy vì sự kiện nào", nên khi mở lại sẽ
-  > khôi phục **tất cả** đăng ký đang `cancelled` rơi vào khoảng ngày của sự
-  > kiện — kể cả người tự cắt suất trong đúng khoảng đó.
+  > Lịch nghỉ mới lưu vết những bếp/đăng ký thực sự bị hủy bởi sự kiện trong
+  > `holiday_event_meal` và `holiday_event_registration`. Mở lại dùng transaction,
+  > giữ nguyên suất tự cắt và chờ đến khi hết mọi sự kiện chồng nhau mới khôi phục.
+  > Lịch nghỉ cũ trước migration không có dữ liệu nguồn để phân biệt lý do hủy;
+  > hệ thống không tự khôi phục các bản ghi thiếu dấu vết. Quản lý cần kiểm tra và
+  > mở lại bếp/đăng ký các ngày cũ bằng thao tác riêng khi cần.
 
 ### 6.4 Trạng thái thời gian thực của bếp ăn
 
@@ -246,8 +250,9 @@ Response chuẩn hóa qua `src/ultis/ApiResponse.js`; lỗi nghiệp vụ ném
 
 ## 11. Ghi chú khi triển khai
 
-- **CORS** đang hard-code `http://localhost:5173` trong `src/app.js` — cần đổi
-  sang domain thật khi deploy.
+- **CORS:** cấu hình `CORS_ORIGINS` là các origin phân cách bởi dấu phẩy.
+  Mặc định cho localhost/127.0.0.1 cổng 5173 và 8081. Khi deploy, đặt danh sách
+  domain thật. Không bật wildcard cho origin lạ.
 - **Dữ liệu cũ:** các bản ghi `meal_option` và `meal_registration` còn ở trạng
   thái `pending` từ trước khi bỏ bước duyệt vẫn nằm trong DB. Quản lý nên xử lý
   nốt ở trang "Theo dõi cắt suất ăn", hoặc chạy một câu `UPDATE` để duyệt hàng loạt.

@@ -124,6 +124,7 @@ export default function AccountScreen() {
       </Card>
 
       {/* Menu Nghiệp vụ Suất ăn */}
+      {role !== 'kitchen' && (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Nghiệp vụ suất ăn</Text>
         <Card
@@ -146,7 +147,7 @@ export default function AccountScreen() {
           </View>
         </Card>
       </View>
-
+      )}
       {/* Khu vực Quản trị / Quản lý (Chỉ hiển thị với Admin & Manager) */}
       {isStaffManager && (
         <View style={styles.section}>

@@ -64,8 +64,9 @@ class MealRegistrationController {
 
   get = async (req, res, next) => {
     try {
-      const registration = await this.mealRegistrationService.get(
+      const registration = await this.mealRegistrationService.getForActor(
         req.params.id,
+        getActor(req),
       );
 
       return ApiResponse.success(res, registration);

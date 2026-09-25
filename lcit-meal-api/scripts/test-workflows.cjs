@@ -55,6 +55,7 @@ async function main() {
     await connection.query('INSERT INTO user_role (user_id,role_id,status) SELECT ?,id,\'active\' FROM role WHERE code=?', [r.insertId,role]);
   }
   await connection.query('SET FOREIGN_KEY_CHECKS=1');
+  await require('./migrate.cjs')(connection);
   process.env.DB_NAME = dbName;
   process.env.JWT_SECRET = require('node:crypto').randomBytes(32).toString('hex');
   const app = require('../src/app');
@@ -97,7 +98,51 @@ async function main() {
   await check('Other employee cannot read cancellation request', () => request('user2',`/meal-options/${option.id}`,'GET',undefined,403));
   await check('Employee cannot cancel meals for another user', () => request('user2','/meal-options','POST',{userId:sessions.manager.user.id,type:'cancel_schedule',fromDate:date,toDate:date},403));
   await check('Holiday restore preserves voluntary cancellation', async () => { const event = await request('admin','/holiday-events','POST',{name:'QA holiday',fromDate:date,toDate:date},201); await request('admin',`/holiday-events/${event.id}/restore`,'PATCH',{}); const r = await request('user1',`/meal-registrations/${reg.id}`); assert.equal(r.status,'cancelled'); });
-  await check('Failed holiday restore does not reactivate cancelled registration', async () => { const r = await request('user1',`/meal-registrations/${reg.id}`); assert.equal(r.status,'cancelled'); });
+  await check('Holiday restore leaves voluntary cancellation unchanged', async () => { const r = await request('user1',`/meal-registrations/${reg.id}`); assert.equal(r.status,'cancelled'); });
+  await check('Overlapping holidays restore only their own registrations after last holiday', async () => {
+    const day=new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+    const m=await request('admin','/meals','POST',{mealDate:day},201);
+    const a=await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
+    const b=await request('user2','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
+    await request('user2',`/meal-registrations/${b.id}/cancel`,'PATCH',{});
+    const eventBody={name:'QA overlap',fromDate:day,toDate:day};
+    const h1=await request('admin','/holiday-events','POST',eventBody,201);
+    const h2=await request('admin','/holiday-events','POST',eventBody,201);
+    assert.equal((await request('user1',`/meal-registrations/${a.id}`)).status,'cancelled');
+    await request('admin',`/holiday-events/${h1.id}/restore`,'PATCH',{});
+    assert.equal((await request('admin',`/meals/${m.id}`)).isCancelled,true);
+    assert.equal((await request('user1',`/meal-registrations/${a.id}`)).status,'cancelled');
+    await request('admin',`/holiday-events/${h2.id}/restore`,'PATCH',{});
+    assert.equal((await request('admin',`/meals/${m.id}`)).isCancelled,false);
+    assert.equal((await request('user1',`/meal-registrations/${a.id}`)).status,'confirmed');
+    assert.equal((await request('user2',`/meal-registrations/${b.id}`)).status,'cancelled');
+    await request('admin',`/holiday-events/${h2.id}/restore`,'PATCH',{},409);
+  });
+  await check('Holiday restoration rolls back every change on database failure', async () => {
+    const day=new Date(Date.now()+15*86400000).toISOString().slice(0,10);
+    const m=await request('admin','/meals','POST',{mealDate:day},201);
+    const r=await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
+    const h=await request('admin','/holiday-events','POST',{name:'QA rollback',fromDate:day,toDate:day},201);
+    await connection.query(`CREATE TRIGGER qa_fail_restore BEFORE UPDATE ON meal_registration FOR EACH ROW
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='QA injected failure'`);
+    try {
+      await request('admin',`/holiday-events/${h.id}/restore`,'PATCH',{},500);
+      assert.equal((await request('admin',`/holiday-events/${h.id}`)).status,'active');
+      assert.equal((await request('admin',`/meals/${m.id}`)).isCancelled,true);
+      assert.equal((await request('user1',`/meal-registrations/${r.id}`)).status,'cancelled');
+    } finally { await connection.query('DROP TRIGGER qa_fail_restore'); }
+    await request('admin',`/holiday-events/${h.id}/restore`,'PATCH',{});
+    assert.equal((await request('user1',`/meal-registrations/${r.id}`)).status,'confirmed');
+  });
+  await check('Cancellation submitted during holiday remains cancelled after restore', async () => {
+    const day=new Date(Date.now()+16*86400000).toISOString().slice(0,10);
+    const m=await request('admin','/meals','POST',{mealDate:day},201);
+    const r=await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
+    const h=await request('admin','/holiday-events','POST',{name:'QA personal opt out',fromDate:day,toDate:day},201);
+    await request('user1','/meal-options','POST',{type:'cancel_schedule',fromDate:day,toDate:day},201);
+    await request('admin',`/holiday-events/${h.id}/restore`,'PATCH',{});
+    assert.equal((await request('user1',`/meal-registrations/${r.id}`)).status,'cancelled');
+  });
   let payment;
   await check('Create payment', async () => { payment = await request('manager','/payments','POST',{userId:sessions.user1.user.id,paymentDate:date,amount:90000},201); assert.equal(Number(payment.amount),90000); });
   await check('Payment business date survives API serialization', async () => { assert.equal(payment.paymentDate.slice(0,10),date); });
@@ -107,6 +152,13 @@ async function main() {
   await check('Reject repeated payment confirmation', () => request('manager',`/payments/${payment.id}/mark-paid`,'PATCH',{},409));
   await check('Reject negative payment update', () => request('manager',`/payments/${payment.id}`,'PUT',{amount:-100},400));
   await check('Reject negative paid amount', async () => { const p = await request('admin','/payments','POST',{userId:sessions.user2.user.id,paymentDate:date,amount:100},201); await request('manager',`/payments/${p.id}/mark-paid`,'PATCH',{paidAmount:-100},400); });
+  for (const amount of [null,'','not-a-number',true]) {
+    await check(`Reject invalid payment amount ${JSON.stringify(amount)}`, () => request('manager',`/payments/${payment.id}`,'PUT',{amount},400));
+  }
+  await check('CORS rejects unknown web origin', async () => {
+    const r=await fetch(base+'/auth/login',{method:'OPTIONS',headers:{Origin:'https://untrusted.example','Access-Control-Request-Method':'POST'}});
+    assert.equal(r.headers.get('access-control-allow-origin'),null);
+  });
   await check('Read and mark personal notifications', async () => { const n = rows(await request('user1','/notifications/me')); assert.ok(n.length>0); await request('user1','/notifications/me/seen-all','PATCH',{}); const count=await request('user1','/notifications/me/unseen-count'); assert.equal(count.total,0); });
   for (const ep of ['/payments/export','/meal-registrations/export']) await check(`Excel ${ep}`, async () => { const r = await fetch(base+ep,{headers:{Authorization:`Bearer ${sessions.admin.accessToken}`}}); assert.equal(r.status,200); const b=Buffer.from(await r.arrayBuffer()); assert.equal(b.subarray(0,2).toString(),'PK'); });
   await check('Update own profile', async () => { const u=await request('user1','/users/me','PATCH',{fullName:'QA edited'}); assert.equal(u.fullName,'QA edited'); });
@@ -120,6 +172,10 @@ async function main() {
     await connection.query("UPDATE system_setting SET setting_value='00:00' WHERE setting_key='registration_close_time'");
     const m=await request('admin','/meals','POST',{mealDate:today},201);
     await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},400);
+    await connection.query("UPDATE system_setting SET setting_value='23:59' WHERE setting_key='registration_close_time'");
+    const r=await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
+    await connection.query("UPDATE system_setting SET setting_value='00:00' WHERE setting_key='registration_close_time'");
+    await request('user1',`/meal-registrations/${r.id}`,'PUT',{guestCount:2},400);
   });
   await check('Logout revokes token', async () => { await request('user2','/auth/logout','POST',{}); await request('user2','/meals','GET',undefined,401); });
   const output = path.resolve(__dirname,'../../test-results/api-workflows.json');
@@ -127,7 +183,10 @@ async function main() {
   fs.writeFileSync(output,JSON.stringify({timestamp:new Date().toISOString(),database:'disposable schema; config only copied',results},null,2));
   console.log(`RESULT ${results.filter(r=>r.status==='PASS').length}/${results.length} passed; ${output}`);
   if (process.argv.includes('--serve')) {
-    console.log('QA API READY http://localhost:3000; isolated accounts admin/manager/user1/user2/kitchen, password 123456. Ctrl+C cleans up.');
+    console.log(`QA schema: ${dbName}`);
+    console.log('QA API READY http://localhost:3000; isolated accounts admin/manager/user1/user2/kitchen, password 123456. Type stop to clean up.');
+    process.stdin.setEncoding('utf8');
+    process.stdin.on('data',async input=>{if(input.trim()==='stop'){await cleanup();process.exit(0);}});
     process.once('SIGINT',async()=>{await cleanup();process.exit(0);});
     process.once('SIGTERM',async()=>{await cleanup();process.exit(0);});
   } else { await cleanup(); process.exitCode=results.some(r=>r.status==='FAIL')?1:0; }

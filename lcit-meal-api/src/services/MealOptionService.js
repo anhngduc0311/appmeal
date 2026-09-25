@@ -126,6 +126,20 @@ class MealOptionService {
     return this.mealOptionRepository.listByUser(userId);
   }
 
+  assertOwnerOrManager(userId, actor) {
+    const isManagement = (actor.roles || []).some(role =>
+      [ROLE.ADMIN, ROLE.MANAGER].includes(role));
+    if (String(userId) !== String(actor.actorId) && !isManagement) {
+      throw new AppError("Bạn không có quyền thao tác trên yêu cầu này", 403);
+    }
+  }
+
+  async getForActor(id, actor) {
+    const option = await this.get(id);
+    this.assertOwnerOrManager(option.userId, actor);
+    return option;
+  }
+
   async filter(userId, type, status) {
     return this.mealOptionRepository.filter(userId, type, status);
   }
@@ -137,6 +151,7 @@ class MealOptionService {
     await this.assertBeforeRegistrationCutoff(data.fromDate);
 
     const targetUserId = data.userId || actor.actorId;
+    this.assertOwnerOrManager(targetUserId, actor);
 
     const isAutoApproved = AUTO_APPROVE_TYPES.includes(data.type);
 

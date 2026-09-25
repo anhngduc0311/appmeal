@@ -11,8 +11,10 @@ import { useUnseenNotificationCount } from '../../src/hooks/useNotificationsData
 import { colors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
 import { spacing } from '../../src/theme/spacing';
+import { useAuth } from '../../src/providers/AuthProvider';
 
 export default function TabLayout() {
+  const { role } = useAuth();
   const { data: unreadCount = 0 } = useUnseenNotificationCount();
 
   return (
@@ -49,6 +51,7 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Protected guard={role !== 'kitchen'}>
       <Tabs.Screen
         name="schedule"
         options={{
@@ -97,6 +100,7 @@ export default function TabLayout() {
         }}
       />
 
+      </Tabs.Protected>
       <Tabs.Screen
         name="account"
         options={{

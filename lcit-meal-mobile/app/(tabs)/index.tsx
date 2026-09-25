@@ -41,8 +41,14 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { KitchenHome } from '../../src/components/meals/KitchenHome';
 
 export default function HomeScreen() {
+  const { role } = useAuth();
+  return role === 'kitchen' ? <KitchenHome /> : <PersonalHomeScreen />;
+}
+
+function PersonalHomeScreen() {
   const router = useRouter();
   const { user, role, useMockData } = useAuth();
 

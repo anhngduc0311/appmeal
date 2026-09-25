@@ -148,6 +148,12 @@ class MealRegistrationService {
     return registration;
   }
 
+  async getForActor(id, actor) {
+    const registration = await this.get(id);
+    this.assertOwnerOrManager(registration, actor);
+    return registration;
+  }
+
   async listByUser(userId) {
     return this.mealRegistrationRepository.listByUser(userId);
   }
@@ -201,6 +207,7 @@ class MealRegistrationService {
     this.validateCreateData(data);
 
     const targetUserId = data.userId || actor.actorId;
+    this.assertOwnerOrManager({ userId: targetUserId }, actor);
 
     // Tài khoản admin là tài khoản quản trị hệ thống, không trực tiếp ăn nên
     // không được tự đăng ký suất ăn cho chính mình (vẫn có thể đăng ký HỘ
@@ -215,10 +222,11 @@ class MealRegistrationService {
 
     // Không cho đăng ký suất ăn của ngày đã qua (dùng chuỗi so sánh vì
     // meal_date lưu dạng DATE "YYYY-MM-DD", so sánh string là an toàn).
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getVietnamNow().date;
     if (meal.mealDate < todayStr) {
       throw new AppError("Không thể đăng ký suất ăn cho ngày đã qua", 409);
     }
+    await this.assertBeforeRegistrationCutoff(meal.mealDate);
 
     const existing = await this.mealRegistrationRepository.getByUserAndMeal(
       targetUserId,
@@ -299,6 +307,11 @@ class MealRegistrationService {
       throw new AppError("mealId là bắt buộc", 400);
     }
 
+    if (data.guestCount !== undefined &&
+        (typeof data.guestCount !== 'number' || !Number.isInteger(data.guestCount))) {
+      throw new AppError("Số khách phải là số nguyên", 400);
+    }
+
     if (data.guestCount !== undefined && Number(data.guestCount) < 0) {
       throw new AppError("guestCount không thể là số âm", 400);
     }
@@ -333,6 +346,16 @@ class MealRegistrationService {
 
     this.assertOwnerOrManager(registration, actor);
     this.assertNotAdminSelfService(registration.userId, actor, "sửa");
+
+    const meal = await this.getMealOrFail(registration.mealId);
+    if (meal.isCancelled || meal.mealDate < getVietnamNow().date ||
+        registration.status === MEAL_REGISTRATION_STATUS.COMPLETED) {
+      throw new AppError("Không thể sửa suất ăn đã hoàn thành hoặc bếp đã hủy", 409);
+    }
+    await this.assertBeforeRegistrationCutoff(meal.mealDate);
+    if (data.status !== undefined && data.status !== registration.status) {
+      throw new AppError("Sử dụng thao tác xác nhận hoặc cắt suất để đổi trạng thái", 400);
+    }
 
     if (registration.status === MEAL_REGISTRATION_STATUS.CANCELLED) {
       throw new AppError("Đăng ký đã bị hủy, không thể sửa", 409);

@@ -11,7 +11,7 @@ import { LoadingState } from '../src/components/states';
 import { colors } from '../src/theme/colors';
 
 function RootNavigation() {
-  const { isLoading } = useAuth();
+  const { isLoading, isAuthenticated, role } = useAuth();
 
   if (isLoading) {
     return (
@@ -32,7 +32,11 @@ function RootNavigation() {
           animation: 'fade_from_bottom',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Protected guard={isAuthenticated}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="profile/edit" options={{ title: 'Chỉnh sửa hồ sơ' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={!isAuthenticated}>
         <Stack.Screen
           name="(auth)/login"
           options={{
@@ -40,6 +44,8 @@ function RootNavigation() {
             presentation: 'modal',
           }}
         />
+        </Stack.Protected>
+        <Stack.Protected guard={isAuthenticated && role !== 'kitchen'}>
         <Stack.Screen
           name="meal/[id]"
           options={{
@@ -52,13 +58,6 @@ function RootNavigation() {
           options={{
             headerShown: false,
             title: 'Yêu cầu cắt suất',
-          }}
-        />
-        <Stack.Screen
-          name="profile/edit"
-          options={{
-            headerShown: false,
-            title: 'Chỉnh sửa hồ sơ',
           }}
         />
         <Stack.Screen
@@ -131,6 +130,7 @@ function RootNavigation() {
             title: 'Thư viện Component',
           }}
         />
+        </Stack.Protected>
       </Stack>
     </>
   );
