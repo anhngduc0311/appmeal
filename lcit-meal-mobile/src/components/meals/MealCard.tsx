@@ -71,9 +71,12 @@ export const MealCard: React.FC<MealCardProps> = ({
         activeOpacity={onPress ? 0.7 : 1}
         onPress={onPress}
         disabled={!onPress}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={`Xem suất ăn ${formatFullDisplayDate(dateStr)}`}
       >
         {/* Header dòng ngày & Badge trạng thái */}
         <View style={styles.headerRow}>
+          <View style={styles.calendarTile}><Text style={styles.calendarMonth}>THÁNG {dateStr.slice(5, 7)}</Text><Text style={styles.calendarDay}>{dateStr.slice(8, 10)}</Text></View>
           <View style={styles.dateCol}>
             <View style={styles.dateBadgeRow}>
               <Text style={[styles.dateText, isToday && styles.dateTextToday]}>
@@ -153,13 +156,13 @@ export const MealCard: React.FC<MealCardProps> = ({
               {onCancel && registration && (
                 <Button
                   title="Cắt suất"
-                  variant="danger"
+                  variant="outline"
                   size="sm"
                   leftIcon={
                     <Ionicons
                       name="close-circle-outline"
                       size={16}
-                      color={colors.textInverse}
+                      color={colors.primary}
                     />
                   }
                   onPress={() => onCancel(registration.id)}
@@ -194,14 +197,17 @@ export const MealCard: React.FC<MealCardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  calendarTile: {width: 52, height: 60, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12},
+  calendarMonth: {fontSize: 8, letterSpacing: 0.5, fontWeight: '700', color: colors.primary},
+  calendarDay: {fontSize: 23, fontWeight: '700', color: colors.primaryDark},
   card: {
     marginBottom: spacing.md,
     backgroundColor: colors.surface,
     borderColor: colors.border,
   },
   cardToday: {
-    borderColor: colors.primary,
-    borderWidth: 1.5,
+    borderColor: colors.primary300,
+    borderWidth: 1,
     backgroundColor: '#FAFDFB',
   },
   cardCancelledMeal: {
@@ -225,7 +231,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dateText: {
-    fontSize: typography.sizes.base,
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -246,7 +252,7 @@ const styles = StyleSheet.create({
   contentBox: {
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: spacing.lg,
     marginBottom: spacing.sm,
     gap: spacing.xs,
   },
@@ -267,10 +273,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   menuText: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     flex: 1,
-    lineHeight: 18,
+    lineHeight: 22,
   },
   guestPill: {
     flexDirection: 'row',

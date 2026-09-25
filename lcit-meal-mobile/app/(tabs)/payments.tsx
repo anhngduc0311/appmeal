@@ -160,7 +160,7 @@ export default function PaymentsScreen() {
                 style={styles.paymentItemCard}
               >
                 <View style={styles.itemTopRow}>
-                  <View>
+                  <View style={{flex: 1, marginRight: 12}}>
                     <Text style={styles.itemTitle}>
                       Kỳ tiền ăn ngày {formatDisplayDate(item.paymentDate)}
                     </Text>
@@ -301,7 +301,8 @@ export default function PaymentsScreen() {
 
 const styles = StyleSheet.create({
   summaryCard: {
-    backgroundColor: colors.surface,
+    padding: 28,
+    backgroundColor: colors.primaryDark,
     marginBottom: spacing.lg,
   },
   summaryHeader: {
@@ -311,36 +312,39 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   summaryTitle: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    color: '#D5E4D8',
     fontWeight: typography.weights.medium,
   },
   summaryAmount: {
-    fontSize: typography.sizes['3xl'],
+    fontSize: 36,
     fontWeight: typography.weights.extrabold,
     marginVertical: 4,
   },
   amountUnpaid: {
-    color: colors.status.unpaid.dot,
+    color: '#FFFFFF',
   },
   amountPaid: {
-    color: colors.status.confirmed.dot,
+    color: '#FFFFFF',
   },
   summaryDesc: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    color: '#D5E4D8',
     marginTop: 4,
     lineHeight: 18,
   },
   filterRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginBottom: spacing.md,
   },
   filterChip: {
+    minHeight: 40,
+    justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    borderRadius: radius.full,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -381,7 +385,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   itemDate: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: typography.sizes.xs,
     color: colors.textMuted,
     marginTop: 2,
   },

@@ -28,7 +28,7 @@ export const Card: React.FC<CardProps> = ({
   onPress,
   activeOpacity = 0.75,
 }) => {
-  const paddingValue = spacing[padding] || spacing.lg;
+  const paddingValue = spacing[padding] ?? spacing.lg;
 
   const cardStyle: ViewStyle = {
     padding: paddingValue,
@@ -56,7 +56,7 @@ export const Card: React.FC<CardProps> = ({
 const styles = StyleSheet.create({
   base: {
     backgroundColor: colors.surface,
-    borderRadius: radius.xl,
+    borderRadius: radius['2xl'],
     overflow: 'hidden',
   },
   elevated: {

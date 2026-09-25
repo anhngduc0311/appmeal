@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -27,10 +28,11 @@ import { radius } from '../../src/theme/radius';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, useMockData } = useAuth();
+  const wide = useWindowDimensions().width >= 850;
 
-  const [username, setUsername] = useState('nv_an');
-  const [password, setPassword] = useState('123456');
+  const [username, setUsername] = useState(useMockData ? 'nv_an' : '');
+  const [password, setPassword] = useState(useMockData ? '123456' : '');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -67,20 +69,24 @@ export default function LoginScreen() {
 
   return (
     <ScreenContainer scrollable backgroundColor={colors.background}>
-      <View style={styles.container}>
+      <View style={[styles.container, wide && styles.desktop]}>
         {/* Brand Logo & Title */}
-        <View style={styles.brandHeader}>
+        <View style={[styles.brandHeader, wide && styles.brandDesktop]}>
           <View style={styles.logoCircle}>
-            <Ionicons name="restaurant" size={38} color={colors.primary} />
+            <Ionicons name="restaurant" size={30} color="#DCEAA0" />
           </View>
           <Text style={styles.appName}>LCIT MEAL</Text>
           <Text style={styles.appTagline}>
-            Hệ thống Quản lý Suất ăn Cơ quan
+            BỮA TRƯA TẠI CƠ QUAN
           </Text>
+          <Text style={[styles.brandHeadline, wide && {fontSize: 42, lineHeight: 54}]}>Một bữa ăn tốt.{'\n'}Một ngày hiệu quả.</Text>
+          <Text style={styles.brandDescription}>Đăng ký bữa trưa, theo dõi lịch ăn và thanh toán trong cùng một nơi.</Text>
+          {wide && <View style={styles.brandArtwork}><Ionicons name="leaf-outline" size={80} color="#DCEAA0" /><Text style={styles.artworkCaption}>CHĂM CHÚT TỪNG BỮA ĂN</Text></View>}
         </View>
-
+        <View style={styles.formColumn}>
         {/* Form Đăng nhập */}
         <Card variant="elevated" padding="2xl" style={styles.formCard}>
+          <Text style={styles.formEyebrow}>CHÀO MỪNG TRỞ LẠI</Text>
           <Text style={styles.formTitle}>Đăng nhập</Text>
           <Text style={styles.formSubtitle}>
             Sử dụng tài khoản được cơ quan cấp để tiếp tục
@@ -141,7 +147,7 @@ export default function LoginScreen() {
         </Card>
 
         {/* Chọn nhanh tài khoản Demo trong giai đoạn phát triển */}
-        <Card variant="outlined" padding="lg" style={styles.demoCard}>
+        {useMockData && <Card variant="outlined" padding="lg" style={styles.demoCard}>
           <View style={styles.demoHeader}>
             <Ionicons name="flash-outline" size={18} color={colors.primaryDark} />
             <Text style={styles.demoTitle}>Tài khoản thử nghiệm nhanh (Demo)</Text>
@@ -168,7 +174,7 @@ export default function LoginScreen() {
                     username === u.username && styles.mockUserRoleActive,
                   ]}
                 >
-                  {(u.role || 'employee').toUpperCase()}
+                  {{admin: 'QUẢN TRỊ', manager: 'QUẢN LÝ', employee: 'NHÂN VIÊN', kitchen: 'NHÀ BẾP'}[u.role || 'employee']}
                 </Text>
                 <Text
                   style={[
@@ -182,57 +188,70 @@ export default function LoginScreen() {
               </TouchableOpacity>
             ))}
           </View>
-        </Card>
+        </Card>}
+        <Text style={styles.footer}>LCIT MEAL · Quản lý suất ăn cơ quan</Text>
+        </View>
       </View>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
+  desktop: {flexDirection: 'row', alignItems: 'stretch', paddingVertical: 48},
+  brandDesktop: {flex: 1, padding: 40}, formColumn: {flex: 1, minWidth: 0},
+  brandHeadline: {fontSize: 28, lineHeight: 39, color: '#FFFFFF', fontWeight: '700', marginTop: 28, letterSpacing: -0.8},
+  brandDescription: {fontSize: 14, lineHeight: 24, color: '#D5E4D8', marginTop: 18, maxWidth: 300},
+  brandArtwork: {flex: 1, minHeight: 190, alignItems: 'center', justifyContent: 'center', gap: 24, marginTop: 36, borderTopWidth: 1, borderTopColor: '#456452'},
+  artworkCaption: {fontSize: 10, letterSpacing: 2, color: '#DCEAA0'},
+  formEyebrow: {fontSize: 10, fontWeight: '700', letterSpacing: 1.6, color: colors.primary, marginBottom: 12},
+  footer: {textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 20},
   container: {
     paddingVertical: spacing.xl,
-    alignItems: 'center',
+    gap: 24,
   },
   brandHeader: {
-    alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    padding: 28,
+    backgroundColor: colors.primaryDark,
+    borderRadius: 24,
   },
   logoCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: colors.primaryLight,
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: '#2A5342',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.primary300,
+    borderWidth: 1,
+    borderColor: '#587B5F',
   },
   appName: {
     fontSize: typography.sizes['2xl'],
     fontWeight: typography.weights.extrabold,
-    color: colors.primaryDark,
-    letterSpacing: 1,
+    color: '#FFFFFF',
+    letterSpacing: 2,
   },
   appTagline: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    marginTop: 4,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    color: '#D5E4D8',
+    marginTop: 8,
   },
   formCard: {
     width: '100%',
     marginBottom: spacing.xl,
   },
   formTitle: {
-    fontSize: typography.sizes.xl,
+    fontSize: 30,
     fontWeight: typography.weights.bold,
     color: colors.text,
     marginBottom: 4,
   },
   formSubtitle: {
-    fontSize: typography.sizes.xs,
+    fontSize: 14,
+    lineHeight: 22,
     color: colors.textSecondary,
-    marginBottom: spacing.xl,
+    marginBottom: 28,
   },
   loginBtn: {
     marginTop: spacing.md,

@@ -13,6 +13,7 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,6 +39,7 @@ import { radius } from '../../src/theme/radius';
 
 export default function ManagementDashboardScreen() {
   const router = useRouter();
+  const wide = useWindowDimensions().width >= 850;
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
@@ -99,9 +101,9 @@ export default function ManagementDashboardScreen() {
     refetchRegs();
   };
 
-  const todaySlots = homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 142;
-  const todayStaffCount = homeData?.todayStaff?.registered_staff_count ?? 135;
-  const todayGuestCount = homeData?.todayStaff?.total_guest_count ?? 7;
+  const todaySlots = homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 0;
+  const todayStaffCount = homeData?.todayStaff?.registered_staff_count ?? 0;
+  const todayGuestCount = homeData?.todayStaff?.total_guest_count ?? 0;
   const pendingCount = pendingRegs.length || homeData?.pendingMealOptionCount || 0;
   const outstandingAmount = homeData?.outstanding?.total_outstanding_amount ?? 0;
   const unpaidRecords = homeData?.outstanding?.unpaid_record_count ?? 0;
@@ -113,8 +115,8 @@ export default function ManagementDashboardScreen() {
   return (
     <ScreenContainer scrollable={false} backgroundColor={colors.background}>
       <Header
-        title="Bảng điều khiển Quản lý"
-        subtitle={`Quyền: ${role?.toUpperCase()} · ${user?.fullName}`}
+        title="Tổng quan quản lý"
+        subtitle={`Theo dõi hoạt động bữa ăn · ${user?.fullName || ''}`}
         showBack
         onBack={() => router.back()}
         userRole={role || undefined}
@@ -142,9 +144,9 @@ export default function ManagementDashboardScreen() {
         }
       >
         {/* KPI Cards Overview */}
-        <View style={styles.kpiContainer}>
+        <View style={[styles.kpiContainer, wide && {flexDirection: 'row', gap: 16}]}>
           {/* Card 1: Hôm nay */}
-          <Card variant="elevated" padding="md" style={styles.kpiCardLarge}>
+          <Card variant="elevated" padding="md" style={[styles.kpiCardLarge, wide && {flex: 1}]}>
             <View style={styles.kpiHeaderRow}>
               <View style={[styles.kpiIconBox, { backgroundColor: colors.primaryLight }]}>
                 <Ionicons name="restaurant" size={20} color={colors.primaryDark} />
@@ -164,7 +166,7 @@ export default function ManagementDashboardScreen() {
           </Card>
 
           {/* Card 2 & 3: Pending & Outstanding */}
-          <View style={styles.kpiRowSmall}>
+          <View style={[styles.kpiRowSmall, wide && {flex: 1.2}]}>
             <Card
               variant="elevated"
               padding="md"
@@ -187,7 +189,7 @@ export default function ManagementDashboardScreen() {
               <View style={[styles.kpiIconSmall, { backgroundColor: '#FEE2E2' }]}>
                 <Ionicons name="alert-circle" size={16} color="#DC2626" />
               </View>
-              <Text style={[styles.kpiNumberSmall, { color: '#DC2626' }]}>
+              <Text style={[styles.kpiNumberSmall, { color: '#DC2626', fontSize: wide ? 26 : 20 }]}>
                 {formatCurrency(outstandingAmount)}
               </Text>
               <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu</Text>
@@ -331,7 +333,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/meals' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: colors.primaryLight }]}>
@@ -345,7 +347,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/registrations' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF3C7' }]}>
@@ -359,7 +361,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/payments' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#DCFCE7' }]}>
@@ -373,7 +375,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/users' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#F3E8FF' }]}>
@@ -389,7 +391,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/notifications' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#E0F2FE' }]}>
@@ -404,7 +406,7 @@ export default function ManagementDashboardScreen() {
               <Card
                 variant="elevated"
                 padding="md"
-                style={styles.menuGridItem}
+                style={[styles.menuGridItem, wide && {width: '24%'}]}
                 onPress={() => router.push('/management/settings' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#FCE7F3' }]}>
@@ -420,7 +422,7 @@ export default function ManagementDashboardScreen() {
               <Card
                 variant="elevated"
                 padding="md"
-                style={styles.menuGridItem}
+                style={[styles.menuGridItem, wide && {width: '24%'}]}
                 onPress={() => router.push('/management/audit' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#F1F5F9' }]}>
@@ -435,7 +437,7 @@ export default function ManagementDashboardScreen() {
             <Card
               variant="elevated"
               padding="md"
-              style={styles.menuGridItem}
+              style={[styles.menuGridItem, wide && {width: '24%'}]}
               onPress={() => router.push('/management/admin-tools' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF9C3' }]}>
@@ -475,7 +477,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: 2,
     paddingBottom: spacing['3xl'],
   },
   refreshHeaderBtn: {
@@ -485,8 +487,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   kpiCardLarge: {
+    padding: 24,
     marginBottom: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.primaryDark,
   },
   kpiHeaderRow: {
     flexDirection: 'row',
@@ -502,14 +505,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   kpiBigNumber: {
-    fontSize: 32,
+    fontSize: 44,
     fontWeight: typography.weights.extrabold,
-    color: colors.primaryDark,
+    color: '#FFFFFF',
     marginTop: spacing.xs,
   },
   kpiLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.sm,
+    color: '#D5E4D8',
     marginBottom: spacing.xs,
   },
   kpiSubRow: {
@@ -521,12 +524,12 @@ const styles = StyleSheet.create({
     borderTopColor: colors.borderLight,
   },
   kpiSubText: {
-    fontSize: typography.sizes['2xs'],
-    color: colors.textMuted,
+    fontSize: typography.sizes.xs,
+    color: '#D5E4D8',
   },
   boldText: {
     fontWeight: typography.weights.bold,
-    color: colors.text,
+    color: '#FFFFFF',
   },
   kpiRowSmall: {
     flexDirection: 'row',
@@ -534,6 +537,8 @@ const styles = StyleSheet.create({
   },
   kpiCardSmall: {
     flex: 1,
+    padding: 20,
+    justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   kpiIconSmall: {
@@ -545,7 +550,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   kpiNumberSmall: {
-    fontSize: typography.sizes.lg,
+    fontSize: 26,
     fontWeight: typography.weights.bold,
   },
   kpiSmallLabel: {
@@ -734,14 +739,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   menuGridTitle: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   menuGridDesc: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
-    lineHeight: 14,
+    lineHeight: 18,
   },
 });

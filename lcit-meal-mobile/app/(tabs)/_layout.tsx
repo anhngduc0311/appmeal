@@ -10,7 +10,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUnseenNotificationCount } from '../../src/hooks/useNotificationsData';
 import { colors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
-import { spacing } from '../../src/theme/spacing';
 import { useAuth } from '../../src/providers/AuthProvider';
 
 export default function TabLayout() {
@@ -22,17 +21,20 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveBackgroundColor: colors.primary50,
+        tabBarItemStyle: { borderRadius: 12, marginHorizontal: 3 },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: spacing.tabBarHeight,
+          height: 76,
           paddingBottom: 8,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: typography.sizes['2xs'],
+          lineHeight: 16,
           fontWeight: typography.weights.semibold,
         },
       }}

@@ -1,3 +1,4 @@
+import { formatDateTime } from '../../src/utils/formatters';
 /**
  * Tab Screen - Thông báo (Notifications) - T17, T23
  * Danh sách thông báo cá nhân, đếm số thông báo chưa đọc và đánh dấu đã xem
@@ -81,7 +82,7 @@ export default function NotificationsScreen() {
               <Card
                 key={item.id}
                 variant="elevated"
-                padding="md"
+                padding="lg"
                 onPress={() => handleMarkAsSeen(item.id)}
                 style={[
                   styles.notifCard,
@@ -124,7 +125,7 @@ export default function NotificationsScreen() {
                     </View>
 
                     <Text style={styles.notifBody}>{item.content}</Text>
-                    <Text style={styles.notifTime}>{item.createdAt}</Text>
+                    <Text style={styles.notifTime}>{formatDateTime(item.createdAt)}</Text>
                   </View>
                 </View>
               </Card>
@@ -170,7 +171,7 @@ const styles = StyleSheet.create({
   iconCircle: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -208,13 +209,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   notifBody: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.sm,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 22,
     marginBottom: 4,
   },
   notifTime: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: typography.sizes.xs,
     color: colors.textMuted,
   },
 });

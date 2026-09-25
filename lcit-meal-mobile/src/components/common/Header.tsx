@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         <View style={styles.titleWrapper}>
           <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={styles.title} numberOfLines={2}>
               {title}
             </Text>
             {isMockMode && (
@@ -78,15 +78,15 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </View>
           {subtitle && (
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={styles.subtitle} numberOfLines={2}>
               {subtitle}
             </Text>
           )}
+          {userRole && <View style={{ alignSelf: 'flex-start', marginTop: 8 }}><Badge type="role" value={userRole} size="sm" /></View>}
         </View>
       </View>
 
       <View style={styles.rightRow}>
-        {userRole && <Badge type="role" value={userRole} size="sm" />}
         {rightAction}
       </View>
     </View>
@@ -99,8 +99,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: spacing.headerHeight,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.lg,
+    backgroundColor: 'transparent',
   },
   leftRow: {
     flexDirection: 'row',
@@ -124,7 +125,8 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.sizes['2xl'],
+    flexShrink: 1,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
@@ -144,7 +146,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginTop: 6,
+    lineHeight: 19,
   },
   rightRow: {
     flexDirection: 'row',

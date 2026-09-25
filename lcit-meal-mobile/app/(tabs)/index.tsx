@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,9 +39,6 @@ import {
   formatDisplayDate,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
-import { spacing } from '../../src/theme/spacing';
-import { typography } from '../../src/theme/typography';
-import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
 
 export default function HomeScreen() {
@@ -50,6 +48,7 @@ export default function HomeScreen() {
 
 function PersonalHomeScreen() {
   const router = useRouter();
+  const wide = useWindowDimensions().width >= 850;
   const { user, role, useMockData } = useAuth();
 
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -135,201 +134,52 @@ function PersonalHomeScreen() {
       onRefresh={handleRefresh}
       backgroundColor={colors.background}
     >
-      <MockModeBanner />
-
-      {/* Header chào người dùng */}
+      <View style={styles.brandRow}>
+        <View style={styles.brandIcon}><Ionicons name="restaurant" size={18} color={colors.textInverse} /></View>
+        <Text style={styles.brand}>LCIT <Text style={styles.brandLight}>MEAL</Text></Text>
+        <Text style={styles.brandCaption}>BỮA TRƯA MỖI NGÀY</Text>
+      </View>
       <Header
-        title={`Xin chào, ${user?.fullName ? user.fullName.split(' ').slice(-1)[0] : 'Bạn'} 👋`}
-        subtitle={`${user?.fullName || 'Người dùng'} · ${user?.username || ''}`}
-        userRole={role || 'employee'}
-        isMockMode={useMockData}
-        rightAction={
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/notifications')}
-            style={styles.notifBtn}
-            accessibilityLabel="Thông báo"
-          >
-            <Ionicons name="notifications-outline" size={22} color={colors.text} />
-          </TouchableOpacity>
-        }
+        title={`Xin chào, ${user?.fullName?.split(' ').slice(-1)[0] || 'Bạn'}`}
+        subtitle="Một ngày làm việc tốt bắt đầu từ một bữa ăn ngon."
+        userRole={role || 'employee'} isMockMode={useMockData}
+        rightAction={<TouchableOpacity accessibilityRole="button" accessibilityLabel="Thông báo" onPress={() => router.push('/(tabs)/notifications')} style={styles.notifBtn}><Ionicons name="notifications-outline" size={22} color={colors.text} /></TouchableOpacity>}
       />
-
-      {/* Banner cấu hình giờ đóng đăng ký */}
-      <View style={styles.cutoffNotice}>
-        <Ionicons name="time-outline" size={18} color={colors.status.pending.dot} />
-        <Text style={styles.cutoffText}>
-          Giờ chốt đăng ký & cắt suất hôm nay: <Text style={styles.cutoffBold}>{cutoffTime}</Text>
-        </Text>
+      <View style={styles.hero}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.eyebrow}>BỮA TRƯA TẠI LCIT</Text>
+          <Text style={[styles.heroTitle, wide && {fontSize: 36}]}>Trọn bữa ngon,{'\n'}vẹn ngày làm việc.</Text>
+          <View style={styles.cutoff}><Ionicons name="time-outline" size={16} color="#DCEAA0" /><Text style={styles.heroNote}>Chốt đăng ký & cắt suất lúc {cutoffTime}</Text></View>
+        </View>
+        {wide && <View style={styles.plateOuter}><View style={styles.plateInner}><Ionicons name="restaurant-outline" size={58} color="#DCEAA0" /></View></View>}
       </View>
-
-      {/* Lối vào Bảng điều khiển Quản lý cho Admin & Quản lý */}
-      {(role === 'admin' || role === 'manager') && (
-        <View style={styles.section}>
-          <Card
-            variant="elevated"
-            padding="md"
-            onPress={() => router.push('/management')}
-            style={styles.adminEntryCard}
-          >
-            <View style={styles.adminEntryRow}>
-              <View style={styles.adminIconBox}>
-                <Ionicons name="shield-checkmark" size={24} color="#1D4ED8" />
-              </View>
-              <View style={styles.adminTextCol}>
-                <Text style={styles.adminCardTitle}>Trung Tâm Quản Lý & Admin</Text>
-                <Text style={styles.adminCardSubtitle}>
-                  Thống kê toàn đơn vị, duyệt cắt suất, lịch bếp & thu tiền ăn
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-            </View>
-          </Card>
-        </View>
-      )}
-
-      {/* 1. Suất ăn hôm nay */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Suất ăn hôm nay</Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/schedule')}
-          >
-            <Text style={styles.viewAllText}>Xem cả tuần →</Text>
-          </TouchableOpacity>
-        </View>
-
-        {todayMeal ? (
-          <MealCard
-            dateStr={todayStr}
-            meal={todayMeal}
-            registration={todayReg}
-            onPress={() => todayMeal && router.push(`/meal/${todayMeal.id}` as any)}
-            onRegister={handleRegisterToday}
-            onCancel={() => setCancelModalVisible(true)}
-            onUpdateGuests={(_mealId, guests) => {
-              setGuestCountInput(guests);
-              setGuestModalVisible(true);
-            }}
-          />
-        ) : (
-          <Card variant="flat" padding="lg" style={styles.noMealCard}>
-            <Ionicons name="cafe-outline" size={24} color={colors.textMuted} />
-            <Text style={styles.noMealText}>Hôm nay nhà bếp không bố trí lịch nấu ăn.</Text>
-          </Card>
-        )}
-      </View>
-
-      {/* 2. Khoản thanh toán cá nhân */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Thanh toán cá nhân</Text>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/payments')}
-          >
-            <Text style={styles.viewAllText}>Chi tiết →</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Card variant="elevated" padding="lg" style={styles.paymentSummaryCard}>
-          <View style={styles.paymentRow}>
-            <View style={styles.paymentInfo}>
-              <Text style={styles.paymentLabel}>Tổng tiền ăn chưa thanh toán</Text>
-              <Text
-                style={[
-                  styles.paymentAmount,
-                  totalUnpaidAmount > 0 ? styles.paymentAmountUnpaid : styles.paymentAmountPaid,
-                ]}
-              >
-                {formatCurrency(totalUnpaidAmount)}
-              </Text>
-              <Text style={styles.paymentSubtext}>
-                {unpaidCount > 0
-                  ? `Gồm ${unpaidCount} kỳ thanh toán chưa hoàn tất`
-                  : 'Bạn đã hoàn thành tất cả các khoản thanh toán!'}
-              </Text>
-            </View>
-
-            <Button
-              title="Thanh toán"
-              variant={totalUnpaidAmount > 0 ? 'primary' : 'secondary'}
-              size="sm"
-              onPress={() => router.push('/(tabs)/payments')}
-            />
+      <View style={[styles.columns, wide && styles.columnsWide]}>
+        <View style={styles.mainColumn}>
+          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Suất ăn hôm nay</Text><TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(tabs)/schedule')} style={styles.textLink}><Text style={styles.link}>Xem lịch ăn →</Text></TouchableOpacity></View>
+          {todayMeal ? <MealCard dateStr={todayStr} meal={todayMeal} registration={todayReg}
+            onPress={() => router.push(`/meal/${todayMeal.id}` as any)} onRegister={handleRegisterToday}
+            onCancel={() => setCancelModalVisible(true)} onUpdateGuests={(_id, guests) => {setGuestCountInput(guests); setGuestModalVisible(true);}}
+          /> : <Card padding="2xl" style={styles.empty}><Ionicons name="cafe-outline" size={32} color={colors.primary} /><Text style={styles.body}>Hôm nay nhà bếp không bố trí lịch nấu ăn.</Text></Card>}
+          <Text style={[styles.sectionTitle, {marginTop: 18, marginBottom: 16}]}>Tiện ích của bạn</Text>
+          <View style={styles.quickGrid}>
+            <Card onPress={() => router.push('/(tabs)/schedule')} style={styles.quickCard} padding="xl"><View style={styles.actionIcon}><Ionicons name="calendar-outline" size={24} color={colors.primary} /></View><Text style={styles.actionTitle}>Lịch ăn</Text><Text style={styles.body}>Chủ động sắp xếp bữa trưa</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
+            <Card onPress={() => router.push('/meal-options' as any)} style={styles.quickCard} padding="xl"><View style={[styles.actionIcon, {backgroundColor: '#F4EBD8'}]}><Ionicons name="receipt-outline" size={24} color="#8A672C" /></View><Text style={styles.actionTitle}>Báo cắt suất</Text><Text style={styles.body}>Điều chỉnh những ngày vắng</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
           </View>
-        </Card>
-      </View>
-
-      {/* 3. Thao tác nhanh */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Thao tác nhanh</Text>
-        <View style={styles.quickActionsGrid}>
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/schedule')}
-            style={styles.quickActionCard}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: colors.primaryLight }]}>
-              <Ionicons name="calendar-outline" size={22} color={colors.primaryDark} />
-            </View>
-            <Text style={styles.actionTitle}>Lịch ăn tháng</Text>
-            <Text style={styles.actionDesc}>Xem và đăng ký các ngày</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/meal-options' as any)}
-            style={styles.quickActionCard}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="document-text-outline" size={22} color="#B45309" />
-            </View>
-            <Text style={styles.actionTitle}>Báo cắt suất</Text>
-            <Text style={styles.actionDesc}>Cắt hôm nay hoặc dài hạn</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/payments')}
-            style={styles.quickActionCard}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#E0F2FE' }]}>
-              <Ionicons name="qr-code-outline" size={22} color="#0369A1" />
-            </View>
-            <Text style={styles.actionTitle}>Quét mã QR</Text>
-            <Text style={styles.actionDesc}>Chuyển khoản tiền ăn</Text>
-          </TouchableOpacity>
-
-          {(role === 'admin' || role === 'manager') && (
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => router.push('/management')}
-              style={styles.quickActionCard}
-            >
-              <View style={[styles.actionIconBox, { backgroundColor: '#DBEAFE' }]}>
-                <Ionicons name="briefcase-outline" size={22} color="#1D4ED8" />
-              </View>
-              <Text style={styles.actionTitle}>Trang Quản lý</Text>
-              <Text style={styles.actionDesc}>Bếp & đăng ký nhân sự</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            activeOpacity={0.7}
-            onPress={() => router.push('/component-showcase')}
-            style={styles.quickActionCard}
-          >
-            <View style={[styles.actionIconBox, { backgroundColor: '#F3E8FF' }]}>
-              <Ionicons name="cube-outline" size={22} color="#7E22CE" />
-            </View>
-            <Text style={styles.actionTitle}>Thư viện UI</Text>
-            <Text style={styles.actionDesc}>Kiểm thử Component</Text>
-          </TouchableOpacity>
+        </View>
+        <View style={[styles.sideColumn, wide && {width: 320}]}>
+          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Thanh toán</Text></View>
+          <Card padding="2xl" style={styles.paymentCard}>
+            <View style={styles.paymentTop}><Text style={styles.paymentLabel}>TIỀN ĂN CỦA BẠN</Text><Ionicons name="wallet-outline" size={22} color={colors.primary} /></View>
+            <Text style={styles.paymentAmount}>{formatCurrency(totalUnpaidAmount)}</Text>
+            <Text style={styles.body}>{unpaidCount > 0 ? `${unpaidCount} kỳ chưa thanh toán` : 'Các khoản thanh toán đã hoàn tất'}</Text>
+            <View style={styles.divider} />
+            <Text style={[styles.body, {marginBottom: 20}]}>Theo dõi tiền ăn và chuyển khoản thuận tiện bằng mã QR.</Text>
+            <Button title="Xem thanh toán" onPress={() => router.push('/(tabs)/payments')} fullWidth rightIcon={<Ionicons name="arrow-forward" size={18} color="white" />} />
+          </Card>
+          {(role === 'admin' || role === 'manager') && <Card onPress={() => router.push('/management')} padding="xl" style={styles.managementCard}><Ionicons name="grid-outline" size={24} color={colors.primary} /><Text style={styles.actionTitle}>Trung tâm quản lý</Text><Text style={styles.body}>Suất ăn, lịch bếp và thu tiền toàn đơn vị →</Text></Card>}
         </View>
       </View>
-
+      <View style={{marginTop: 28}}><MockModeBanner /></View>
       {/* Modal xác nhận Cắt suất */}
       <ConfirmDialog
         visible={cancelModalVisible}
@@ -371,163 +221,23 @@ function PersonalHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  notifBtn: {
-    width: spacing.minTouchTarget,
-    height: spacing.minTouchTarget,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cutoffNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.status.pending.bg,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.status.pending.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.lg,
-    gap: spacing.xs,
-  },
-  cutoffText: {
-    fontSize: typography.sizes.xs,
-    color: colors.status.pending.text,
-    fontWeight: typography.weights.medium,
-  },
-  cutoffBold: {
-    fontWeight: typography.weights.bold,
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  viewAllText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.primary,
-  },
-  noMealCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-    gap: spacing.xs,
-  },
-  noMealText: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  paymentSummaryCard: {
-    backgroundColor: colors.surface,
-  },
-  paymentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  paymentInfo: {
-    flex: 1,
-    marginRight: spacing.md,
-  },
-  paymentLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  paymentAmount: {
-    fontSize: typography.sizes.xl,
-    fontWeight: typography.weights.extrabold,
-  },
-  paymentAmountUnpaid: {
-    color: colors.status.unpaid.dot,
-  },
-  paymentAmountPaid: {
-    color: colors.status.confirmed.dot,
-  },
-  paymentSubtext: {
-    fontSize: typography.sizes['2xs'],
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.xs,
-  },
-  quickActionCard: {
-    width: '47.5%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  actionTitle: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  actionDesc: {
-    fontSize: typography.sizes['2xs'],
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  modalGuestCounterBox: {
-    paddingVertical: spacing.sm,
-  },
-  adminEntryCard: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderWidth: 1.5,
-  },
-  adminEntryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  adminIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
-    backgroundColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  adminTextCol: {
-    flex: 1,
-  },
-  adminCardTitle: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.bold,
-    color: '#1E40AF',
-  },
-  adminCardSubtitle: {
-    fontSize: 11,
-    color: '#3B82F6',
-    marginTop: 2,
-    lineHeight: 15,
-  },
+  brandRow: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, marginBottom: 14},
+  brandIcon: {width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center'},
+  brand: {fontSize: 17, fontWeight: '800', letterSpacing: 1, color: colors.primaryDark}, brandLight: {fontWeight: '400'},
+  brandCaption: {marginLeft: 'auto', fontSize: 9, letterSpacing: 1.3, color: colors.textSecondary},
+  notifBtn: {width: 48, height: 48, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center'},
+  hero: {backgroundColor: colors.primaryDark, borderRadius: 24, padding: 28, marginBottom: 26, flexDirection: 'row', alignItems: 'center', overflow: 'hidden'},
+  heroCopy: {flex: 1}, eyebrow: {fontSize: 10, fontWeight: '700', letterSpacing: 2, color: '#DCEAA0', marginBottom: 14},
+  heroTitle: {fontSize: 28, lineHeight: 40, fontWeight: '700', letterSpacing: -0.6, color: '#FFFFFF'},
+  cutoff: {flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22}, heroNote: {fontSize: 12, color: '#D5E4D8', flexShrink: 1, lineHeight: 19},
+  plateOuter: {width: 168, height: 168, borderRadius: 84, borderWidth: 1, borderColor: '#587B5F', alignItems: 'center', justifyContent: 'center', marginHorizontal: 32},
+  plateInner: {width: 136, height: 136, borderRadius: 68, borderWidth: 14, borderColor: '#325D46', backgroundColor: '#244F3D', alignItems: 'center', justifyContent: 'center'},
+  columns: {gap: 26}, columnsWide: {flexDirection: 'row', alignItems: 'flex-start'}, mainColumn: {flex: 1, minWidth: 0}, sideColumn: {gap: 0},
+  sectionHeader: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginBottom: 10, gap: 8},
+  sectionTitle: {fontSize: 18, fontWeight: '700', color: colors.text}, textLink: {minHeight: 44, justifyContent: 'center'}, link: {fontSize: 12, fontWeight: '600', color: colors.primary},
+  quickGrid: {flexDirection: 'row', gap: 12}, quickCard: {flex: 1}, actionIcon: {width: 46, height: 46, borderRadius: 14, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 18},
+  actionTitle: {fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 8}, body: {fontSize: 13, lineHeight: 21, color: colors.textSecondary},
+  paymentCard: {backgroundColor: '#EEF2E3', borderColor: '#DAE2CA'}, paymentTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}, paymentLabel: {fontSize: 10, letterSpacing: 1.3, fontWeight: '700', color: colors.primaryDark},
+  paymentAmount: {fontSize: 30, fontWeight: '700', letterSpacing: -0.8, color: colors.primaryDark, marginTop: 22, marginBottom: 6}, divider: {height: 1, backgroundColor: '#D6DEC8', marginVertical: 22},
+  managementCard: {marginTop: 16, gap: 8}, empty: {gap: 14, alignItems: 'center'}, modalGuestCounterBox: {paddingVertical: 8},
 });

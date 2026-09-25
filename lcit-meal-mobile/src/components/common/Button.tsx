@@ -119,8 +119,8 @@ export const Button: React.FC<ButtonProps> = ({
       case 'sm':
         return {
           container: {
-            height: spacing.buttonSmallHeight,
-            minHeight: spacing.buttonSmallHeight,
+            height: 44,
+            minHeight: 44,
             paddingHorizontal: spacing.md,
           },
           text: {
@@ -135,7 +135,7 @@ export const Button: React.FC<ButtonProps> = ({
             paddingHorizontal: spacing['2xl'],
           },
           text: {
-            fontSize: typography.sizes.lg,
+            fontSize: typography.sizes.base,
           },
         };
       case 'md':

@@ -64,6 +64,7 @@ export const Input: React.FC<InputProps> = ({
         {leftIcon && <View style={styles.leftIconWrapper}>{leftIcon}</View>}
 
         <TextInput
+          accessibilityLabel={label}
           style={[
             styles.input,
             leftIcon ? { paddingLeft: spacing.xs } : null,
@@ -96,7 +97,7 @@ export const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
     width: '100%',
   },
   labelRow: {
@@ -117,11 +118,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: spacing.minTouchTarget, // Tối thiểu 48px
+    height: 52,
     minHeight: spacing.minTouchTarget,
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
   },
