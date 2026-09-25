@@ -1,0 +1,85 @@
+/**
+ * Types - Meals, Registrations, Options and Holidays
+ * Khớp với backend constants và schema database
+ */
+
+export interface Meal {
+  id: number;
+  mealDate: string; // YYYY-MM-DD
+  isCancelled: boolean | number;
+  cancelledBy?: number | null;
+  note?: string | null;
+  status: 'active' | 'cancelled' | string;
+  createdAt?: string;
+}
+
+export type MealRegistrationStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface MealRegistration {
+  id: number;
+  userId: number;
+  mealId: number;
+  guestCount: number; // 0..10
+  status: MealRegistrationStatus;
+  createdAt?: string;
+  mealDate?: string; // Joined date
+  meal?: Meal;
+  user?: {
+    id: number;
+    fullName: string;
+    username: string;
+  };
+}
+
+export type MealOptionType = 'cancel_today' | 'cancel_schedule' | 'cancel_permanent';
+
+export type MealOptionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface MealOption {
+  id: number;
+  userId: number;
+  type: MealOptionType;
+  fromDate: string; // YYYY-MM-DD
+  toDate: string;   // YYYY-MM-DD
+  note?: string | null;
+  status: MealOptionStatus;
+  createdAt?: string;
+  createdBy?: number | null;
+  updatedAt?: string;
+  approvedAt?: string | null;
+  approvedBy?: number | null;
+  user?: {
+    id: number;
+    fullName: string;
+    username: string;
+  };
+}
+
+export interface HolidayEvent {
+  id: number;
+  name: string;
+  fromDate: string; // YYYY-MM-DD
+  toDate: string;   // YYYY-MM-DD
+  reason?: string | null;
+  status: string;
+  createdAt?: string;
+}
+
+export interface RegisterMealRequest {
+  mealId: number;
+  guestCount?: number;
+  userId?: number;
+}
+
+export interface CancelMealRegistrationRequest {
+  registrationId: number;
+  reason?: string;
+}
+
+export interface CreateMealOptionRequest {
+  type: MealOptionType;
+  fromDate: string;
+  toDate: string;
+  note?: string;
+  userId?: number;
+}
