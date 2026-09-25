@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, StyleProp } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, StyleProp, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
@@ -60,7 +60,6 @@ export const MealCard: React.FC<MealCardProps> = ({
     <Card
       variant="elevated"
       padding="lg"
-      onPress={onPress}
       style={[
         styles.card,
         isToday && styles.cardToday,
@@ -68,61 +67,67 @@ export const MealCard: React.FC<MealCardProps> = ({
         style,
       ]}
     >
-      {/* Header dòng ngày & Badge trạng thái */}
-      <View style={styles.headerRow}>
-        <View style={styles.dateCol}>
-          <View style={styles.dateBadgeRow}>
-            <Text style={[styles.dateText, isToday && styles.dateTextToday]}>
-              {formatFullDisplayDate(dateStr)}
-            </Text>
-            {isToday && (
-              <View style={styles.todayPill}>
-                <Text style={styles.todayPillText}>Hôm nay</Text>
-              </View>
-            )}
+      <TouchableOpacity
+        activeOpacity={onPress ? 0.7 : 1}
+        onPress={onPress}
+        disabled={!onPress}
+      >
+        {/* Header dòng ngày & Badge trạng thái */}
+        <View style={styles.headerRow}>
+          <View style={styles.dateCol}>
+            <View style={styles.dateBadgeRow}>
+              <Text style={[styles.dateText, isToday && styles.dateTextToday]}>
+                {formatFullDisplayDate(dateStr)}
+              </Text>
+              {isToday && (
+                <View style={styles.todayPill}>
+                  <Text style={styles.todayPillText}>Hôm nay</Text>
+                </View>
+              )}
+            </View>
           </View>
+
+          <Badge
+            type="mealRegistration"
+            value={regStatus}
+            isMealCancelled={isMealCancelled}
+            size="sm"
+          />
         </View>
 
-        <Badge
-          type="mealRegistration"
-          value={regStatus}
-          isMealCancelled={isMealCancelled}
-          size="sm"
-        />
-      </View>
+        {/* Thông tin món ăn hoặc thông báo bếp nghỉ */}
+        <View style={styles.contentBox}>
+          {isMealCancelled ? (
+            <View style={styles.kitchenAlert}>
+              <Ionicons
+                name="alert-circle"
+                size={18}
+                color={colors.status.kitchenClosed.dot}
+              />
+              <Text style={styles.kitchenAlertText}>
+                {meal?.note || 'Nhà bếp nghỉ phục vụ trong ngày này.'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.menuRow}>
+              <Ionicons name="restaurant-outline" size={18} color={colors.primary} />
+              <Text style={styles.menuText} numberOfLines={2}>
+                {meal?.note || 'Thực đơn cơm trưa tiêu chuẩn văn phòng'}
+              </Text>
+            </View>
+          )}
 
-      {/* Thông tin món ăn hoặc thông báo bếp nghỉ */}
-      <View style={styles.contentBox}>
-        {isMealCancelled ? (
-          <View style={styles.kitchenAlert}>
-            <Ionicons
-              name="alert-circle"
-              size={18}
-              color={colors.status.kitchenClosed.dot}
-            />
-            <Text style={styles.kitchenAlertText}>
-              {meal?.note || 'Nhà bếp nghỉ phục vụ trong ngày này.'}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.menuRow}>
-            <Ionicons name="restaurant-outline" size={18} color={colors.primary} />
-            <Text style={styles.menuText} numberOfLines={2}>
-              {meal?.note || 'Thực đơn cơm trưa tiêu chuẩn văn phòng'}
-            </Text>
-          </View>
-        )}
-
-        {/* Khách ăn kèm nếu có */}
-        {registration && guestCount > 0 && !isMealCancelled && (
-          <View style={styles.guestPill}>
-            <Ionicons name="people-outline" size={14} color={colors.primaryDark} />
-            <Text style={styles.guestPillText}>
-              Kèm {guestCount} khách ăn
-            </Text>
-          </View>
-        )}
-      </View>
+          {/* Khách ăn kèm nếu có */}
+          {registration && guestCount > 0 && !isMealCancelled && (
+            <View style={styles.guestPill}>
+              <Ionicons name="people-outline" size={14} color={colors.primaryDark} />
+              <Text style={styles.guestPillText}>
+                Kèm {guestCount} khách ăn
+              </Text>
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
 
       {/* Dòng nút hành động (Chỉ hiển thị khi bếp mở và ngày chưa hoàn thành) */}
       {!isMealCancelled && !isCompleted && !isPast && (

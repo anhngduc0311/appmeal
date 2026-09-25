@@ -15,10 +15,13 @@ export interface Payment {
   paidAt?: string | null;
   billImg?: string | null;
   status: PaymentStatus;
+  userName?: string;
   user?: {
     id: number;
     fullName: string;
     username: string;
+    email?: string | null;
+    phone?: string | null;
   };
 }
 
@@ -27,4 +30,31 @@ export interface PaymentSummary {
   unpaidCount: number;
   overdueCount: number;
   latestPaymentDate?: string;
+}
+
+export interface CreatePaymentRequest {
+  userId: number;
+  paymentDate: string; // YYYY-MM-DD
+  amount: number;
+  status?: PaymentStatus;
+}
+
+export interface UpdatePaymentRequest {
+  paymentDate?: string;
+  amount?: number;
+  status?: PaymentStatus;
+}
+
+export interface MarkPaidRequest {
+  paidAmount?: number;
+  billImg?: string | null;
+}
+
+export interface PaymentFilterParams {
+  userId?: number;
+  status?: PaymentStatus;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
 }

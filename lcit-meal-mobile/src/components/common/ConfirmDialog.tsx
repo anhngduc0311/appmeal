@@ -26,6 +26,7 @@ export interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   isDestructive?: boolean;
+  variant?: 'primary' | 'danger' | 'secondary';
   loading?: boolean;
   iconName?: string;
   children?: React.ReactNode;
@@ -40,12 +41,15 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   confirmText = 'Xác nhận',
   cancelText = 'Hủy bỏ',
   isDestructive = false,
+  variant,
   loading = false,
   iconName,
   children,
   onConfirm,
   onCancel,
 }) => {
+  const isDanger = isDestructive || variant === 'danger';
+
   return (
     <Modal
       visible={visible}
@@ -61,14 +65,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 <View
                   style={[
                     styles.iconCircle,
-                    isDestructive ? styles.iconCircleDanger : styles.iconCirclePrimary,
+                    isDanger ? styles.iconCircleDanger : styles.iconCirclePrimary,
                   ]}
                 >
                   <Ionicons
                     name={iconName as any}
                     size={28}
                     color={
-                      isDestructive
+                      isDanger
                         ? colors.status.cancelled.dot
                         : colors.primary
                     }
@@ -92,7 +96,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 />
                 <Button
                   title={confirmText}
-                  variant={isDestructive ? 'danger' : 'primary'}
+                  variant={isDanger ? 'danger' : 'primary'}
                   size="md"
                   loading={loading}
                   onPress={onConfirm}

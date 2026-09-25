@@ -5,19 +5,19 @@ import {
   StyleSheet,
   ViewStyle,
   StyleProp,
-  TouchableOpacityProps,
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radius } from '../../theme/radius';
 import { shadows } from '../../theme/shadows';
 
-export interface CardProps extends TouchableOpacityProps {
+export interface CardProps {
   children: React.ReactNode;
   variant?: 'elevated' | 'outlined' | 'flat';
   padding?: keyof typeof spacing;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
+  activeOpacity?: number;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -26,7 +26,7 @@ export const Card: React.FC<CardProps> = ({
   padding = 'lg',
   style,
   onPress,
-  ...props
+  activeOpacity = 0.75,
 }) => {
   const paddingValue = spacing[padding] || spacing.lg;
 
@@ -40,11 +40,10 @@ export const Card: React.FC<CardProps> = ({
   if (onPress) {
     return (
       <TouchableOpacity
-        activeOpacity={0.75}
+        activeOpacity={activeOpacity}
         onPress={onPress}
         style={[styles.base, cardStyle, style]}
         accessibilityRole="button"
-        {...props}
       >
         {children}
       </TouchableOpacity>

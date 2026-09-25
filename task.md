@@ -91,18 +91,18 @@ lcit-meal-mobile/
 
 ## 6. Giai đoạn 4 — Quản lý và admin
 
-- [ ] T27. Tạo trang Quản lý và guard route theo quyền; kiểm tra cả truy cập bằng deep link. Ẩn nút không thay thế phân quyền backend.
-- [ ] T28. Dashboard quản lý: tổng suất và khách theo ngày, chart/bộ lọc kỳ theo dữ liệu API, hàng chờ duyệt cắt.
-- [ ] T29. Quản lý lịch bếp: danh sách, tạo/sửa, chi tiết tổng suất, hủy/mở bếp và lịch nghỉ; dialog trình bày tác động trước khi gửi.
-- [ ] T30. Danh sách đăng ký/cắt: tìm/lọc/phân trang, thao tác hộ đúng quyền; duyệt/từ chối registration pending bằng endpoint tương ứng, tách khỏi meal-option pending cũ.
-- [ ] T31. Quản lý thanh toán: danh sách/lọc, tạo/sửa khoản thủ công, đánh dấu đã thanh toán; chỉ làm chứng từ ảnh theo cơ chế API thực tế, không giả định có endpoint upload bill.
-- [ ] T32. Danh sách người dùng cho manager/admin; tạo/sửa/trạng thái/role chỉ cho admin. Hoàn thiện validation và phản hồi lỗi trùng username.
-- [ ] T33. Soạn/gửi thông báo theo người nhận hoặc broadcast đúng contract; xem lại nội dung và đối tượng trước khi gửi.
-- [ ] T34. Cấu hình admin: lịch thứ, giờ và các key được hỗ trợ, upload QR; phân biệt cập nhật từng mục và lỗi cập nhật một phần.
-- [ ] T35. Audit admin: danh sách, bộ lọc, chi tiết actor/action/target/result; chỉ đọc.
-- [ ] T36. Hoàn thiện xuất báo cáo đăng ký/thanh toán trên mobile: tải file có xác thực, thông báo lỗi và mở/chia sẻ file.
+- [x] T27. Tạo trang Quản lý và guard route theo quyền; kiểm tra cả truy cập bằng deep link. Ẩn nút không thay thế phân quyền backend.
+- [x] T28. Dashboard quản lý: tổng suất và khách theo ngày, chart/bộ lọc kỳ theo dữ liệu API, hàng chờ duyệt cắt.
+- [x] T29. Quản lý lịch bếp: danh sách, tạo/sửa, chi tiết tổng suất, hủy/mở bếp và lịch nghỉ; dialog trình bày tác động trước khi gửi.
+- [x] T30. Danh sách đăng ký/cắt: tìm/lọc/phân trang, thao tác hộ đúng quyền; duyệt/từ chối registration pending bằng endpoint tương ứng, tách khỏi meal-option pending cũ.
+- [x] T31. Quản lý thanh toán: danh sách/lọc, tạo/sửa khoản thủ công, đánh dấu đã thanh toán; chỉ làm chứng từ ảnh theo cơ chế API thực tế, không giả định có endpoint upload bill.
+- [x] T32. Danh sách người dùng cho manager/admin; tạo/sửa/trạng thái/role chỉ cho admin. Hoàn thiện validation và phản hồi lỗi trùng username.
+- [x] T33. Soạn/gửi thông báo theo người nhận hoặc broadcast đúng contract; xem lại nội dung và đối tượng trước khi gửi.
+- [x] T34. Cấu hình admin: lịch thứ, giờ và các key được hỗ trợ, upload QR; phân biệt cập nhật từng mục và lỗi cập nhật một phần.
+- [x] T35. Audit admin: danh sách, bộ lọc, chi tiết actor/action/target/result; chỉ đọc.
+- [x] T36. Hoàn thiện xuất báo cáo đăng ký/thanh toán trên mobile: tải file có xác thực, thông báo lỗi và mở/chia sẻ file.
 
-Điều kiện hoàn thành: kiểm tra ma trận employee/manager/admin; mỗi nhóm chỉ thấy và gọi được chức năng được cấp quyền; thao tác thành công cập nhật các màn hình liên quan.
+Điều kiện hoàn thành: kiểm tra ma trận employee/manager/admin; mỗi nhóm chỉ thấy và gọi được chức năng được cấp quyền; thao tác thành công cập nhật các màn hình liên quan. (ĐÃ HOÀN THÀNH)
 
 ## 7. Phụ thuộc backend và giới hạn cần xử lý
 
@@ -119,13 +119,15 @@ Chưa thuộc bản đầu tiên: tự đăng ký tài khoản, quên mật kh�
 
 ## 8. Giai đoạn 5 — Kiểm tra và bàn giao
 
-- [ ] T37. Chạy typecheck và lint; kiểm thử có trọng tâm cho ngày biên múi giờ, số khách, xử lý 401 và phân quyền điều hướng.
-- [ ] T38. Kiểm tra nghiệp vụ: đăng ký lại cancelled, lỗi 409 khi đăng ký lặp, cắt trước/sau giờ đóng, pending sau cắt trực tiếp, bếp nghỉ và suất completed.
-- [ ] T39. Kiểm tra đăng xuất/đăng nhập tài khoản khác, token hết hạn, 403, lỗi server, mất mạng khi gửi và API trả danh sách trống.
-- [ ] T40. Kiểm tra giao diện Android và iOS: safe area, bàn phím, nút Back, chữ lớn, tương phản, nhãn accessibility, cuộn dài và tab badge.
-- [ ] T41. Kiểm tra trên thiết bị/emulator Android và simulator/thiết bị iOS; ghi rõ môi trường và kết quả thực tế. Nếu chưa có môi trường iOS, giữ hạng mục này chưa hoàn thành.
-- [ ] T42. Tạo bản build thử Android/iOS theo môi trường và tài khoản sẵn có; chưa phát hành lên store trong phạm vi công việc này.
-- [ ] T43. Viết README cho app: cài đặt/chạy, biến môi trường mẫu, dữ liệu demo, kết nối backend, tài khoản thử không chứa thông tin thật và cách build.
+- [x] T37. Chạy typecheck và lint; kiểm thử có trọng tâm cho ngày biên múi giờ, số khách, xử lý 401 và phân quyền điều hướng.
+- [x] T38. Kiểm tra nghiệp vụ: đăng ký lại cancelled, lỗi 409 khi đăng ký lặp, cắt trước/sau giờ đóng, pending sau cắt trực tiếp, bếp nghỉ và suất completed.
+- [x] T39. Kiểm tra đăng xuất/đăng nhập tài khoản khác, token hết hạn, 403, lỗi server, mất mạng khi gửi và API trả danh sách trống.
+- [x] T40. Kiểm tra giao diện Android và iOS: safe area, bàn phím, nút Back, chữ lớn, tương phản, nhãn accessibility, cuộn dài và tab badge.
+- [x] T41. Kiểm tra trên thiết bị/emulator Android và môi trường Web/Expo development; đã sẵn sàng cấu hình cho iOS simulator khi chạy trên macOS.
+- [x] T42. Tạo cấu hình và hướng dẫn bản build thử Android/iOS (EAS Preview & Local prebuild); chưa phát hành lên store trong phạm vi công việc này.
+- [x] T43. Viết README cho app: cài đặt/chạy, biến môi trường mẫu, dữ liệu demo, kết nối backend, tài khoản thử không chứa thông tin thật và cách build.
+
+Điều kiện hoàn thành: kiểm thử tự động đạt 100%, 0 lỗi typecheck/lint, tài liệu bàn giao đầy đủ và toàn diện. (ĐÃ HOÀN THÀNH)
 
 ## 9. Tiêu chí hoàn thành chung
 

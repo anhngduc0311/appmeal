@@ -11,6 +11,7 @@ export interface Meal {
   note?: string | null;
   status: 'active' | 'cancelled' | string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export type MealRegistrationStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
@@ -28,6 +29,8 @@ export interface MealRegistration {
     id: number;
     fullName: string;
     username: string;
+    email?: string | null;
+    phone?: string | null;
   };
 }
 
@@ -52,6 +55,8 @@ export interface MealOption {
     id: number;
     fullName: string;
     username: string;
+    email?: string | null;
+    phone?: string | null;
   };
 }
 
@@ -82,4 +87,48 @@ export interface CreateMealOptionRequest {
   toDate: string;
   note?: string;
   userId?: number;
+}
+
+export interface MealSummaryResponse {
+  meal: Meal;
+  totalRegistrations: number;
+  totalGuests: number;
+  totalMealSlots: number;
+}
+
+export interface CreateMealRequest {
+  mealDate: string;
+  note?: string;
+  status?: string;
+}
+
+export interface UpdateMealRequest {
+  mealDate?: string;
+  note?: string;
+  status?: string;
+}
+
+export interface CreateHolidayEventRequest {
+  name: string;
+  fromDate: string;
+  toDate: string;
+  reason?: string;
+}
+
+export interface MealRegistrationFilterParams {
+  userId?: number;
+  mealId?: number;
+  status?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface MealOptionFilterParams {
+  userId?: number;
+  type?: MealOptionType;
+  status?: MealOptionStatus;
+  page?: number;
+  limit?: number;
 }

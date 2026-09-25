@@ -19,6 +19,7 @@ import {
   PaymentStatus,
   UserRole,
 } from '../../types';
+import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
@@ -29,7 +30,9 @@ export interface BadgeProps {
   type?: BadgeType;
   value?: MealRegistrationStatus | MealOptionStatus | PaymentStatus | UserRole | string;
   isMealCancelled?: boolean | number;
+  label?: string;
   customLabel?: string;
+  variant?: 'confirmed' | 'pending' | 'completed' | 'cancelled' | 'danger' | 'warning' | 'success' | string;
   customConfig?: Partial<StatusConfig>;
   showDot?: boolean;
   showIcon?: boolean;
@@ -42,7 +45,9 @@ export const Badge: React.FC<BadgeProps> = ({
   type = 'custom',
   value,
   isMealCancelled,
+  label,
   customLabel,
+  variant,
   customConfig,
   showDot = true,
   showIcon = false,
@@ -52,7 +57,51 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   let config: StatusConfig;
 
-  if (type === 'mealRegistration') {
+  const displayLabel = label || customLabel || String(value || '');
+
+  if (variant) {
+    if (variant === 'confirmed' || variant === 'success') {
+      config = {
+        label: displayLabel,
+        textColor: colors.status.confirmed.text,
+        bgColor: colors.status.confirmed.bg,
+        borderColor: colors.status.confirmed.border,
+        dotColor: colors.status.confirmed.dot,
+      };
+    } else if (variant === 'pending' || variant === 'warning') {
+      config = {
+        label: displayLabel,
+        textColor: colors.status.pending.text,
+        bgColor: colors.status.pending.bg,
+        borderColor: colors.status.pending.border,
+        dotColor: colors.status.pending.dot,
+      };
+    } else if (variant === 'cancelled' || variant === 'danger') {
+      config = {
+        label: displayLabel,
+        textColor: colors.status.cancelled.text,
+        bgColor: colors.status.cancelled.bg,
+        borderColor: colors.status.cancelled.border,
+        dotColor: colors.status.cancelled.dot,
+      };
+    } else if (variant === 'completed') {
+      config = {
+        label: displayLabel,
+        textColor: colors.status.completed.text,
+        bgColor: colors.status.completed.bg,
+        borderColor: colors.status.completed.border,
+        dotColor: colors.status.completed.dot,
+      };
+    } else {
+      config = {
+        label: displayLabel,
+        textColor: customConfig?.textColor || '#475569',
+        bgColor: customConfig?.bgColor || '#F1F5F9',
+        borderColor: customConfig?.borderColor || '#E2E8F0',
+        dotColor: customConfig?.dotColor || '#94A3B8',
+      };
+    }
+  } else if (type === 'mealRegistration') {
     config = getMealRegistrationStatusConfig(value as MealRegistrationStatus, isMealCancelled);
   } else if (type === 'mealOption') {
     config = getMealOptionStatusConfig(value as MealOptionStatus);
@@ -62,7 +111,7 @@ export const Badge: React.FC<BadgeProps> = ({
     config = getRoleConfig(value as UserRole);
   } else {
     config = {
-      label: customLabel || String(value || ''),
+      label: displayLabel,
       textColor: customConfig?.textColor || '#475569',
       bgColor: customConfig?.bgColor || '#F1F5F9',
       borderColor: customConfig?.borderColor || '#E2E8F0',
@@ -112,7 +161,7 @@ export const Badge: React.FC<BadgeProps> = ({
           textStyle,
         ]}
       >
-        {customLabel || config.label}
+        {displayLabel || config.label}
       </Text>
     </View>
   );

@@ -1,12 +1,20 @@
 /**
  * Payment Service
- * Quản lý các khoản thanh toán cá nhân và thông tin tài chính
- * TUÂN THỦ GAP-01: Chỉ truy vấn /payments/me cho nhân viên, không tính tổng toàn cơ quan.
+ * Quản lý các khoản thanh toán cá nhân và quản trị thanh toán toàn cơ quan
+ * TUÂN THỦ GAP-01: Chỉ truy vấn /payments/me cho nhân viên, không tính tổng toàn cơ quan cho employee.
  */
 
 import { apiClient, extractDataList } from './apiClient';
 import { mockStore } from './mockStore';
-import { Payment, PaymentSummary, PaginatedData } from '../types';
+import {
+  Payment,
+  PaymentSummary,
+  CreatePaymentRequest,
+  UpdatePaymentRequest,
+  MarkPaidRequest,
+  PaymentFilterParams,
+  PaginatedData,
+} from '../types';
 
 export const paymentService = {
   /**
@@ -64,5 +72,104 @@ export const paymentService = {
     }
     const res = await apiClient<Payment[] | PaginatedData<Payment>>('/payments');
     return extractDataList<Payment>(res);
+  },
+
+  /**
+   * Lọc và tìm kiếm danh sách thanh toán (Admin/Manager): GET /api/payments/filter
+   */
+  async filterPayments(params: PaymentFilterParams, useMock = true): Promise<Payment[]> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 200));
+      let list = mockStore.getAllPayments();
+      if (params.userId) list = list.filter((p) => p.userId === params.userId);
+      if (params.status) list = list.filter((p) => p.status === params.status);
+      if (params.from) list = list.filter((p) => p.paymentDate >= params.from!);
+      if (params.to) list = list.filter((p) => p.paymentDate <= params.to!);
+      return list;
+    }
+
+    const queryParams = new URLSearchParams();
+    if (params.userId) queryParams.append('userId', String(params.userId));
+    if (params.status) queryParams.append('status', params.status);
+    if (params.from) queryParams.append('from', params.from);
+    if (params.to) queryParams.append('to', params.to);
+    if (params.page) queryParams.append('page', String(params.page));
+    if (params.limit) queryParams.append('limit', String(params.limit));
+
+    const res = await apiClient<Payment[] | PaginatedData<Payment>>(
+      `/payments/filter?${queryParams.toString()}`
+    );
+    return extractDataList<Payment>(res);
+  },
+
+  /**
+   * Xem chi tiết một khoản thanh toán: GET /api/payments/:id (Admin/Manager)
+   */
+  async getPayment(id: number, useMock = true): Promise<Payment> {
+    if (useMock) {
+      const p = mockStore.getAllPayments().find((x) => x.id === id);
+      if (!p) throw new Error('Không tìm thấy khoản thanh toán');
+      return p;
+    }
+    return await apiClient<Payment>(`/payments/${id}`);
+  },
+
+  /**
+   * Tạo khoản thanh toán thủ công (Admin/Manager): POST /api/payments
+   */
+  async createPayment(data: CreatePaymentRequest, useMock = true): Promise<Payment> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      return mockStore.createPayment(data);
+    }
+    return await apiClient<Payment>('/payments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Cập nhật khoản thanh toán (Admin/Manager): PUT /api/payments/:id
+   */
+  async updatePayment(id: number, data: UpdatePaymentRequest, useMock = true): Promise<Payment> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      const updated = mockStore.updatePayment(id, data);
+      if (!updated) throw new Error('Cập nhật khoản thanh toán thất bại');
+      return updated;
+    }
+    return await apiClient<Payment>(`/payments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Đánh dấu đã thanh toán (Admin/Manager): PATCH /api/payments/:id/mark-paid
+   * Chỉ gửi paidAmount và billImg dạng chuỗi URL/mã tham chiếu theo API thực tế
+   */
+  async markPaid(id: number, data: MarkPaidRequest = {}, useMock = true): Promise<Payment> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      const marked = mockStore.markPaymentPaid(id, data.paidAmount, data.billImg);
+      if (!marked) throw new Error('Xác nhận thanh toán thất bại');
+      return marked;
+    }
+    return await apiClient<Payment>(`/payments/${id}/mark-paid`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Xóa khoản thanh toán (Admin only): DELETE /api/payments/:id
+   */
+  async deletePayment(id: number, useMock = true): Promise<void> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      mockStore.deletePayment(id);
+      return;
+    }
+    await apiClient(`/payments/${id}`, { method: 'DELETE' });
   },
 };

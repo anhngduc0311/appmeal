@@ -33,5 +33,17 @@ export interface MealScheduleConfig {
   mealCompletionTime: string;
   paymentDueDay: number;
   mealPrice: number;
+  guestMealPrice?: number;
   paymentQrImage?: string | null;
+}
+
+export interface BulkUpdateSettingsRequest {
+  settings: {
+    settingKey: string;
+    settingValue: string;
+  }[];
+}
+
+export interface UpdateMealScheduleConfigRequest {
+  days: MealScheduleDayConfig[];
 }

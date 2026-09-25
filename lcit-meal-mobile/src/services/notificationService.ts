@@ -1,11 +1,18 @@
 /**
  * Notification Service
- * Quản lý thông báo, đếm số thông báo chưa đọc và đánh dấu đã xem
+ * Quản lý thông báo, đếm số thông báo chưa đọc, đánh dấu đã xem, soạn và phát thông báo
  */
 
 import { apiClient, extractDataList } from './apiClient';
 import { mockStore } from './mockStore';
-import { NotificationItem, UnseenCountResponse, PaginatedData } from '../types';
+import {
+  NotificationItem,
+  UnseenCountResponse,
+  SendNotificationRequest,
+  CreateNotificationRequest,
+  UpdateNotificationRequest,
+  PaginatedData,
+} from '../types';
 
 export const notificationService = {
   /**
@@ -18,6 +25,105 @@ export const notificationService = {
     }
     const res = await apiClient<NotificationItem[] | PaginatedData<NotificationItem>>('/notifications/me');
     return extractDataList<NotificationItem>(res);
+  },
+
+  /**
+   * Lấy toàn bộ danh sách thông báo hệ thống (Admin/Manager): GET /api/notifications
+   */
+  async getAllNotifications(useMock = true): Promise<NotificationItem[]> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 200));
+      return mockStore.getAllNotifications();
+    }
+    const res = await apiClient<NotificationItem[] | PaginatedData<NotificationItem>>('/notifications');
+    return extractDataList<NotificationItem>(res);
+  },
+
+  /**
+   * Lọc thông báo (Admin/Manager): GET /api/notifications/filter
+   */
+  async filterNotifications(query?: string, status?: string, useMock = true): Promise<NotificationItem[]> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 200));
+      let list = mockStore.getAllNotifications();
+      if (query) {
+        const q = query.toLowerCase();
+        list = list.filter((n) => n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q));
+      }
+      if (status) {
+        list = list.filter((n) => n.status === status);
+      }
+      return list;
+    }
+
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (status) params.append('status', status);
+
+    const res = await apiClient<NotificationItem[] | PaginatedData<NotificationItem>>(
+      `/notifications/filter?${params.toString()}`
+    );
+    return extractDataList<NotificationItem>(res);
+  },
+
+  /**
+   * Soạn & phát thông báo tới danh sách userIds hoặc Broadcast toàn bộ (Admin/Manager): POST /api/notifications/send
+   */
+  async sendNotification(data: SendNotificationRequest, useMock = true): Promise<NotificationItem> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 400));
+      return mockStore.sendNotification(data);
+    }
+    return await apiClient<NotificationItem>('/notifications/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Tạo thông báo: POST /api/notifications (Admin/Manager)
+   */
+  async createNotification(data: CreateNotificationRequest, useMock = true): Promise<NotificationItem> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      return mockStore.sendNotification(data);
+    }
+    return await apiClient<NotificationItem>('/notifications', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Sửa thông báo: PUT /api/notifications/:id (Admin/Manager)
+   */
+  async updateNotification(
+    id: number,
+    data: UpdateNotificationRequest,
+    useMock = true
+  ): Promise<NotificationItem> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      const updated = mockStore.updateNotification(id, data);
+      if (!updated) throw new Error('Cập nhật thông báo thất bại');
+      return updated;
+    }
+    return await apiClient<NotificationItem>(`/notifications/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Xóa thông báo: DELETE /api/notifications/:id (Admin/Manager)
+   */
+  async deleteNotification(id: number, useMock = true): Promise<void> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      mockStore.deleteNotification(id);
+      return;
+    }
+    await apiClient(`/notifications/${id}`, { method: 'DELETE' });
   },
 
   /**

@@ -20,6 +20,7 @@ export interface NotificationItem {
   status?: string;
   createdAt: string;
   createdBy?: number | null;
+  creatorName?: string;
   // Bảng trung gian notification_recipient
   isSeen?: boolean | number;
   seenAt?: string | null;
@@ -28,4 +29,28 @@ export interface NotificationItem {
 export interface UnseenCountResponse {
   total: number;
   count?: number;
+}
+
+export interface SendNotificationRequest {
+  title: string;
+  content: string;
+  url?: string;
+  type?: string;
+  userIds?: number[]; // Nếu để trống/không gửi -> broadcast cho toàn bộ cán bộ active
+}
+
+export interface CreateNotificationRequest {
+  title: string;
+  content: string;
+  url?: string;
+  type?: string;
+  status?: string;
+}
+
+export interface UpdateNotificationRequest {
+  title?: string;
+  content?: string;
+  url?: string;
+  type?: string;
+  status?: string;
 }

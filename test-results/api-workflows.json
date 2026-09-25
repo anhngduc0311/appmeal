@@ -1,0 +1,334 @@
+{
+  "timestamp": "2026-09-25T07:27:00.983Z",
+  "database": "disposable schema; config only copied",
+  "results": [
+    {
+      "name": "Login admin",
+      "status": "PASS"
+    },
+    {
+      "name": "Login manager",
+      "status": "PASS"
+    },
+    {
+      "name": "Login user1",
+      "status": "PASS"
+    },
+    {
+      "name": "Login user2",
+      "status": "PASS"
+    },
+    {
+      "name": "Login kitchen",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject wrong password",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject missing credentials",
+      "status": "PASS"
+    },
+    {
+      "name": "Require authentication",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: dashboard",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: /meals",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: /meal-registrations/me",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: /payments/me",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: /notifications/me",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: /system-settings",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: users permission",
+      "status": "PASS"
+    },
+    {
+      "name": "admin: audit permission",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: dashboard",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: /meals",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: /meal-registrations/me",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: /payments/me",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: /notifications/me",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: /system-settings",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: users permission",
+      "status": "PASS"
+    },
+    {
+      "name": "manager: audit permission",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: dashboard",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: /meals",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: /meal-registrations/me",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: /payments/me",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: /notifications/me",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: /system-settings",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: users permission",
+      "status": "PASS"
+    },
+    {
+      "name": "user1: audit permission",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: dashboard",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: /meals",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: /meal-registrations/me",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: /payments/me",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: /notifications/me",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: /system-settings",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: users permission",
+      "status": "PASS"
+    },
+    {
+      "name": "kitchen: audit permission",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee cannot create user",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager cannot modify settings",
+      "status": "PASS"
+    },
+    {
+      "name": "Web origin 8081 allowed by CORS",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ null\n- 'http://localhost:8081'\n"
+    },
+    {
+      "name": "Duplicate meal rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Admin cannot self-register",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee registers with 2 guests",
+      "status": "PASS"
+    },
+    {
+      "name": "Duplicate registration rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject guestCount -1",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject guestCount 11",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject guestCount 1.5",
+      "status": "FAIL",
+      "error": "POST /meal-registrations: expected 400, got 201; "
+    },
+    {
+      "name": "Update guests keeps same registration",
+      "status": "PASS"
+    },
+    {
+      "name": "Other employee cannot read registration",
+      "status": "FAIL",
+      "error": "GET /meal-registrations/290: expected 403, got 200; "
+    },
+    {
+      "name": "Other employee cannot cancel registration",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee cannot register for another user",
+      "status": "FAIL",
+      "error": "POST /meal-registrations: expected 403, got 201; "
+    },
+    {
+      "name": "Cancel registration",
+      "status": "PASS"
+    },
+    {
+      "name": "Re-register after cancellation",
+      "status": "PASS"
+    },
+    {
+      "name": "Cancel date range syncs registration",
+      "status": "PASS"
+    },
+    {
+      "name": "Other employee cannot read cancellation request",
+      "status": "FAIL",
+      "error": "GET /meal-options/8: expected 403, got 200; "
+    },
+    {
+      "name": "Employee cannot cancel meals for another user",
+      "status": "FAIL",
+      "error": "POST /meal-options: expected 403, got 201; "
+    },
+    {
+      "name": "Holiday restore preserves voluntary cancellation",
+      "status": "FAIL",
+      "error": "PATCH /holiday-events/1/restore: expected 200, got 500; Check constraint 'chk_holiday_event_status' is violated."
+    },
+    {
+      "name": "Failed holiday restore does not reactivate cancelled registration",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'confirmed'\n- 'cancelled'\n"
+    },
+    {
+      "name": "Create payment",
+      "status": "PASS"
+    },
+    {
+      "name": "Payment business date survives API serialization",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '2026-10-01'\n- '2026-10-02'\n            ^\n"
+    },
+    {
+      "name": "Personal payments contain own invoice",
+      "status": "PASS"
+    },
+    {
+      "name": "Employee cannot mark paid",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager marks paid",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject repeated payment confirmation",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject negative payment update",
+      "status": "FAIL",
+      "error": "PUT /payments/27: expected 400, got 200; "
+    },
+    {
+      "name": "Reject negative paid amount",
+      "status": "FAIL",
+      "error": "PATCH /payments/28/mark-paid: expected 400, got 200; "
+    },
+    {
+      "name": "Read and mark personal notifications",
+      "status": "PASS"
+    },
+    {
+      "name": "Excel /payments/export",
+      "status": "PASS"
+    },
+    {
+      "name": "Excel /meal-registrations/export",
+      "status": "PASS"
+    },
+    {
+      "name": "Update own profile",
+      "status": "PASS"
+    },
+    {
+      "name": "Admin creates employee",
+      "status": "PASS"
+    },
+    {
+      "name": "Duplicate username rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Manager cannot modify users",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject registration for past day",
+      "status": "PASS"
+    },
+    {
+      "name": "Registration cutoff enforced for today",
+      "status": "FAIL",
+      "error": "POST /meal-registrations: expected 400, got 201; "
+    },
+    {
+      "name": "Logout revokes token",
+      "status": "PASS"
+    }
+  ]
+}

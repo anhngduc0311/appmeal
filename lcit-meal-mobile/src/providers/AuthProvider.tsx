@@ -23,6 +23,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   useMockData: boolean;
+  isMockMode: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   switchMockUser: (userId: number) => Promise<void>;
@@ -169,6 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated: !!user && !!token,
       isLoading,
       useMockData,
+      isMockMode: useMockData,
       login,
       logout,
       switchMockUser,

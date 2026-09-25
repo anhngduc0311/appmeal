@@ -19,6 +19,7 @@ export const colors = {
 
   // Neutral / Background Colors (Nền sáng hiện đại)
   background: '#F8FAFC',   // Slate 50 - Nền ứng dụng chính
+  backgroundDark: '#F1F5F9', // Slate 100 - Nền chip, box phụ
   surface: '#FFFFFF',      // Pure White - Nền thẻ, sheet, modal
   surfaceSubtle: '#F1F5F9',// Slate 100 - Nền input, header phụ
   surfaceActive: '#E2E8F0',// Slate 200 - Nền khi chạm
@@ -34,6 +35,10 @@ export const colors = {
   borderLight: '#F1F5F9',  // Slate 100
   borderDark: '#CBD5E1',   // Slate 300 - Viền input active
   borderFocus: '#16A34A',  // Viền khi focus ô nhập
+
+  // Helpers
+  warning: '#D97706',
+  danger: '#DC2626',
 
   // Semantic Statuses (Có nhãn tiếng Việt & màu tương ứng)
   status: {

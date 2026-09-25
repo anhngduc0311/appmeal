@@ -65,7 +65,63 @@ function RootNavigation() {
           name="management/index"
           options={{
             headerShown: false,
-            title: 'Quản lý',
+            title: 'Bảng điều khiển Quản lý',
+          }}
+        />
+        <Stack.Screen
+          name="management/meals"
+          options={{
+            headerShown: false,
+            title: 'Quản lý lịch bếp & Ngày nghỉ',
+          }}
+        />
+        <Stack.Screen
+          name="management/registrations"
+          options={{
+            headerShown: false,
+            title: 'Quản lý đăng ký & Duyệt cắt',
+          }}
+        />
+        <Stack.Screen
+          name="management/payments"
+          options={{
+            headerShown: false,
+            title: 'Quản lý thu tiền ăn',
+          }}
+        />
+        <Stack.Screen
+          name="management/users"
+          options={{
+            headerShown: false,
+            title: 'Quản lý người dùng & Vai trò',
+          }}
+        />
+        <Stack.Screen
+          name="management/notifications"
+          options={{
+            headerShown: false,
+            title: 'Soạn & Phát thông báo',
+          }}
+        />
+        <Stack.Screen
+          name="management/settings"
+          options={{
+            headerShown: false,
+            title: 'Cấu hình hệ thống',
+          }}
+        />
+        <Stack.Screen
+          name="management/audit"
+          options={{
+            headerShown: false,
+            title: 'Nhật ký hệ thống',
+          }}
+        />
+        <Stack.Screen
+          name="management/admin-tools"
+          options={{
+            headerShown: false,
+            title: 'Công cụ quản trị',
           }}
         />
         <Stack.Screen

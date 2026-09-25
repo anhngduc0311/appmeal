@@ -75,6 +75,11 @@ export function formatDisplayDate(
 }
 
 /**
+ * Alias cho formatDisplayDate
+ */
+export const formatBusinessDateDisplay = formatDisplayDate;
+
+/**
  * Định dạng hiển thị ngày có thứ: "Thứ Sáu, 26/09/2026"
  */
 export function formatFullDisplayDate(

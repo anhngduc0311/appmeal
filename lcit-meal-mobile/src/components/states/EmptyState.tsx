@@ -15,6 +15,7 @@ export interface EmptyStateProps {
   iconName?: string;
   title: string;
   description?: string;
+  message?: string;
   actionText?: string;
   onAction?: () => void;
   style?: ViewStyle;
@@ -24,17 +25,20 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   iconName = 'file-tray-outline',
   title,
   description,
+  message,
   actionText,
   onAction,
   style,
 }) => {
+  const desc = message || description;
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconCircle}>
         <Ionicons name={iconName as any} size={36} color={colors.textMuted} />
       </View>
       <Text style={styles.title}>{title}</Text>
-      {description && <Text style={styles.description}>{description}</Text>}
+      {desc ? <Text style={styles.description}>{desc}</Text> : null}
 
       {actionText && onAction && (
         <Button

@@ -5,7 +5,7 @@
 
 export type UserRole = 'admin' | 'manager' | 'employee' | 'kitchen';
 
-export type UserStatus = 'active' | 'inactive' | 'locked' | 'deleted' | number;
+export type UserStatus = 'active' | 'inactive' | 'locked' | 'deleted' | string | number;
 
 export interface RoleObject {
   id: number;
@@ -51,6 +51,38 @@ export interface UpdateProfileRequest {
   currentPassword?: string;
   email?: string;
   phone?: string;
+}
+
+export interface CreateUserRequest {
+  fullName: string;
+  username: string;
+  password?: string;
+  roleId?: number;
+  status?: string | number;
+  email?: string;
+  phone?: string;
+}
+
+export interface UpdateUserRequest {
+  fullName?: string;
+  password?: string;
+  roleId?: number;
+  status?: string | number;
+  email?: string;
+  phone?: string;
+}
+
+export interface UserFilterParams {
+  query?: string;
+  role?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface UserAvailabilityResponse {
+  available: boolean;
+  message?: string;
 }
 
 /**

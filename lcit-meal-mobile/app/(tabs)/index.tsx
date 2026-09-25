@@ -157,6 +157,31 @@ export default function HomeScreen() {
         </Text>
       </View>
 
+      {/* Lối vào Bảng điều khiển Quản lý cho Admin & Quản lý */}
+      {(role === 'admin' || role === 'manager') && (
+        <View style={styles.section}>
+          <Card
+            variant="elevated"
+            padding="md"
+            onPress={() => router.push('/management')}
+            style={styles.adminEntryCard}
+          >
+            <View style={styles.adminEntryRow}>
+              <View style={styles.adminIconBox}>
+                <Ionicons name="shield-checkmark" size={24} color="#1D4ED8" />
+              </View>
+              <View style={styles.adminTextCol}>
+                <Text style={styles.adminCardTitle}>Trung Tâm Quản Lý & Admin</Text>
+                <Text style={styles.adminCardSubtitle}>
+                  Thống kê toàn đơn vị, duyệt cắt suất, lịch bếp & thu tiền ăn
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+            </View>
+          </Card>
+        </View>
+      )}
+
       {/* 1. Suất ăn hôm nay */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
@@ -466,5 +491,37 @@ const styles = StyleSheet.create({
   },
   modalGuestCounterBox: {
     paddingVertical: spacing.sm,
+  },
+  adminEntryCard: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderWidth: 1.5,
+  },
+  adminEntryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  adminIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminTextCol: {
+    flex: 1,
+  },
+  adminCardTitle: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: '#1E40AF',
+  },
+  adminCardSubtitle: {
+    fontSize: 11,
+    color: '#3B82F6',
+    marginTop: 2,
+    lineHeight: 15,
   },
 });

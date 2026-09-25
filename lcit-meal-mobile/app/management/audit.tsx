@@ -1,0 +1,460 @@
+/**
+ * Nhật Ký Hệ Thống / Audit Logs (Admin Only)
+ * T35: Danh sách, bộ lọc, chi tiết actor/action/target/result; chỉ đọc.
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Modal,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { ScreenContainer } from '../../src/components/common/ScreenContainer';
+import { Header } from '../../src/components/common/Header';
+import { Card } from '../../src/components/common/Card';
+import { Badge } from '../../src/components/common/Badge';
+import { Button } from '../../src/components/common/Button';
+import { Input } from '../../src/components/common/Input';
+import { ForbiddenState } from '../../src/components/states/ForbiddenState';
+import { EmptyState } from '../../src/components/states/EmptyState';
+import { useAuth } from '../../src/providers/AuthProvider';
+import { useAuditLogs } from '../../src/hooks/useAuditLogs';
+import { colors } from '../../src/theme/colors';
+import { spacing } from '../../src/theme/spacing';
+import { typography } from '../../src/theme/typography';
+import { radius } from '../../src/theme/radius';
+import { AuditLogItem } from '../../src/types';
+
+export default function ManagementAuditScreen() {
+  const router = useRouter();
+  const { user, role } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+
+  const isAdmin = role === 'admin';
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
+
+  const { data: logs = [], isLoading, refetch } = useAuditLogs();
+
+  if (!isAdmin) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Nhật ký hệ thống" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Chỉ dành cho Quản trị viên"
+          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền xem nhật ký thao tác hệ thống.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
+
+  const filteredLogs = logs.filter((l) => {
+    const matchAction =
+      actionFilter === 'all' ||
+      (actionFilter === 'create' && l.logAction.includes('create')) ||
+      (actionFilter === 'update' && l.logAction.includes('update')) ||
+      (actionFilter === 'delete' && l.logAction.includes('delete')) ||
+      (actionFilter === 'approve' && l.logAction.includes('approve')) ||
+      (actionFilter === 'payment' && (l.logAction.includes('paid') || l.logAction.includes('payment')));
+
+    const q = searchQuery.toLowerCase();
+    const matchQuery =
+      !searchQuery ||
+      (l.actorName && l.actorName.toLowerCase().includes(q)) ||
+      (l.actorUsername && l.actorUsername.toLowerCase().includes(q)) ||
+      (l.logDetail && l.logDetail.toLowerCase().includes(q)) ||
+      (l.logTarget && l.logTarget.toLowerCase().includes(q)) ||
+      (l.logAction && l.logAction.toLowerCase().includes(q));
+
+    return matchAction && matchQuery;
+  });
+
+  const getActionBadge = (action: string) => {
+    if (action.includes('create') || action.includes('restore')) {
+      return <Badge label="Tạo mới / Mở" variant="confirmed" size="sm" />;
+    }
+    if (action.includes('update') || action.includes('setting')) {
+      return <Badge label="Cập nhật" variant="warning" size="sm" />;
+    }
+    if (action.includes('delete') || action.includes('cancel')) {
+      return <Badge label="Xóa / Hủy" variant="cancelled" size="sm" />;
+    }
+    if (action.includes('approve')) {
+      return <Badge label="Phê duyệt" variant="confirmed" size="sm" />;
+    }
+    if (action.includes('paid')) {
+      return <Badge label="Thu tiền" variant="completed" size="sm" />;
+    }
+    return <Badge label={action} variant="confirmed" size="sm" />;
+  };
+
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      <Header
+        title="Nhật ký Hệ thống (Audit Logs)"
+        subtitle="Theo dõi và tra cứu toàn bộ lịch sử thao tác"
+        showBack
+        onBack={() => router.back()}
+        userRole={role || undefined}
+      />
+
+      {/* Search Bar */}
+      <View style={styles.searchBarWrapper}>
+        <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
+        <Input
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Tìm theo người thực hiện, đối tượng, mô tả..."
+          style={styles.searchInput}
+        />
+        {searchQuery ? (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
+      {/* Filter Chips */}
+      <View style={styles.chipsRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
+          {[
+            { id: 'all', label: 'Tất cả' },
+            { id: 'create', label: 'Tạo mới' },
+            { id: 'update', label: 'Chỉnh sửa' },
+            { id: 'approve', label: 'Phê duyệt' },
+            { id: 'payment', label: 'Thanh toán' },
+            { id: 'delete', label: 'Xóa / Hủy' },
+          ].map((c) => {
+            const isSelected = actionFilter === c.id;
+            return (
+              <TouchableOpacity
+                key={c.id}
+                style={[styles.chip, isSelected && styles.chipSelected]}
+                onPress={() => setActionFilter(c.id)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                  {c.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      {/* Audit Log List */}
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing || isLoading}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        {filteredLogs.length === 0 ? (
+          <EmptyState
+            title="Không có nhật ký nào"
+            message="Không tìm thấy bản ghi nhật ký phù hợp với bộ lọc."
+          />
+        ) : (
+          filteredLogs.map((log) => (
+            <Card
+              key={log.id}
+              variant="elevated"
+              padding="md"
+              style={styles.logCard}
+              onPress={() => setSelectedLog(log)}
+            >
+              <View style={styles.logHeader}>
+                <View style={styles.actorCol}>
+                  <Text style={styles.actorName}>{log.actorName || 'Hệ thống'}</Text>
+                  <Text style={styles.actorUser}>
+                    {log.actorUsername ? `@${log.actorUsername}` : 'System'}
+                  </Text>
+                </View>
+                {getActionBadge(log.logAction)}
+              </View>
+
+              <Text style={styles.logDetailText}>{log.logDetail || log.logAction}</Text>
+
+              <View style={styles.logFooter}>
+                <Text style={styles.logMetaText}>
+                  Đối tượng: <Text style={styles.boldText}>{log.logTarget || 'N/A'}</Text>
+                </Text>
+                <Text style={styles.logTimeText}>{log.createdAt}</Text>
+              </View>
+            </Card>
+          ))
+        )}
+      </ScrollView>
+
+      {/* Modal Chi Tiết Nhật Ký Thao Tác */}
+      <Modal visible={selectedLog !== null} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalDialog}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chi tiết nhật ký thao tác</Text>
+              <TouchableOpacity onPress={() => setSelectedLog(null)} activeOpacity={0.7}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {selectedLog && (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Thời gian:</Text>
+                  <Text style={styles.detailValue}>{selectedLog.createdAt}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Người thực hiện:</Text>
+                  <Text style={styles.detailValue}>
+                    {selectedLog.actorName} (@{selectedLog.actorUsername || 'system'})
+                  </Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Hành động:</Text>
+                  <Text style={styles.detailValue}>{selectedLog.logAction}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Đối tượng tác động:</Text>
+                  <Text style={styles.detailValue}>{selectedLog.logTarget || 'N/A'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Mô tả chi tiết:</Text>
+                  <Text style={styles.detailValue}>{selectedLog.logDetail || 'Không có'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Địa chỉ IP:</Text>
+                  <Text style={styles.detailValue}>{selectedLog.ipAddress || '127.0.0.1'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Thiết bị (User-Agent):</Text>
+                  <Text style={styles.detailValue}>{selectedLog.userAgent || 'App Mobile'}</Text>
+                </View>
+
+                {selectedLog.oldData ? (
+                  <View style={styles.codeBlockWrapper}>
+                    <Text style={styles.codeBlockTitle}>Dữ liệu trước thay đổi (Old Data):</Text>
+                    <Text style={styles.codeBlockText}>
+                      {JSON.stringify(selectedLog.oldData, null, 2)}
+                    </Text>
+                  </View>
+                ) : null}
+
+                {selectedLog.newData ? (
+                  <View style={styles.codeBlockWrapper}>
+                    <Text style={styles.codeBlockTitle}>Dữ liệu sau thay đổi (New Data):</Text>
+                    <Text style={styles.codeBlockText}>
+                      {JSON.stringify(selectedLog.newData, null, 2)}
+                    </Text>
+                  </View>
+                ) : null}
+
+                <Button
+                  title="Đóng"
+                  variant="secondary"
+                  onPress={() => setSelectedLog(null)}
+                  style={styles.closeBtn}
+                />
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </ScreenContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.md,
+    paddingBottom: spacing['3xl'],
+  },
+  searchBarWrapper: {
+    position: 'relative',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 24,
+    top: 22,
+    zIndex: 1,
+  },
+  searchInput: {
+    paddingLeft: 34,
+    height: 42,
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: 24,
+    top: 22,
+    zIndex: 1,
+  },
+  chipsRow: {
+    paddingVertical: spacing.xs,
+  },
+  chipsScroll: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    borderRadius: radius.full,
+    backgroundColor: colors.backgroundDark,
+  },
+  chipSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  chipText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+  },
+  chipTextSelected: {
+    color: colors.primaryDark,
+    fontWeight: typography.weights.bold,
+  },
+  logCard: {
+    marginBottom: spacing.xs,
+    backgroundColor: colors.surface,
+  },
+  logHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  actorCol: {
+    flex: 1,
+  },
+  actorName: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  actorUser: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  logDetailText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    lineHeight: 16,
+    marginVertical: 4,
+  },
+  logFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    marginTop: 4,
+  },
+  logMetaText: {
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  logTimeText: {
+    fontSize: 10,
+    color: colors.textMuted,
+  },
+  boldText: {
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.md,
+  },
+  modalDialog: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    maxHeight: '90%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  modalTitle: {
+    fontSize: typography.sizes.base,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  detailRow: {
+    marginBottom: spacing.xs,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  detailLabel: {
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  detailValue: {
+    fontSize: typography.sizes.xs,
+    color: colors.text,
+    marginTop: 2,
+    fontWeight: typography.weights.medium,
+  },
+  codeBlockWrapper: {
+    backgroundColor: colors.backgroundDark,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    marginVertical: spacing.xs,
+  },
+  codeBlockTitle: {
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  codeBlockText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: colors.text,
+  },
+  closeBtn: {
+    marginTop: spacing.md,
+  },
+});

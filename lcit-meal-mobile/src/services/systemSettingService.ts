@@ -1,6 +1,6 @@
 /**
  * System Setting Service
- * Truy vấn cấu hình hệ thống và lịch ăn trong tuần từ backend
+ * Truy vấn và cập nhật cấu hình hệ thống, lịch ăn trong tuần, giờ đóng và upload QR thanh toán
  */
 
 import { apiClient } from './apiClient';
@@ -9,6 +9,7 @@ import {
   SystemSettingItem,
   MealScheduleConfigResponse,
   MealScheduleConfig,
+  MealScheduleDayConfig,
 } from '../types';
 
 export const systemSettingService = {
@@ -27,11 +28,25 @@ export const systemSettingService = {
   },
 
   /**
+   * Cập nhật cấu hình theo key (Admin only): PUT /api/system-settings/key/:key
+   */
+  async updateByKey(key: string, value: string, useMock = true): Promise<SystemSettingItem> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 200));
+      return mockStore.updateSettingKey(key, value);
+    }
+    return await apiClient<SystemSettingItem>(`/system-settings/key/${key}`, {
+      method: 'PUT',
+      body: JSON.stringify({ settingValue: value }),
+    });
+  },
+
+  /**
    * Lấy danh sách cấu hình hệ thống: GET /api/system-settings
    */
   async getAllSettings(useMock = true): Promise<SystemSettingItem[]> {
     if (useMock) {
-      return [];
+      return mockStore.getRawSystemSettings();
     }
     try {
       const res = await apiClient<SystemSettingItem[]>('/system-settings');
@@ -42,17 +57,85 @@ export const systemSettingService = {
   },
 
   /**
+   * Cập nhật nhiều cấu hình cùng lúc (Admin only): PUT /api/system-settings/bulk
+   */
+  async bulkUpdate(
+    settings: { settingKey: string; settingValue: string }[],
+    useMock = true
+  ): Promise<void> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      for (const item of settings) {
+        mockStore.updateSettingKey(item.settingKey, item.settingValue);
+      }
+      return;
+    }
+    await apiClient('/system-settings/bulk', {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    });
+  },
+
+  /**
    * Lấy cấu hình ngày ăn trong tuần: GET /api/system-settings/meal-schedule-config
    */
   async getMealScheduleConfig(useMock = true): Promise<MealScheduleConfigResponse | null> {
     if (useMock) {
-      return null;
+      return mockStore.getMealScheduleConfigDays();
     }
     try {
       return await apiClient<MealScheduleConfigResponse>('/system-settings/meal-schedule-config');
     } catch {
       return null;
     }
+  },
+
+  /**
+   * Cập nhật cấu hình ngày ăn trong tuần (Admin only): PUT /api/system-settings/meal-schedule-config
+   */
+  async updateMealScheduleConfig(
+    days: MealScheduleDayConfig[],
+    useMock = true
+  ): Promise<MealScheduleConfigResponse> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 300));
+      return mockStore.updateMealScheduleConfigDays(days);
+    }
+    return await apiClient<MealScheduleConfigResponse>('/system-settings/meal-schedule-config', {
+      method: 'PUT',
+      body: JSON.stringify({ days }),
+    });
+  },
+
+  /**
+   * Upload ảnh QR thanh toán (Admin only): POST /api/system-settings/payment-qr
+   */
+  async uploadPaymentQr(
+    fileUri: string,
+    mimeType = 'image/png',
+    useMock = true
+  ): Promise<{ url: string }> {
+    if (useMock) {
+      await new Promise((res) => setTimeout(res, 500));
+      mockStore.updateSettingKey('payment_qr_image', fileUri);
+      return { url: fileUri };
+    }
+
+    const formData = new FormData();
+    const filename = fileUri.split('/').pop() || 'payment_qr.png';
+    formData.append('file', {
+      uri: fileUri,
+      name: filename,
+      type: mimeType,
+    } as unknown as Blob);
+
+    return await apiClient<{ url: string }>('/system-settings/payment-qr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      body: formData,
+    });
   },
 
   /**
@@ -64,10 +147,11 @@ export const systemSettingService = {
     }
 
     try {
-      const [scheduleRes, qrSetting, priceSetting, closeTimeSetting] = await Promise.all([
+      const [scheduleRes, qrSetting, priceSetting, guestPriceSetting, closeTimeSetting] = await Promise.all([
         systemSettingService.getMealScheduleConfig(false),
         systemSettingService.getByKey('payment_qr_image', false),
         systemSettingService.getByKey('meal_price', false),
+        systemSettingService.getByKey('guest_meal_price', false),
         systemSettingService.getByKey('registration_close_time', false),
       ]);
 
@@ -83,6 +167,7 @@ export const systemSettingService = {
         mealCompletionTime: '12:00',
         paymentDueDay: 25,
         mealPrice: priceSetting?.settingValue ? parseInt(priceSetting.settingValue, 10) : 30000,
+        guestMealPrice: guestPriceSetting?.settingValue ? parseInt(guestPriceSetting.settingValue, 10) : 35000,
         paymentQrImage: qrSetting?.settingValue || null,
       };
     } catch {

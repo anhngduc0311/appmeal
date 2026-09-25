@@ -1,0 +1,27 @@
+/**
+ * Hook - Dashboard Data
+ * Lấy dữ liệu tổng quan quản lý và biểu đồ
+ */
+
+import { useQuery } from '@tanstack/react-query';
+import { dashboardService } from '../services/dashboardService';
+import { useAuth } from '../providers/AuthProvider';
+
+export function useDashboardHome() {
+  const { isMockMode } = useAuth();
+
+  return useQuery({
+    queryKey: ['dashboard', 'home', isMockMode],
+    queryFn: () => dashboardService.getHome(isMockMode),
+    refetchInterval: 30000,
+  });
+}
+
+export function useDashboardChart(period: 'week' | 'month' | 'year' = 'week', date?: string) {
+  const { isMockMode } = useAuth();
+
+  return useQuery({
+    queryKey: ['dashboard', 'chart', period, date, isMockMode],
+    queryFn: () => dashboardService.getChart(period, date, isMockMode),
+  });
+}
