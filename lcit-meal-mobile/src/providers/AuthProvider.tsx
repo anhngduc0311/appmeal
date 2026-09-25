@@ -2,12 +2,16 @@
  * Auth Provider
  * Quản lý phiên đăng nhập, vai trò người dùng (Role),
  * Chuyển đổi nhanh tài khoản thử nghiệm (Demo) và toggle chế độ Mock.
+ * TUÂN THỦ T21: Tự động đưa về đăng nhập khi 401 và xóa toàn bộ cache cá nhân.
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { User, UserRole, LoginRequest } from '../types';
+import { router } from 'expo-router';
+import { User, UserRole, LoginRequest, extractUserRole } from '../types';
 import { authService } from '../services/authService';
 import { mockStore } from '../services/mockStore';
+import { registerUnauthorizedCallback } from '../services/apiClient';
+import { queryClient } from './QueryProvider';
 import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../config/constants';
 import { env } from '../config/env';
@@ -34,6 +38,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [useMockData, setUseMockDataState] = useState<boolean>(env.defaultUseMock);
 
+  // Xử lý khi nhận 401 từ server
+  const handleUnauthorized = useCallback(async () => {
+    await storage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    await storage.removeItem(STORAGE_KEYS.USER_DATA);
+    queryClient.clear(); // Xóa sạch cache truy vấn
+    setUser(null);
+    setToken(null);
+    router.replace('/(auth)/login');
+  }, []);
+
+  // Đăng ký callback 401 với apiClient
+  useEffect(() => {
+    registerUnauthorizedCallback(handleUnauthorized);
+    return () => {
+      registerUnauthorizedCallback(null);
+    };
+  }, [handleUnauthorized]);
+
   // Khởi động và khôi phục phiên
   useEffect(() => {
     async function initAuth() {
@@ -43,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isMock = savedMockSetting !== null ? savedMockSetting === 'true' : env.defaultUseMock;
         setUseMockDataState(isMock);
 
-        // Khôi phục session
+        // Khôi phục session đã lưu
         const session = await authService.getStoredSession();
         if (session.user && session.token) {
           setUser(session.user);
@@ -52,13 +74,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             mockStore.setCurrentUser(session.user.id);
           }
         } else if (isMock) {
-          // Mặc định đăng nhập An (employee) trong mock mode
+          // Mặc định đăng nhập user An (employee) trong mock mode
           const defaultUser = mockStore.getCurrentUser();
           const mockToken = `mock_token_${defaultUser.id}`;
-          setUser(defaultUser);
+          const normalized: User = {
+            ...defaultUser,
+            role: extractUserRole(defaultUser),
+          };
+          setUser(normalized);
           setToken(mockToken);
           await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken);
-          await storage.setObject(STORAGE_KEYS.USER_DATA, defaultUser);
+          await storage.setObject(STORAGE_KEYS.USER_DATA, normalized);
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
@@ -74,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (credentials: LoginRequest) => {
       setIsLoading(true);
       try {
+        queryClient.clear(); // Xóa cache của tài khoản trước đó
         const res = await authService.login(credentials, useMockData);
         setUser(res.user);
         setToken(res.token);
@@ -88,6 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       await authService.logout(useMockData);
+      queryClient.clear(); // Xóa toàn bộ cache cá nhân để không bị lộ cho người sau
       setUser(null);
       setToken(null);
     } finally {
@@ -97,13 +125,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchMockUser = useCallback(
     async (userId: number) => {
+      queryClient.clear();
       mockStore.setCurrentUser(userId);
       const newUser = mockStore.getCurrentUser();
       const mockToken = `mock_token_${newUser.id}`;
-      setUser(newUser);
+      const normalized: User = {
+        ...newUser,
+        role: extractUserRole(newUser),
+      };
+      setUser(normalized);
       setToken(mockToken);
       await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken);
-      await storage.setObject(STORAGE_KEYS.USER_DATA, newUser);
+      await storage.setObject(STORAGE_KEYS.USER_DATA, normalized);
     },
     []
   );
@@ -111,15 +144,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const setUseMockData = useCallback(async (enabled: boolean) => {
     setUseMockDataState(enabled);
     await storage.setItem(STORAGE_KEYS.USE_MOCK_DATA, enabled ? 'true' : 'false');
+    queryClient.clear(); // Xóa cache để tải lại theo nguồn dữ liệu mới
   }, []);
 
   const updateUserProfile = useCallback((data: Partial<User>) => {
-    setUser((prev) => (prev ? { ...prev, ...data } : null));
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      updated.role = extractUserRole(updated);
+      return updated;
+    });
   }, []);
 
   const role: UserRole | null = useMemo(() => {
     if (!user) return null;
-    return user.role || (user.roles && user.roles[0]) || 'employee';
+    return extractUserRole(user);
   }, [user]);
 
   const value = useMemo(

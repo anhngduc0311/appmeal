@@ -1,9 +1,10 @@
 /**
- * Tab Screen - Thanh toán cá nhân (Payments)
+ * Tab Screen - Thanh toán cá nhân (Payments) - T16, T23
  * Hiển thị danh sách các khoản tiền ăn cá nhân, trạng thái thanh toán và hướng dẫn quét mã QR
+ * TUÂN THỦ GAP-01: Chỉ hiển thị dữ liệu cá nhân từ /payments/me
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -21,8 +22,8 @@ import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { EmptyState } from '../../src/components/states/EmptyState';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import { useMyPayments, useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
+import { useScheduleConfig } from '../../src/hooks/useMealsData';
 import { Payment } from '../../src/types';
 import {
   formatCurrency,
@@ -38,16 +39,19 @@ import { shadows } from '../../src/theme/shadows';
 export default function PaymentsScreen() {
   const { user } = useAuth();
 
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [filterMode, setFilterMode] = useState<'all' | 'unpaid' | 'paid'>('all');
 
-  // Dữ liệu reactive tự động đồng bộ
-  const payments = useMockStore(useCallback(() => mockStore.getMyPayments(), []));
+  // Queries
+  const { data: payments = [], isLoading: loadingPayments, refetch: refetchPayments } = useMyPayments();
+  const { data: summary, isLoading: loadingSummary, refetch: refetchSummary } = useMyPaymentSummary();
+  const { data: scheduleConfig } = useScheduleConfig();
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400);
+  const isRefreshing = loadingPayments || loadingSummary;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchPayments(), refetchSummary()]);
   };
 
   const handleOpenQr = (p: Payment) => {
@@ -55,14 +59,23 @@ export default function PaymentsScreen() {
     setQrModalVisible(true);
   };
 
-  const unpaidTotal = payments
-    .filter((p) => p.status === 'unpaid' || p.status === 'overdue')
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const unpaidTotal = summary?.totalUnpaidAmount || 0;
+
+  // Lọc theo filterMode
+  const filteredPayments = payments.filter((item) => {
+    if (filterMode === 'unpaid') {
+      return item.status === 'unpaid' || item.status === 'overdue';
+    }
+    if (filterMode === 'paid') {
+      return item.status === 'paid' || item.isPaid === 1 || item.isPaid === true;
+    }
+    return true;
+  });
 
   return (
     <ScreenContainer
       scrollable
-      refreshing={refreshing}
+      refreshing={isRefreshing}
       onRefresh={handleRefresh}
       backgroundColor={colors.background}
     >
@@ -98,12 +111,45 @@ export default function PaymentsScreen() {
         </Text>
       </Card>
 
+      {/* Bộ lọc trạng thái */}
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setFilterMode('all')}
+          style={[styles.filterChip, filterMode === 'all' && styles.filterChipActive]}
+        >
+          <Text style={[styles.filterText, filterMode === 'all' && styles.filterTextActive]}>
+            Tất cả ({payments.length})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setFilterMode('unpaid')}
+          style={[styles.filterChip, filterMode === 'unpaid' && styles.filterChipActive]}
+        >
+          <Text style={[styles.filterText, filterMode === 'unpaid' && styles.filterTextActive]}>
+            Chưa thanh toán ({summary?.unpaidCount || 0})
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setFilterMode('paid')}
+          style={[styles.filterChip, filterMode === 'paid' && styles.filterChipActive]}
+        >
+          <Text style={[styles.filterText, filterMode === 'paid' && styles.filterTextActive]}>
+            Đã thanh toán
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Danh sách các kỳ thu */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Lịch sử các kỳ thu ({payments.length})</Text>
+        <Text style={styles.sectionTitle}>Lịch sử các kỳ thu ({filteredPayments.length})</Text>
 
-        {payments.length > 0 ? (
-          payments.map((item) => {
+        {filteredPayments.length > 0 ? (
+          filteredPayments.map((item) => {
             const isUnpaid = item.status === 'unpaid' || item.status === 'overdue';
 
             return (
@@ -204,13 +250,16 @@ export default function PaymentsScreen() {
                       </Text>
                     </View>
 
-                    {/* QR Code Placeholder / Display */}
+                    {/* QR Code */}
                     <View style={styles.qrImageBox}>
                       <Image
                         source={{
-                          uri: 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=LCITMEAL_PAYMENT_' + selectedPayment.id,
+                          uri:
+                            scheduleConfig?.paymentQrImage ||
+                            `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=LCITMEAL_PAYMENT_${selectedPayment.id}`,
                         }}
                         style={styles.qrImage}
+                        resizeMode="contain"
                       />
                     </View>
 
@@ -225,7 +274,7 @@ export default function PaymentsScreen() {
                         • Chủ tài khoản: <Text style={styles.qrBold}>LCIT BẾP ĂN CƠ QUAN</Text>
                       </Text>
                       <Text style={styles.qrInfoText}>
-                        • Nội dung CK: <Text style={styles.qrBold}>TIEN AN {user?.username?.toUpperCase()} T09</Text>
+                        • Nội dung CK: <Text style={styles.qrBold}>TIEN AN {user?.username?.toUpperCase()} P{selectedPayment.id}</Text>
                       </Text>
                     </View>
 
@@ -253,7 +302,7 @@ export default function PaymentsScreen() {
 const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: colors.surface,
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
   summaryHeader: {
     flexDirection: 'row',
@@ -282,6 +331,31 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 4,
     lineHeight: 18,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primaryDark,
+  },
+  filterText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.semibold,
+    color: colors.textSecondary,
+  },
+  filterTextActive: {
+    color: colors.textInverse,
   },
   section: {
     marginBottom: spacing['2xl'],

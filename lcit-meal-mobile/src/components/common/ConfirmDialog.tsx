@@ -22,12 +22,13 @@ import { shadows } from '../../theme/shadows';
 export interface ConfirmDialogProps {
   visible: boolean;
   title: string;
-  message: string;
+  message?: string;
   confirmText?: string;
   cancelText?: string;
   isDestructive?: boolean;
   loading?: boolean;
   iconName?: string;
+  children?: React.ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -41,6 +42,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isDestructive = false,
   loading = false,
   iconName,
+  children,
   onConfirm,
   onCancel,
 }) => {
@@ -75,7 +77,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               )}
 
               <Text style={styles.title}>{title}</Text>
-              <Text style={styles.message}>{message}</Text>
+              {message ? <Text style={styles.message}>{message}</Text> : null}
+
+              {children && <View style={styles.customContentBox}>{children}</View>}
 
               <View style={styles.buttonRow}>
                 <Button
@@ -145,7 +149,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.lg,
+  },
+  customContentBox: {
+    width: '100%',
+    marginBottom: spacing.lg,
   },
   buttonRow: {
     flexDirection: 'row',

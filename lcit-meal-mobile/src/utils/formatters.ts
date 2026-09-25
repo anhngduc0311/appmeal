@@ -1,6 +1,7 @@
 /**
  * Utility Formatters
- * Định dạng ngày giờ chuẩn Việt Nam, tiền tệ VNĐ, thứ trong tuần
+ * Định dạng ngày giờ chuẩn nghiệp vụ Việt Nam, tiền tệ VNĐ, thứ trong tuần.
+ * TUÂN THỦ T24: Tuyệt đối không dùng chuyển đổi UTC gây lệch ngày ăn (YYYY-MM-DD).
  */
 
 const DAYS_OF_WEEK_VI = [
@@ -16,64 +17,111 @@ const DAYS_OF_WEEK_VI = [
 const SHORT_DAYS_OF_WEEK_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
 /**
+ * Phân tích chuỗi ngày hoặc đối tượng Date thành các thành phần { year, month, day }
+ * An toàn với múi giờ Việt Nam và định dạng YYYY-MM-DD
+ */
+export function parseDateParts(
+  dateInput: string | Date | number | null | undefined
+): { year: number; month: number; day: number } | null {
+  if (!dateInput) return null;
+
+  if (typeof dateInput === 'string') {
+    const match = dateInput.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return {
+        year: parseInt(match[1], 10),
+        month: parseInt(match[2], 10),
+        day: parseInt(match[3], 10),
+      };
+    }
+  }
+
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return null;
+
+  return {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    day: d.getDate(),
+  };
+}
+
+/**
  * Chuyển đổi Date / string thành YYYY-MM-DD (Business Date)
  */
-export function formatBusinessDate(dateInput: string | Date | number): string {
-  const d = new Date(dateInput);
-  if (isNaN(d.getTime())) return '';
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+export function formatBusinessDate(
+  dateInput: string | Date | number | null | undefined
+): string {
+  const parts = parseDateParts(dateInput);
+  if (!parts) return '';
+  const y = String(parts.year);
+  const m = String(parts.month).padStart(2, '0');
+  const d = String(parts.day).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 /**
  * Định dạng hiển thị dd/MM/yyyy
  */
-export function formatDisplayDate(dateInput: string | Date | number): string {
-  if (!dateInput) return '';
-  // Nếu là dạng YYYY-MM-DD
-  if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-    const [y, m, d] = dateInput.split('-');
-    return `${d}/${m}/${y}`;
-  }
-  const d = new Date(dateInput);
-  if (isNaN(d.getTime())) return String(dateInput);
-  const day = String(d.getDate()).padStart(2, '0');
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+export function formatDisplayDate(
+  dateInput: string | Date | number | null | undefined
+): string {
+  const parts = parseDateParts(dateInput);
+  if (!parts) return '';
+  const d = String(parts.day).padStart(2, '0');
+  const m = String(parts.month).padStart(2, '0');
+  const y = String(parts.year);
+  return `${d}/${m}/${y}`;
 }
 
 /**
  * Định dạng hiển thị ngày có thứ: "Thứ Sáu, 26/09/2026"
  */
-export function formatFullDisplayDate(dateInput: string | Date | number): string {
-  if (!dateInput) return '';
-  const d = typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)
-    ? new Date(`${dateInput}T00:00:00`)
-    : new Date(dateInput);
+export function formatFullDisplayDate(
+  dateInput: string | Date | number | null | undefined
+): string {
+  const parts = parseDateParts(dateInput);
+  if (!parts) return '';
 
-  if (isNaN(d.getTime())) return String(dateInput);
-  const dayOfWeek = DAYS_OF_WEEK_VI[d.getDay()];
-  return `${dayOfWeek}, ${formatDisplayDate(d)}`;
+  const localDate = new Date(parts.year, parts.month - 1, parts.day);
+  const dayOfWeek = DAYS_OF_WEEK_VI[localDate.getDay()];
+  const displayDate = formatDisplayDate(dateInput);
+
+  return `${dayOfWeek}, ${displayDate}`;
 }
 
 /**
- * Lấy tên thứ ngắn: "T2", "T3"...
+ * Lấy tên thứ ngắn: "T2", "T3", "CN"...
  */
-export function getShortDayOfWeek(dateInput: string | Date | number): string {
-  const d = typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)
-    ? new Date(`${dateInput}T00:00:00`)
-    : new Date(dateInput);
-  if (isNaN(d.getTime())) return '';
-  return SHORT_DAYS_OF_WEEK_VI[d.getDay()];
+export function getShortDayOfWeek(
+  dateInput: string | Date | number | null | undefined
+): string {
+  const parts = parseDateParts(dateInput);
+  if (!parts) return '';
+
+  const localDate = new Date(parts.year, parts.month - 1, parts.day);
+  return SHORT_DAYS_OF_WEEK_VI[localDate.getDay()];
+}
+
+/**
+ * Lấy thứ đầy đủ: "Thứ Hai", "Chủ Nhật"...
+ */
+export function getFullDayOfWeek(
+  dateInput: string | Date | number | null | undefined
+): string {
+  const parts = parseDateParts(dateInput);
+  if (!parts) return '';
+
+  const localDate = new Date(parts.year, parts.month - 1, parts.day);
+  return DAYS_OF_WEEK_VI[localDate.getDay()];
 }
 
 /**
  * Định dạng ngày giờ: "14:30 25/09/2026"
  */
-export function formatDateTime(dateInput: string | Date | number): string {
+export function formatDateTime(
+  dateInput: string | Date | number | null | undefined
+): string {
   if (!dateInput) return '';
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return String(dateInput);
@@ -97,19 +145,36 @@ export function formatCurrency(amount: number | string | null | undefined): stri
  * Mô tả ngày tương đối (Hôm nay, Ngày mai, Hôm qua)
  */
 export function getRelativeDateLabel(dateStr: string): string {
-  const today = formatBusinessDate(new Date());
+  const now = new Date();
+  const today = formatBusinessDate(now);
   const targetDate = formatBusinessDate(dateStr);
 
   if (targetDate === today) return 'Hôm nay';
 
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const tomorrow = formatBusinessDate(d);
+  const tomorrowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const tomorrow = formatBusinessDate(tomorrowDate);
   if (targetDate === tomorrow) return 'Ngày mai';
 
-  d.setDate(d.getDate() - 2);
-  const yesterday = formatBusinessDate(d);
+  const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const yesterday = formatBusinessDate(yesterdayDate);
   if (targetDate === yesterday) return 'Hôm qua';
 
   return formatFullDisplayDate(dateStr);
+}
+
+/**
+ * So sánh 2 ngày nghiệp vụ (YYYY-MM-DD)
+ * @returns 0 nếu bằng nhau, < 0 nếu d1 trước d2, > 0 nếu d1 sau d2
+ */
+export function compareBusinessDates(d1: string, d2: string): number {
+  const b1 = formatBusinessDate(d1);
+  const b2 = formatBusinessDate(d2);
+  return b1.localeCompare(b2);
+}
+
+/**
+ * Lấy ngày hôm nay theo định dạng chuẩn YYYY-MM-DD
+ */
+export function getTodayBusinessDate(): string {
+  return formatBusinessDate(new Date());
 }

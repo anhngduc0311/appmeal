@@ -1,11 +1,19 @@
 /**
  * Types - Authentication and Users
- * Khớp với Role.js và schema qlsa.sql
+ * Khớp với Role.js, User.js và schema database
  */
 
 export type UserRole = 'admin' | 'manager' | 'employee' | 'kitchen';
 
-export type UserStatus = 'active' | 'inactive' | 'locked';
+export type UserStatus = 'active' | 'inactive' | 'locked' | 'deleted' | number;
+
+export interface RoleObject {
+  id: number;
+  displayName?: string;
+  code: UserRole;
+  description?: string;
+  status?: string;
+}
 
 export interface User {
   id: number;
@@ -14,8 +22,8 @@ export interface User {
   email?: string | null;
   phone?: string | null;
   status: UserStatus;
-  roles?: UserRole[];
-  role?: UserRole; // Main primary role
+  roles?: (RoleObject | UserRole)[];
+  role?: UserRole; // Normalized primary role
   createdAt?: string;
   updatedAt?: string;
 }
@@ -39,8 +47,28 @@ export interface LoginResponsePayload {
 
 export interface UpdateProfileRequest {
   fullName?: string;
+  password?: string;
+  currentPassword?: string;
   email?: string;
   phone?: string;
-  currentPassword?: string;
-  newPassword?: string;
+}
+
+/**
+ * Trích xuất role chuẩn từ đối tượng User (hỗ trợ cả mảng chuỗi và mảng RoleObject từ backend)
+ */
+export function extractUserRole(user: User | null | undefined): UserRole {
+  if (!user) return 'employee';
+  if (user.role) return user.role;
+
+  if (Array.isArray(user.roles) && user.roles.length > 0) {
+    const firstRole = user.roles[0];
+    if (typeof firstRole === 'string') {
+      return firstRole as UserRole;
+    }
+    if (typeof firstRole === 'object' && firstRole !== null && 'code' in firstRole) {
+      return (firstRole as RoleObject).code;
+    }
+  }
+
+  return 'employee';
 }

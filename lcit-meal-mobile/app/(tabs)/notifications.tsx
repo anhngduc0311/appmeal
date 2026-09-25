@@ -1,9 +1,9 @@
 /**
- * Tab Screen - Thông báo (Notifications)
+ * Tab Screen - Thông báo (Notifications) - T17, T23
  * Danh sách thông báo cá nhân, đếm số thông báo chưa đọc và đánh dấu đã xem
  */
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -15,29 +15,36 @@ import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
 import { EmptyState } from '../../src/components/states/EmptyState';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import {
+  useMyNotifications,
+  useMarkNotificationSeenMutation,
+  useMarkAllNotificationsSeenMutation,
+} from '../../src/hooks/useNotificationsData';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 
 export default function NotificationsScreen() {
-  const [refreshing, setRefreshing] = useState(false);
+  // Queries & Mutations
+  const {
+    data: notifications = [],
+    isLoading: loadingNotifications,
+    refetch: refetchNotifications,
+  } = useMyNotifications();
 
-  // Dữ liệu reactive tự động đồng bộ
-  const notifications = useMockStore(useCallback(() => mockStore.getMyNotifications(), []));
+  const markSeenMutation = useMarkNotificationSeenMutation();
+  const markAllSeenMutation = useMarkAllNotificationsSeenMutation();
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400);
+  const handleRefresh = async () => {
+    await refetchNotifications();
   };
 
   const handleMarkAsSeen = (id: number) => {
-    mockStore.markNotificationAsSeen(id);
+    markSeenMutation.mutate(id);
   };
 
   const handleMarkAllAsSeen = () => {
-    mockStore.markAllNotificationsAsSeen();
+    markAllSeenMutation.mutate();
   };
 
   const unreadCount = notifications.filter((n) => !n.isSeen).length;
@@ -45,7 +52,7 @@ export default function NotificationsScreen() {
   return (
     <ScreenContainer
       scrollable
-      refreshing={refreshing}
+      refreshing={loadingNotifications}
       onRefresh={handleRefresh}
       backgroundColor={colors.background}
     >

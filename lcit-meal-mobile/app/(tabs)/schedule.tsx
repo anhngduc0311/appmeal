@@ -2,26 +2,35 @@
  * Tab Screen - Lịch ăn (Meal Schedule)
  * Xem lịch ăn các ngày trong tháng, trạng thái suất ăn cá nhân,
  * đăng ký ăn, cập nhật số khách, cắt suất hoặc cắt theo khoảng ngày.
+ * Kết nối thực tế TanStack React Query (T22, T25)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { MealCard } from '../../src/components/meals/MealCard';
+import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { DatePickerModal } from '../../src/components/meals/DatePickerModal';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { EmptyState } from '../../src/components/states/EmptyState';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import {
+  useMeals,
+  useMyRegistrations,
+  useRegisterMealMutation,
+  useCancelRegistrationMutation,
+  useUpdateGuestCountMutation,
+  useCreateMealOptionMutation,
+} from '../../src/hooks/useMealsData';
 import {
   formatDisplayDate,
 } from '../../src/utils/formatters';
@@ -32,7 +41,6 @@ import { radius } from '../../src/theme/radius';
 
 export default function ScheduleScreen() {
   const router = useRouter();
-  const [refreshing, setRefreshing] = useState(false);
   const [filterMode, setFilterMode] = useState<'all' | 'registered' | 'cancelled'>('all');
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
@@ -44,18 +52,30 @@ export default function ScheduleScreen() {
   const [guestCount, setGuestCount] = useState(0);
   const [rangePickerVisible, setRangePickerVisible] = useState(false);
 
-  // Dữ liệu reactive tự động cập nhật
-  const meals = useMockStore(useCallback(() => mockStore.getMeals(), []));
-  const registrations = useMockStore(useCallback(() => mockStore.getMyRegistrations(), []));
+  // Queries
+  const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
+  const { data: registrations = [], isLoading: loadingRegs, refetch: refetchRegs } = useMyRegistrations();
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400);
+  // Mutations
+  const registerMutation = useRegisterMealMutation();
+  const cancelMutation = useCancelRegistrationMutation();
+  const updateGuestsMutation = useUpdateGuestCountMutation();
+  const createMealOptionMutation = useCreateMealOptionMutation();
+
+  const isRefreshing = loadingMeals || loadingRegs;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchMeals(), refetchRegs()]);
   };
 
-  const handleRegister = (mealId: number) => {
-    mockStore.registerMeal(mealId, 0);
-    setBannerMessage('Đăng ký suất ăn thành công!');
+  const handleRegister = async (mealId: number) => {
+    try {
+      await registerMutation.mutateAsync({ mealId, guestCount: 0 });
+      setBannerMessage('Đăng ký suất ăn thành công!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Đăng ký suất ăn thất bại.';
+      Alert.alert('Thông báo', msg);
+    }
   };
 
   const handleOpenCancel = (regId: number) => {
@@ -63,12 +83,21 @@ export default function ScheduleScreen() {
     setCancelModalVisible(true);
   };
 
-  const handleConfirmCancel = () => {
-    if (selectedRegId) {
-      mockStore.cancelMealRegistration(selectedRegId);
+  const handleConfirmCancel = async () => {
+    if (!selectedRegId) return;
+    try {
+      const res = await cancelMutation.mutateAsync({ registrationId: selectedRegId });
       setCancelModalVisible(false);
       setSelectedRegId(null);
-      setBannerMessage('Đã cắt suất ăn thành công.');
+
+      if (res && res.status === 'pending') {
+        setBannerMessage('Yêu cầu cắt suất của bạn đã được gửi cho Quản lý xét duyệt.');
+      } else {
+        setBannerMessage('Đã cắt suất ăn thành công.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cắt suất ăn thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
     }
   };
 
@@ -78,25 +107,44 @@ export default function ScheduleScreen() {
     setGuestModalVisible(true);
   };
 
-  const handleSaveGuests = () => {
-    if (selectedMealId) {
-      mockStore.updateGuestCount(selectedMealId, guestCount);
+  const handleSaveGuests = async () => {
+    if (!selectedMealId) return;
+    try {
+      const reg = registrations.find((r) => r.mealId === selectedMealId);
+      await updateGuestsMutation.mutateAsync({
+        mealId: selectedMealId,
+        guestCount,
+        registrationId: reg?.id,
+      });
       setGuestModalVisible(false);
       setSelectedMealId(null);
       setBannerMessage(`Đã cập nhật số khách (${guestCount} khách) thành công.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
     }
   };
 
-  const handleSelectDateRange = (fromDate: string, toDate: string) => {
-    mockStore.createMealOption('cancel_schedule', fromDate, toDate, 'Cắt suất theo khoảng ngày');
-    setBannerMessage(`Đã tạo yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate)}.`);
+  const handleSelectDateRange = async (fromDate: string, toDate: string) => {
+    try {
+      await createMealOptionMutation.mutateAsync({
+        type: 'cancel_schedule',
+        fromDate,
+        toDate,
+        note: 'Cắt suất theo khoảng ngày',
+      });
+      setBannerMessage(`Đã tạo yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate)}.`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Tạo yêu cầu cắt suất thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
+    }
   };
 
   // Lọc danh sách theo filterMode
   const filteredMeals = meals.filter((meal) => {
-    const reg = registrations.find((r) => r.mealId === meal.id);
+    const reg = registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate);
     if (filterMode === 'registered') {
-      return reg && (reg.status === 'confirmed' || reg.status === 'completed');
+      return reg && (reg.status === 'confirmed' || reg.status === 'completed' || reg.status === 'pending');
     }
     if (filterMode === 'cancelled') {
       return reg && reg.status === 'cancelled';
@@ -107,7 +155,7 @@ export default function ScheduleScreen() {
   return (
     <ScreenContainer
       scrollable
-      refreshing={refreshing}
+      refreshing={isRefreshing}
       onRefresh={handleRefresh}
       backgroundColor={colors.background}
     >
@@ -193,7 +241,7 @@ export default function ScheduleScreen() {
       <View style={styles.listContainer}>
         {filteredMeals.length > 0 ? (
           filteredMeals.map((meal) => {
-            const reg = registrations.find((r) => r.mealId === meal.id);
+            const reg = registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate);
             return (
               <MealCard
                 key={meal.id}
@@ -222,11 +270,12 @@ export default function ScheduleScreen() {
       <ConfirmDialog
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
-        message="Bạn có chắc chắn muốn hủy suất ăn này? Hệ thống sẽ ghi nhận và cập nhật trực tiếp."
+        message="Bạn có chắc chắn muốn hủy suất ăn này? Hệ thống sẽ cập nhật trạng thái theo quy định của nhà bếp."
         confirmText="Xác nhận cắt"
         cancelText="Giữ lại"
         isDestructive
         iconName="trash-outline"
+        loading={cancelMutation.isPending}
         onConfirm={handleConfirmCancel}
         onCancel={() => {
           setCancelModalVisible(false);
@@ -242,12 +291,23 @@ export default function ScheduleScreen() {
         confirmText="Xác nhận"
         cancelText="Đóng"
         iconName="people-outline"
+        loading={updateGuestsMutation.isPending}
         onConfirm={handleSaveGuests}
         onCancel={() => {
           setGuestModalVisible(false);
           setSelectedMealId(null);
         }}
-      />
+      >
+        <View style={styles.modalGuestCounterBox}>
+          <GuestCounter
+            value={guestCount}
+            onChange={setGuestCount}
+            min={0}
+            max={10}
+            label="Số khách ăn kèm"
+          />
+        </View>
+      </ConfirmDialog>
 
       {/* Modal chọn khoảng ngày để cắt suất */}
       <DatePickerModal
@@ -305,5 +365,8 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: spacing['3xl'],
+  },
+  modalGuestCounterBox: {
+    paddingVertical: spacing.sm,
   },
 });

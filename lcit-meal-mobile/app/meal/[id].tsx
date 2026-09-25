@@ -1,18 +1,19 @@
 /**
- * Screen: Chi tiết ngày ăn (Meal Detail) - T12, T13, T14
+ * Screen: Chi tiết ngày ăn (Meal Detail) - T12, T13, T14, T22, T25
  * Hiển thị đầy đủ thông tin:
  * - Ngày ăn, Thứ, Tình trạng bếp (Hoạt động / Bếp nghỉ)
  * - Thực đơn nhà bếp
- * - Trạng thái suất ăn cá nhân (Confirmed, Pending, Completed, Cancelled)
- * - Thao tác hợp lệ: Đăng ký, Đổi khách (0..10), Cắt suất trực tiếp (kèm lý do)
- * - Ưu tiên hiển thị cảnh báo khi bếp nghỉ
+ * - Trạng thái suất ăn cá nhân (Confirmed, Pending, Completed, Cancelled) dựa trên response thực tế
+ * - Thao tác hợp lệ: Đăng ký, Đổi khách (0..10), Cắt suất trực tiếp
+ * - Khóa nút khi đang gửi mutation và hiển thị kết quả chính xác
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,14 +24,22 @@ import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
+import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { EmptyState } from '../../src/components/states/EmptyState';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import {
+  useMeals,
+  useMyRegistrations,
+  useScheduleConfig,
+  useRegisterMealMutation,
+  useCancelRegistrationMutation,
+  useUpdateGuestCountMutation,
+} from '../../src/hooks/useMealsData';
 import {
   formatFullDisplayDate,
   formatBusinessDate,
   formatCurrency,
+  compareBusinessDates,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
@@ -53,22 +62,28 @@ export default function MealDetailScreen() {
     text: string;
   } | null>(null);
 
-  // Dữ liệu reactive từ store
-  const meal = useMockStore(
-    useCallback(() => {
-      const meals = mockStore.getMeals();
-      return meals.find((m) => m.id === mealId);
-    }, [mealId])
-  );
+  // Queries
+  const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
+  const { data: registrations = [], isLoading: loadingRegs, refetch: refetchRegs } = useMyRegistrations();
+  const { data: scheduleConfig } = useScheduleConfig();
 
-  const registration = useMockStore(
-    useCallback(() => {
-      if (!mealId) return undefined;
-      return mockStore.getRegistrationForMeal(mealId);
-    }, [mealId])
-  );
+  // Mutations
+  const registerMutation = useRegisterMealMutation();
+  const cancelMutation = useCancelRegistrationMutation();
+  const updateGuestsMutation = useUpdateGuestCountMutation();
 
-  if (!meal) {
+  const isRefreshing = loadingMeals || loadingRegs;
+
+  const meal = meals.find((m) => m.id === mealId);
+  const registration = meal
+    ? registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate)
+    : undefined;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchMeals(), refetchRegs()]);
+  };
+
+  if (!meal && !loadingMeals) {
     return (
       <ScreenContainer scrollable={false}>
         <Header title="Chi tiết ngày ăn" showBack />
@@ -83,10 +98,10 @@ export default function MealDetailScreen() {
     );
   }
 
-  const isMealCancelled = !!meal.isCancelled;
+  const isMealCancelled = !!meal?.isCancelled;
   const todayStr = formatBusinessDate(new Date());
-  const isToday = meal.mealDate === todayStr;
-  const isPast = new Date(meal.mealDate).getTime() < new Date(todayStr).getTime();
+  const isToday = meal?.mealDate === todayStr;
+  const isPast = meal ? compareBusinessDates(meal.mealDate, todayStr) < 0 : false;
 
   const regStatus = registration?.status;
   const isRegistered = regStatus === 'confirmed';
@@ -94,29 +109,50 @@ export default function MealDetailScreen() {
   const isPending = regStatus === 'pending';
   const isCancelled = regStatus === 'cancelled';
   const currentGuests = registration?.guestCount || 0;
+  const mealPrice = scheduleConfig?.mealPrice || 30000;
 
-  const handleRegister = (guests = 0) => {
-    mockStore.registerMeal(meal.id, guests);
-    setBannerMessage({
-      variant: 'success',
-      text: guests > 0
-        ? `Đăng ký suất ăn kèm ${guests} khách thành công!`
-        : 'Đăng ký suất ăn thành công!',
-    });
+  const handleRegister = async (guests = 0) => {
+    if (!meal) return;
+    try {
+      await registerMutation.mutateAsync({ mealId: meal.id, guestCount: guests });
+      setBannerMessage({
+        variant: 'success',
+        text: guests > 0
+          ? `Đăng ký suất ăn kèm ${guests} khách thành công!`
+          : 'Đăng ký suất ăn thành công!',
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Đăng ký suất ăn thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
+    }
   };
 
   const handleOpenCancelDialog = () => {
     setCancelModalVisible(true);
   };
 
-  const handleConfirmCancel = () => {
-    if (registration) {
-      mockStore.cancelMealRegistration(registration.id);
-      setCancelModalVisible(false);
-      setBannerMessage({
-        variant: 'success',
-        text: 'Đã cắt suất ăn thành công. Nhà bếp đã được cập nhật.',
+  const handleConfirmCancel = async () => {
+    if (!registration) return;
+    try {
+      const updated = await cancelMutation.mutateAsync({
+        registrationId: registration.id,
       });
+      setCancelModalVisible(false);
+
+      if (updated && updated.status === 'pending') {
+        setBannerMessage({
+          variant: 'warning',
+          text: 'Đã quá giờ đóng đăng ký, yêu cầu cắt suất của bạn đã được chuyển cho Quản lý xét duyệt.',
+        });
+      } else {
+        setBannerMessage({
+          variant: 'success',
+          text: 'Đã cắt suất ăn thành công. Nhà bếp đã được cập nhật.',
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cắt suất ăn thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
     }
   };
 
@@ -125,20 +161,35 @@ export default function MealDetailScreen() {
     setGuestModalVisible(true);
   };
 
-  const handleSaveGuests = () => {
-    mockStore.updateGuestCount(meal.id, guestCountInput);
-    setGuestModalVisible(false);
-    setBannerMessage({
-      variant: 'success',
-      text: `Đã cập nhật số khách (${guestCountInput} khách) thành công.`,
-    });
+  const handleSaveGuests = async () => {
+    if (!meal) return;
+    try {
+      await updateGuestsMutation.mutateAsync({
+        mealId: meal.id,
+        guestCount: guestCountInput,
+        registrationId: registration?.id,
+      });
+      setGuestModalVisible(false);
+      setBannerMessage({
+        variant: 'success',
+        text: `Đã cập nhật số khách (${guestCountInput} khách) thành công.`,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
+    }
   };
 
   return (
-    <ScreenContainer scrollable backgroundColor={colors.background}>
+    <ScreenContainer
+      scrollable
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
+      backgroundColor={colors.background}
+    >
       <Header
         title="Chi tiết suất ăn"
-        subtitle={formatFullDisplayDate(meal.mealDate)}
+        subtitle={meal ? formatFullDisplayDate(meal.mealDate) : ''}
         showBack
       />
 
@@ -151,60 +202,62 @@ export default function MealDetailScreen() {
       )}
 
       {/* 1. TÌNH TRẠNG BẾP & THỰC ĐƠN */}
-      <Card
-        variant="elevated"
-        padding="xl"
-        style={[
-          styles.mainCard,
-          isMealCancelled && styles.mainCardCancelled,
-        ]}
-      >
-        <View style={styles.cardHeader}>
-          <View style={styles.dateCol}>
-            <Text style={styles.fullDateText}>
-              {formatFullDisplayDate(meal.mealDate)}
-            </Text>
-            {isToday && (
-              <View style={styles.todayPill}>
-                <Text style={styles.todayPillText}>Hôm nay</Text>
-              </View>
-            )}
-          </View>
+      {meal && (
+        <Card
+          variant="elevated"
+          padding="xl"
+          style={[
+            styles.mainCard,
+            isMealCancelled && styles.mainCardCancelled,
+          ]}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.dateCol}>
+              <Text style={styles.fullDateText}>
+                {formatFullDisplayDate(meal.mealDate)}
+              </Text>
+              {isToday && (
+                <View style={styles.todayPill}>
+                  <Text style={styles.todayPillText}>Hôm nay</Text>
+                </View>
+              )}
+            </View>
 
-          <Badge
-            type="mealRegistration"
-            value={regStatus}
-            isMealCancelled={isMealCancelled}
-          />
-        </View>
-
-        {/* Thông báo bếp nghỉ hoặc chi tiết thực đơn */}
-        {isMealCancelled ? (
-          <View style={styles.kitchenClosedAlert}>
-            <Ionicons
-              name="alert-circle"
-              size={24}
-              color={colors.status.kitchenClosed.dot}
+            <Badge
+              type="mealRegistration"
+              value={regStatus}
+              isMealCancelled={isMealCancelled}
             />
-            <View style={styles.alertContent}>
-              <Text style={styles.alertTitle}>Bếp nghỉ phục vụ</Text>
-              <Text style={styles.alertDesc}>
-                {meal.note || 'Nhà bếp nghỉ phục vụ theo lịch cơ quan hoặc bảo trì định kỳ.'}
-              </Text>
-            </View>
           </View>
-        ) : (
-          <View style={styles.menuSection}>
-            <Text style={styles.sectionLabel}>Thực đơn dự kiến:</Text>
-            <View style={styles.menuBox}>
-              <Ionicons name="restaurant" size={20} color={colors.primary} />
-              <Text style={styles.menuDetailText}>
-                {meal.note || 'Thực đơn cơm trưa tiêu chuẩn văn phòng: 1 món mặn, 1 món rau xào, 1 món canh & tráng miệng.'}
-              </Text>
+
+          {/* Thông báo bếp nghỉ hoặc chi tiết thực đơn */}
+          {isMealCancelled ? (
+            <View style={styles.kitchenClosedAlert}>
+              <Ionicons
+                name="alert-circle"
+                size={24}
+                color={colors.status.kitchenClosed.dot}
+              />
+              <View style={styles.alertContent}>
+                <Text style={styles.alertTitle}>Bếp nghỉ phục vụ</Text>
+                <Text style={styles.alertDesc}>
+                  {meal.note || 'Nhà bếp nghỉ phục vụ theo lịch cơ quan hoặc bảo trì định kỳ.'}
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-      </Card>
+          ) : (
+            <View style={styles.menuSection}>
+              <Text style={styles.sectionLabel}>Thực đơn dự kiến:</Text>
+              <View style={styles.menuBox}>
+                <Ionicons name="restaurant" size={20} color={colors.primary} />
+                <Text style={styles.menuDetailText}>
+                  {meal.note || 'Thực đơn cơm trưa tiêu chuẩn văn phòng: 1 món mặn, 1 món rau xào, 1 món canh & tráng miệng.'}
+                </Text>
+              </View>
+            </View>
+          )}
+        </Card>
+      )}
 
       {/* 2. TRẠNG THÁI SUẤT ĂN CỦA BẠN */}
       {!isMealCancelled && (
@@ -237,7 +290,7 @@ export default function MealDetailScreen() {
               <Text style={styles.infoLabel}>Tiền ăn dự kiến:</Text>
               <Text style={[styles.infoValue, styles.priceHighlight]}>
                 {isRegistered || isPending
-                  ? formatCurrency(30000 * (1 + currentGuests))
+                  ? formatCurrency(mealPrice * (1 + currentGuests))
                   : '0 đ'}
               </Text>
             </View>
@@ -255,7 +308,7 @@ export default function MealDetailScreen() {
       )}
 
       {/* 3. NÚT THAO TÁC NGHIỆP VỤ */}
-      {!isMealCancelled && !isCompleted && !isPast && (
+      {meal && !isMealCancelled && !isCompleted && !isPast && (
         <View style={styles.actionsContainer}>
           {isRegistered || isPending ? (
             <View style={styles.btnStack}>
@@ -263,6 +316,8 @@ export default function MealDetailScreen() {
                 title={`Điều chỉnh khách (${currentGuests} khách)`}
                 variant="secondary"
                 size="lg"
+                loading={updateGuestsMutation.isPending}
+                disabled={updateGuestsMutation.isPending || cancelMutation.isPending}
                 leftIcon={
                   <Ionicons name="people-outline" size={20} color={colors.text} />
                 }
@@ -274,6 +329,8 @@ export default function MealDetailScreen() {
                 title="Cắt suất ăn ngày này"
                 variant="danger"
                 size="lg"
+                loading={cancelMutation.isPending}
+                disabled={cancelMutation.isPending || updateGuestsMutation.isPending}
                 leftIcon={
                   <Ionicons
                     name="close-circle-outline"
@@ -291,6 +348,8 @@ export default function MealDetailScreen() {
                 title={isCancelled ? 'Đăng ký lại suất ăn' : 'Đăng ký suất ăn này'}
                 variant="primary"
                 size="lg"
+                loading={registerMutation.isPending}
+                disabled={registerMutation.isPending}
                 leftIcon={
                   <Ionicons
                     name="checkmark-circle-outline"
@@ -306,6 +365,7 @@ export default function MealDetailScreen() {
                 title="Đăng ký kèm thêm khách"
                 variant="outline"
                 size="md"
+                disabled={registerMutation.isPending}
                 leftIcon={
                   <Ionicons name="people-outline" size={20} color={colors.primary} />
                 }
@@ -321,11 +381,12 @@ export default function MealDetailScreen() {
       <ConfirmDialog
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
-        message={`Bạn đang thực hiện cắt suất ăn ngày ${formatFullDisplayDate(meal.mealDate)}. Vui lòng xác nhận:`}
+        message={`Bạn đang thực hiện cắt suất ăn ngày ${meal ? formatFullDisplayDate(meal.mealDate) : ''}. Vui lòng xác nhận:`}
         confirmText="Xác nhận cắt"
         cancelText="Giữ lại"
         isDestructive
         iconName="close-circle-outline"
+        loading={cancelMutation.isPending}
         onConfirm={handleConfirmCancel}
         onCancel={() => setCancelModalVisible(false)}
       />
@@ -334,13 +395,24 @@ export default function MealDetailScreen() {
       <ConfirmDialog
         visible={guestModalVisible}
         title="Chọn số lượng khách ăn kèm"
-        message="Số lượng khách sẽ được xác nhận ngay cùng với suất ăn của bạn:"
+        message="Số lượng khách sẽ được cập nhật cùng với suất ăn của bạn:"
         confirmText="Lưu thay đổi"
         cancelText="Hủy"
         iconName="people-outline"
+        loading={updateGuestsMutation.isPending}
         onConfirm={handleSaveGuests}
         onCancel={() => setGuestModalVisible(false)}
-      />
+      >
+        <View style={styles.modalGuestCounterBox}>
+          <GuestCounter
+            value={guestCountInput}
+            onChange={setGuestCountInput}
+            min={0}
+            max={10}
+            label="Số khách ăn kèm"
+          />
+        </View>
+      </ConfirmDialog>
     </ScreenContainer>
   );
 }
@@ -478,5 +550,8 @@ const styles = StyleSheet.create({
   },
   btnStack: {
     gap: spacing.md,
+  },
+  modalGuestCounterBox: {
+    paddingVertical: spacing.sm,
   },
 });

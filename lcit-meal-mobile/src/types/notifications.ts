@@ -1,6 +1,6 @@
 /**
  * Types - Notifications
- * Khớp với backend Notification.js và schema database
+ * Khớp với backend Notification.js và NotificationController.js
  */
 
 export type NotificationType =
@@ -20,11 +20,12 @@ export interface NotificationItem {
   status?: string;
   createdAt: string;
   createdBy?: number | null;
-  // Khi query inbox /me:
+  // Bảng trung gian notification_recipient
   isSeen?: boolean | number;
   seenAt?: string | null;
 }
 
 export interface UnseenCountResponse {
-  count: number;
+  total: number;
+  count?: number;
 }

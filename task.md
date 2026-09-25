@@ -78,16 +78,16 @@ lcit-meal-mobile/
 
 ## 5. Giai đoạn 3 — Kết nối backend
 
-- [ ] T19. Đối chiếu route/controller/response thực tế; định nghĩa DTO, mapping role, trạng thái và pagination trước khi nối từng màn hình.
-- [ ] T20. Tạo API client cho `/api`, Bearer token và envelope `{ success, payload, error }`; xử lý timeout, lỗi mạng và 400/401/403/404/409/500.
-- [ ] T21. Kết nối login/logout, lưu token an toàn, phục hồi trạng thái khởi động; 401 đưa về đăng nhập và xóa cache cá nhân. Backend chưa có refresh token hay `GET /auth/me`, không gọi các endpoint giả định này.
-- [ ] T22. Nối lịch ăn/lịch nghỉ, `/meal-registrations/me`, đăng ký lại, số khách, cắt trực tiếp và `/meal-options/me`; tải lại các query liên quan sau mutation thành công.
-- [ ] T23. Nối `/payments/me`, QR cấu hình, `/notifications/me`, unseen-count, seen/seen-all và `PATCH /users/me`.
-- [ ] T24. Chuẩn hóa ngày nghiệp vụ `YYYY-MM-DD`, hiển thị `dd/MM/yyyy`, múi giờ nghiệp vụ Việt Nam và tiền VND; không dùng chuyển UTC làm lệch ngày ăn.
-- [ ] T25. Khóa nút khi đang gửi, không tự retry mutation có tác dụng phụ; khi kết quả chưa rõ do mất mạng, tải lại trạng thái trước khi cho gửi lại.
-- [ ] T26. Cấu hình API URL cho emulator và thiết bị thật; kiểm tra kết nối Android/iOS và không đưa secret backend vào biến môi trường public của app.
+- [x] T19. Đối chiếu route/controller/response thực tế; định nghĩa DTO, mapping role, trạng thái và pagination trước khi nối từng màn hình.
+- [x] T20. Tạo API client cho `/api`, Bearer token và envelope `{ success, payload, error }`; xử lý timeout, lỗi mạng và 400/401/403/404/409/500.
+- [x] T21. Kết nối login/logout, lưu token an toàn, phục hồi trạng thái khởi động; 401 đưa về đăng nhập và xóa cache cá nhân. Backend chưa có refresh token hay `GET /auth/me`, không gọi các endpoint giả định này.
+- [x] T22. Nối lịch ăn/lịch nghỉ, `/meal-registrations/me`, đăng ký lại, số khách, cắt trực tiếp và `/meal-options/me`; tải lại các query liên quan sau mutation thành công.
+- [x] T23. Nối `/payments/me`, QR cấu hình, `/notifications/me`, unseen-count, seen/seen-all và `PATCH /users/me`.
+- [x] T24. Chuẩn hóa ngày nghiệp vụ `YYYY-MM-DD`, hiển thị `dd/MM/yyyy`, múi giờ nghiệp vụ Việt Nam và tiền VND; không dùng chuyển UTC làm lệch ngày ăn.
+- [x] T25. Khóa nút khi đang gửi, không tự retry mutation có tác dụng phụ; khi kết quả chưa rõ do mất mạng, tải lại trạng thái trước khi cho gửi lại.
+- [x] T26. Cấu hình API URL cho emulator và thiết bị thật; kiểm tra kết nối Android/iOS và không đưa secret backend vào biến môi trường public của app.
 
-Điều kiện hoàn thành: luồng nhân viên hoạt động với tài khoản/dữ liệu thử, trạng thái bám response server, lỗi có hướng xử lý, đăng xuất không để lộ cache người trước.
+Điều kiện hoàn thành: luồng nhân viên hoạt động với tài khoản/dữ liệu thử, trạng thái bám response server, lỗi có hướng xử lý, đăng xuất không để lộ cache người trước. (ĐÃ HOÀN THÀNH)
 
 ## 6. Giai đoạn 4 — Quản lý và admin
 

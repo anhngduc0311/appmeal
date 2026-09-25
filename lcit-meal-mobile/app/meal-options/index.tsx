@@ -1,16 +1,18 @@
 /**
- * Screen: Cắt suất theo yêu cầu & Lịch sử - T15
+ * Screen: Cắt suất theo yêu cầu & Lịch sử - T15, T22, T25
  * - Tạo yêu cầu cắt suất: Cắt hôm nay (cancel_today), Cắt theo khoảng (cancel_schedule), Cắt dài hạn (cancel_permanent)
  * - Cả 3 loại được hệ thống tự động duyệt (Approved) theo đúng API hiện tại
  * - Xem danh sách lịch sử các yêu cầu đã gửi
+ * - Khóa nút khi mutation đang chạy
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
@@ -22,8 +24,10 @@ import { Input } from '../../src/components/common/Input';
 import { DatePickerModal } from '../../src/components/meals/DatePickerModal';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { EmptyState } from '../../src/components/states/EmptyState';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import {
+  useMyMealOptions,
+  useCreateMealOptionMutation,
+} from '../../src/hooks/useMealsData';
 import { MealOptionType } from '../../src/types';
 import {
   formatBusinessDate,
@@ -51,26 +55,45 @@ export default function MealOptionsScreen() {
     text: string;
   } | null>(null);
 
-  // Lịch sử từ store
-  const options = useMockStore(useCallback(() => mockStore.getMyMealOptions(), []));
+  // Queries & Mutations
+  const { data: options = [], isLoading: loadingOptions, refetch: refetchOptions } = useMyMealOptions();
+  const createMutation = useCreateMealOptionMutation();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!fromDate) {
       setBannerMessage({ variant: 'error', text: 'Vui lòng chọn ngày bắt đầu cắt suất.' });
       return;
     }
 
-    const finalToDate = optionType === 'cancel_today' ? fromDate : (toDate || fromDate);
+    const finalToDate =
+      optionType === 'cancel_today'
+        ? fromDate
+        : optionType === 'cancel_permanent'
+        ? '2099-12-31'
+        : toDate || fromDate;
 
-    mockStore.createMealOption(optionType, fromDate, finalToDate, note.trim() || undefined);
+    try {
+      await createMutation.mutateAsync({
+        type: optionType,
+        fromDate,
+        toDate: finalToDate,
+        note: note.trim() || undefined,
+      });
 
-    setBannerMessage({
-      variant: 'success',
-      text: `Đã cắt suất ăn từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(finalToDate)} thành công!`,
-    });
+      setBannerMessage({
+        variant: 'success',
+        text:
+          optionType === 'cancel_permanent'
+            ? `Đã tạo yêu cầu cắt suất dài hạn từ ${formatDisplayDate(fromDate)} thành công!`
+            : `Đã cắt suất ăn từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(finalToDate)} thành công!`,
+      });
 
-    setNote('');
-    setActiveTab('history');
+      setNote('');
+      setActiveTab('history');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Tạo yêu cầu cắt suất thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
+    }
   };
 
   const handleSelectDateRange = (from: string, to: string) => {
@@ -84,7 +107,12 @@ export default function MealOptionsScreen() {
   };
 
   return (
-    <ScreenContainer scrollable backgroundColor={colors.background}>
+    <ScreenContainer
+      scrollable
+      refreshing={loadingOptions}
+      onRefresh={refetchOptions}
+      backgroundColor={colors.background}
+    >
       <Header
         title="Yêu cầu cắt suất"
         subtitle="Cắt suất hôm nay, theo khoảng ngày hoặc dài hạn"
@@ -234,6 +262,8 @@ export default function MealOptionsScreen() {
                   <Text style={styles.dateTriggerMain}>
                     {optionType === 'cancel_today'
                       ? formatDisplayDate(todayStr)
+                      : optionType === 'cancel_permanent'
+                      ? `Bắt đầu từ ${formatDisplayDate(fromDate)} (dài hạn)`
                       : `Từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate || fromDate)}`}
                   </Text>
                 </View>
@@ -246,7 +276,7 @@ export default function MealOptionsScreen() {
           <Card variant="elevated" padding="lg" style={styles.card}>
             <Text style={styles.fieldLabel}>3. Lý do / Ghi chú (không bắt buộc):</Text>
             <Input
-              placeholder="Ví dụ: Đi công tác tại nhà máy, Nghỉ phép..."
+              placeholder="Ví dụ: Đi công tác tại cảng, Nghỉ phép..."
               value={note}
               onChangeText={setNote}
               leftIcon={
@@ -272,6 +302,8 @@ export default function MealOptionsScreen() {
             title="Xác nhận gửi yêu cầu cắt suất"
             variant="primary"
             size="lg"
+            loading={createMutation.isPending}
+            disabled={createMutation.isPending}
             onPress={handleSubmit}
             fullWidth
             style={styles.submitBtn}
@@ -312,9 +344,11 @@ export default function MealOptionsScreen() {
                     </Text>
                   )}
 
-                  <Text style={styles.historyTime}>
-                    Tạo lúc: {item.createdAt}
-                  </Text>
+                  {item.createdAt && (
+                    <Text style={styles.historyTime}>
+                      Tạo lúc: {item.createdAt}
+                    </Text>
+                  )}
                 </Card>
               );
             })
@@ -333,8 +367,14 @@ export default function MealOptionsScreen() {
       {/* DatePicker Modal */}
       <DatePickerModal
         visible={dateModalVisible}
-        mode={optionType === 'cancel_today' ? 'single' : 'range'}
-        title={optionType === 'cancel_today' ? 'Chọn ngày cắt' : 'Chọn khoảng ngày cắt suất'}
+        mode={optionType === 'cancel_schedule' ? 'range' : 'single'}
+        title={
+          optionType === 'cancel_today'
+            ? 'Chọn ngày cắt'
+            : optionType === 'cancel_permanent'
+            ? 'Chọn ngày bắt đầu cắt dài hạn'
+            : 'Chọn khoảng ngày cắt suất'
+        }
         onSelectSingle={handleSelectSingleDate}
         onSelectRange={handleSelectDateRange}
         onClose={() => setDateModalVisible(false)}

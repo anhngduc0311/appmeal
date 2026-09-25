@@ -1,14 +1,14 @@
 /**
  * API Client
  * Lớp giao tiếp HTTP chuẩn với backend `/api`
- * Hỗ trợ tự động đính kèm Bearer Token, bóc tách Response Envelope { success, payload, error }
- * và điều hướng sang MockStore khi đang ở chế độ Dữ liệu Mẫu (Mock Mode).
+ * Hỗ trợ tự động đính kèm Bearer Token, bóc tách Response Envelope { success, payload, error },
+ * xử lý timeout (AbortController), lỗi mạng và bắt sự kiện 401 (Hết hạn phiên).
  */
 
 import { env } from '../config/env';
 import { STORAGE_KEYS } from '../config/constants';
 import { storage } from '../utils/storage';
-import { ApiResponse } from '../types';
+import { ApiResponse, PaginatedData } from '../types';
 
 export class ApiError extends Error {
   code: number;
@@ -22,18 +22,30 @@ export class ApiError extends Error {
   }
 }
 
-interface RequestOptions extends RequestInit {
+let onUnauthorizedCallback: (() => void) | null = null;
+
+/**
+ * Đăng ký callback khi gặp lỗi 401 Unauthenticated từ máy chủ
+ */
+export function registerUnauthorizedCallback(callback: (() => void) | null) {
+  onUnauthorizedCallback = callback;
+}
+
+export interface RequestOptions extends RequestInit {
   timeoutMs?: number;
   skipAuth?: boolean;
 }
 
+/**
+ * Hàm gọi API backend bọc chuẩn ApiResponse
+ */
 export async function apiClient<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
   const { timeoutMs = env.requestTimeoutMs, skipAuth = false, ...customConfig } = options;
 
-  // Lấy API URL (hỗ trợ ghi đè từ thiết lập)
+  // Lấy API URL (hỗ trợ cấu hình tùy biến khi chạy máy thật)
   const overriddenUrl = await storage.getItem(STORAGE_KEYS.API_URL_OVERRIDE);
   const baseUrl = overriddenUrl || env.apiBaseUrl;
 
@@ -66,8 +78,21 @@ export async function apiClient<T>(
 
     clearTimeout(timeoutId);
 
-    // Xử lý status HTTP
-    const json = (await response.json()) as ApiResponse<T>;
+    // Xử lý 401 Unauthorized
+    if (response.status === 401 && !skipAuth) {
+      onUnauthorizedCallback?.();
+      throw new ApiError(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    }
+
+    let json: ApiResponse<T>;
+    try {
+      json = (await response.json()) as ApiResponse<T>;
+    } catch {
+      if (!response.ok) {
+        throw new ApiError(response.status, `Lỗi máy chủ HTTP ${response.status}`);
+      }
+      return null as unknown as T;
+    }
 
     if (!response.ok || !json.success) {
       const errorCode = json.error?.code || response.status;
@@ -89,10 +114,22 @@ export async function apiClient<T>(
       throw new ApiError(408, 'Hết thời gian chờ kết nối máy chủ (Timeout). Vui lòng thử lại.');
     }
 
-    // Lỗi mạng hoặc không kết nối được backend
+    // Lỗi kết nối mạng (mất mạng, URL sai...)
     throw new ApiError(
       0,
-      'Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng hoặc bật chế độ Demo.'
+      'Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền mạng hoặc cấu hình API URL.'
     );
   }
+}
+
+/**
+ * Trợ giúp trích xuất mảng dữ liệu dù backend trả về trực tiếp mảng hay bọc trong { data: T[], pagination: ... }
+ */
+export function extractDataList<T>(payload: T[] | PaginatedData<T> | null | undefined): T[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (typeof payload === 'object' && 'data' in payload && Array.isArray((payload as PaginatedData<T>).data)) {
+    return (payload as PaginatedData<T>).data;
+  }
+  return [];
 }

@@ -1,6 +1,7 @@
 /**
  * Auth Service
  * Xử lý Đăng nhập, Đăng xuất, Lưu phiên và Cập nhật hồ sơ
+ * TUÂN THỦ T21: Không gọi GET /auth/me hay refresh token không tồn tại ở backend.
  */
 
 import { apiClient } from './apiClient';
@@ -12,6 +13,7 @@ import {
   LoginRequest,
   LoginResponsePayload,
   UpdateProfileRequest,
+  extractUserRole,
 } from '../types';
 
 export const authService = {
@@ -20,8 +22,7 @@ export const authService = {
    */
   async login(credentials: LoginRequest, useMock = true): Promise<{ user: User; token: string }> {
     if (useMock) {
-      // Giả lập độ trễ mạng
-      await new Promise((res) => setTimeout(res, 400));
+      await new Promise((res) => setTimeout(res, 300));
       const users = mockStore.getAllUsers();
       const matched = users.find(
         (u) =>
@@ -29,32 +30,44 @@ export const authService = {
       );
 
       if (!matched) {
-        // Cho phép đăng nhập demo với bất kỳ user nào trong danh sách
         throw new Error('Tên đăng nhập hoặc mật khẩu không chính xác.');
       }
 
       const mockToken = `mock_token_${matched.id}_${Date.now()}`;
+      const normalizedUser: User = {
+        ...matched,
+        role: extractUserRole(matched),
+      };
+
       await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken);
-      await storage.setObject(STORAGE_KEYS.USER_DATA, matched);
+      await storage.setObject(STORAGE_KEYS.USER_DATA, normalizedUser);
       mockStore.setCurrentUser(matched.id);
 
-      return { user: matched, token: mockToken };
+      return { user: normalizedUser, token: mockToken };
     }
 
     // Gọi API thật: POST /api/auth/login
     const payload = await apiClient<LoginResponsePayload>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({
+        username: credentials.username.trim(),
+        password: credentials.password,
+      }),
       skipAuth: true,
     });
 
     const token = payload.accessToken || payload.token || '';
-    const user = payload.user;
+    const rawUser = payload.user;
+
+    const normalizedUser: User = {
+      ...rawUser,
+      role: extractUserRole(rawUser),
+    };
 
     await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
-    await storage.setObject(STORAGE_KEYS.USER_DATA, user);
+    await storage.setObject(STORAGE_KEYS.USER_DATA, normalizedUser);
 
-    return { user, token };
+    return { user: normalizedUser, token };
   },
 
   /**
@@ -65,7 +78,7 @@ export const authService = {
       try {
         await apiClient('/auth/logout', { method: 'POST' });
       } catch {
-        // Bỏ qua lỗi server khi logout
+        // Bỏ qua lỗi kết nối khi logout
       }
     }
     await storage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
@@ -78,6 +91,9 @@ export const authService = {
   async getStoredSession(): Promise<{ user: User | null; token: string | null }> {
     const token = await storage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     const user = await storage.getObject<User>(STORAGE_KEYS.USER_DATA);
+    if (user) {
+      user.role = extractUserRole(user);
+    }
     return { user, token };
   },
 
@@ -98,12 +114,22 @@ export const authService = {
       return updated;
     }
 
+    // Chuẩn bị payload cho PATCH /api/users/me
+    const body: Record<string, unknown> = {};
+    if (data.fullName) body.fullName = data.fullName.trim();
+    if (data.password) body.password = data.password;
+
     const updatedUser = await apiClient<User>('/users/me', {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: JSON.stringify(body),
     });
 
-    await storage.setObject(STORAGE_KEYS.USER_DATA, updatedUser);
-    return updatedUser;
+    const normalizedUser: User = {
+      ...updatedUser,
+      role: extractUserRole(updatedUser),
+    };
+
+    await storage.setObject(STORAGE_KEYS.USER_DATA, normalizedUser);
+    return normalizedUser;
   },
 };

@@ -3,9 +3,9 @@
  * Quản lý thông báo, đếm số thông báo chưa đọc và đánh dấu đã xem
  */
 
-import { apiClient } from './apiClient';
+import { apiClient, extractDataList } from './apiClient';
 import { mockStore } from './mockStore';
-import { NotificationItem, UnseenCountResponse } from '../types';
+import { NotificationItem, UnseenCountResponse, PaginatedData } from '../types';
 
 export const notificationService = {
   /**
@@ -16,7 +16,8 @@ export const notificationService = {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMyNotifications();
     }
-    return await apiClient<NotificationItem[]>('/notifications/me');
+    const res = await apiClient<NotificationItem[] | PaginatedData<NotificationItem>>('/notifications/me');
+    return extractDataList<NotificationItem>(res);
   },
 
   /**
@@ -26,8 +27,18 @@ export const notificationService = {
     if (useMock) {
       return mockStore.getUnseenNotificationCount();
     }
-    const res = await apiClient<UnseenCountResponse>('/notifications/me/unseen-count');
-    return res.count || 0;
+    try {
+      const res = await apiClient<UnseenCountResponse>('/notifications/me/unseen-count');
+      if (res && typeof res.total === 'number') {
+        return res.total;
+      }
+      if (res && typeof res.count === 'number') {
+        return res.count;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
   },
 
   /**
@@ -38,7 +49,11 @@ export const notificationService = {
       mockStore.markNotificationAsSeen(notificationId);
       return;
     }
-    await apiClient(`/notifications/${notificationId}/seen`, { method: 'PATCH' });
+    try {
+      await apiClient(`/notifications/${notificationId}/seen`, { method: 'PATCH' });
+    } catch {
+      // Bỏ qua lỗi mạng nhỏ khi mark seen
+    }
   },
 
   /**

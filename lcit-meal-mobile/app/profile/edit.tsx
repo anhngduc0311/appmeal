@@ -1,6 +1,6 @@
 /**
- * Screen: Chỉnh sửa hồ sơ cá nhân & Đổi mật khẩu - T18
- * Cho phép cập nhật Họ tên, Email, Số điện thoại và thay đổi mật khẩu
+ * Screen: Chỉnh sửa hồ sơ cá nhân & Đổi mật khẩu - T18, T23, T25
+ * Cho phép cập nhật Họ tên và thay đổi mật khẩu qua PATCH /api/users/me
  */
 
 import React, { useState } from 'react';
@@ -8,6 +8,7 @@ import {
   View,
   Text,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,24 +20,24 @@ import { Input } from '../../src/components/common/Input';
 import { PasswordInput } from '../../src/components/common/PasswordInput';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { useUpdateProfileMutation } from '../../src/hooks/useProfileData';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, updateUserProfile } = useAuth();
+  const { user } = useAuth();
+  const updateProfileMutation = useUpdateProfileMutation();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.phone || '');
 
   // Password fields
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [loading, setLoading] = useState(false);
   const [bannerMessage, setBannerMessage] = useState<{
     variant: 'success' | 'error';
     text: string;
@@ -57,37 +58,27 @@ export default function EditProfileScreen() {
         setBannerMessage({ variant: 'error', text: 'Mật khẩu xác nhận không khớp.' });
         return;
       }
-      if (!currentPassword) {
-        setBannerMessage({ variant: 'error', text: 'Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu.' });
-        return;
-      }
     }
 
-    setLoading(true);
     setBannerMessage(null);
 
     try {
-      await new Promise((res) => setTimeout(res, 400));
-      updateUserProfile({
+      await updateProfileMutation.mutateAsync({
         fullName: fullName.trim(),
-        email: email.trim() || null,
-        phone: phone.trim() || null,
+        password: newPassword || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
       });
 
       setBannerMessage({
         variant: 'success',
         text: 'Cập nhật thông tin hồ sơ thành công!',
       });
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch {
-      setBannerMessage({
-        variant: 'error',
-        text: 'Có lỗi xảy ra khi lưu thông tin. Vui lòng thử lại.',
-      });
-    } finally {
-      setLoading(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra khi lưu thông tin.';
+      Alert.alert('Lỗi cập nhật', msg);
     }
   };
 
@@ -156,14 +147,6 @@ export default function EditProfileScreen() {
         </Text>
 
         <PasswordInput
-          label="Mật khẩu hiện tại"
-          placeholder="Nhập mật khẩu hiện tại"
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          leftIcon={<Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} />}
-        />
-
-        <PasswordInput
           label="Mật khẩu mới"
           placeholder="Tối thiểu 6 ký tự"
           value={newPassword}
@@ -186,6 +169,7 @@ export default function EditProfileScreen() {
           title="Hủy"
           variant="secondary"
           size="lg"
+          disabled={updateProfileMutation.isPending}
           onPress={() => router.back()}
           style={styles.cancelBtn}
         />
@@ -193,7 +177,8 @@ export default function EditProfileScreen() {
           title="Lưu thay đổi"
           variant="primary"
           size="lg"
-          loading={loading}
+          loading={updateProfileMutation.isPending}
+          disabled={updateProfileMutation.isPending}
           onPress={handleSaveProfile}
           style={styles.saveBtn}
         />

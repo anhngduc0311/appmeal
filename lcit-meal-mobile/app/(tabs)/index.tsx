@@ -4,12 +4,13 @@
  * Tuân thủ GAP-01: Chỉ hiển thị dữ liệu cá nhân, không hiển thị dữ liệu tài chính toàn cơ quan.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,10 +20,18 @@ import { Card } from '../../src/components/common/Card';
 import { Button } from '../../src/components/common/Button';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { MealCard } from '../../src/components/meals/MealCard';
+import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { MockModeBanner } from '../../src/components/meals/MockModeBanner';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { useMockStore } from '../../src/hooks/useMockStore';
-import { mockStore } from '../../src/services/mockStore';
+import {
+  useMeals,
+  useMyRegistrations,
+  useScheduleConfig,
+  useRegisterMealMutation,
+  useCancelRegistrationMutation,
+  useUpdateGuestCountMutation,
+} from '../../src/hooks/useMealsData';
+import { useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
 import {
   formatBusinessDate,
   formatCurrency,
@@ -37,65 +46,86 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user, role, useMockData } = useAuth();
 
-  const [refreshing, setRefreshing] = useState(false);
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [guestModalVisible, setGuestModalVisible] = useState(false);
   const [guestCountInput, setGuestCountInput] = useState(0);
 
   const todayStr = formatBusinessDate(new Date());
 
-  // Dữ liệu reactive tự động đồng bộ qua useMockStore
-  const todayMeal = useMockStore(
-    useCallback(() => {
-      const meals = mockStore.getMeals();
-      return meals.find((m) => m.mealDate === todayStr);
-    }, [todayStr])
-  );
+  // Queries từ TanStack React Query
+  const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
+  const { data: registrations = [], isLoading: loadingRegs, refetch: refetchRegs } = useMyRegistrations();
+  const { data: paymentSummary, isLoading: loadingPayments, refetch: refetchPayments } = useMyPaymentSummary();
+  const { data: scheduleConfig } = useScheduleConfig();
 
-  const todayReg = useMockStore(
-    useCallback(() => {
-      if (!todayMeal) return undefined;
-      return mockStore.getRegistrationForMeal(todayMeal.id);
-    }, [todayMeal])
-  );
+  // Mutations
+  const registerMutation = useRegisterMealMutation();
+  const cancelMutation = useCancelRegistrationMutation();
+  const updateGuestsMutation = useUpdateGuestCountMutation();
 
-  const myPayments = useMockStore(
-    useCallback(() => {
-      return mockStore.getMyPayments();
-    }, [])
-  );
+  const isRefreshing = loadingMeals || loadingRegs || loadingPayments;
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 400);
+  const todayMeal = meals.find((m) => m.mealDate === todayStr);
+  const todayReg = todayMeal
+    ? registrations.find((r) => r.mealId === todayMeal.id || r.mealDate === todayStr)
+    : undefined;
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchMeals(), refetchRegs(), refetchPayments()]);
   };
 
-  const handleRegisterToday = (mealId: number) => {
-    mockStore.registerMeal(mealId, 0);
+  const handleRegisterToday = async (mealId: number) => {
+    try {
+      await registerMutation.mutateAsync({ mealId, guestCount: 0 });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Đăng ký suất ăn thất bại.';
+      Alert.alert('Thông báo', msg);
+    }
   };
 
-  const handleCancelToday = () => {
-    if (todayReg) {
-      mockStore.cancelMealRegistration(todayReg.id);
+  const handleCancelToday = async () => {
+    if (!todayReg) return;
+    try {
+      const updatedReg = await cancelMutation.mutateAsync({
+        registrationId: todayReg.id,
+      });
       setCancelModalVisible(false);
+
+      if (updatedReg && updatedReg.status === 'pending') {
+        Alert.alert(
+          'Đã gửi yêu cầu',
+          'Đã quá giờ đóng đăng ký, yêu cầu cắt suất của bạn đã được chuyển cho Quản lý xét duyệt.'
+        );
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cắt suất ăn thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
     }
   };
 
-  const handleSaveGuests = () => {
-    if (todayMeal) {
-      mockStore.updateGuestCount(todayMeal.id, guestCountInput);
+  const handleSaveGuests = async () => {
+    if (!todayMeal) return;
+    try {
+      await updateGuestsMutation.mutateAsync({
+        mealId: todayMeal.id,
+        guestCount: guestCountInput,
+        registrationId: todayReg?.id,
+      });
       setGuestModalVisible(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
+      Alert.alert('Lỗi thao tác', msg);
     }
   };
 
-  // Tính tổng nợ cá nhân
-  const unpaidPayments = myPayments.filter((p) => p.status === 'unpaid' || p.status === 'overdue');
-  const totalUnpaidAmount = unpaidPayments.reduce((acc, curr) => acc + curr.amount, 0);
+  const totalUnpaidAmount = paymentSummary?.totalUnpaidAmount || 0;
+  const unpaidCount = paymentSummary?.unpaidCount || 0;
+  const cutoffTime = scheduleConfig?.cutoffTime || '09:00';
 
   return (
     <ScreenContainer
       scrollable
-      refreshing={refreshing}
+      refreshing={isRefreshing}
       onRefresh={handleRefresh}
       backgroundColor={colors.background}
     >
@@ -123,7 +153,7 @@ export default function HomeScreen() {
       <View style={styles.cutoffNotice}>
         <Ionicons name="time-outline" size={18} color={colors.status.pending.dot} />
         <Text style={styles.cutoffText}>
-          Giờ chốt đăng ký & cắt suất hôm nay: <Text style={styles.cutoffBold}>09:00</Text>
+          Giờ chốt đăng ký & cắt suất hôm nay: <Text style={styles.cutoffBold}>{cutoffTime}</Text>
         </Text>
       </View>
 
@@ -185,8 +215,8 @@ export default function HomeScreen() {
                 {formatCurrency(totalUnpaidAmount)}
               </Text>
               <Text style={styles.paymentSubtext}>
-                {unpaidPayments.length > 0
-                  ? `Gồm ${unpaidPayments.length} kỳ thanh toán chưa hoàn tất`
+                {unpaidCount > 0
+                  ? `Gồm ${unpaidCount} kỳ thanh toán chưa hoàn tất`
                   : 'Bạn đã hoàn thành tất cả các khoản thanh toán!'}
               </Text>
             </View>
@@ -219,11 +249,23 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => router.push('/(tabs)/payments')}
+            onPress={() => router.push('/meal-options' as any)}
             style={styles.quickActionCard}
           >
             <View style={[styles.actionIconBox, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="qr-code-outline" size={22} color="#B45309" />
+              <Ionicons name="document-text-outline" size={22} color="#B45309" />
+            </View>
+            <Text style={styles.actionTitle}>Báo cắt suất</Text>
+            <Text style={styles.actionDesc}>Cắt hôm nay hoặc dài hạn</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push('/(tabs)/payments')}
+            style={styles.quickActionCard}
+          >
+            <View style={[styles.actionIconBox, { backgroundColor: '#E0F2FE' }]}>
+              <Ionicons name="qr-code-outline" size={22} color="#0369A1" />
             </View>
             <Text style={styles.actionTitle}>Quét mã QR</Text>
             <Text style={styles.actionDesc}>Chuyển khoản tiền ăn</Text>
@@ -251,8 +293,8 @@ export default function HomeScreen() {
             <View style={[styles.actionIconBox, { backgroundColor: '#F3E8FF' }]}>
               <Ionicons name="cube-outline" size={22} color="#7E22CE" />
             </View>
-            <Text style={styles.actionTitle}>Thư viện Component</Text>
-            <Text style={styles.actionDesc}>Kiểm thử Giai đoạn 1</Text>
+            <Text style={styles.actionTitle}>Thư viện UI</Text>
+            <Text style={styles.actionDesc}>Kiểm thử Component</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -266,6 +308,7 @@ export default function HomeScreen() {
         cancelText="Giữ lại"
         isDestructive
         iconName="close-circle-outline"
+        loading={cancelMutation.isPending}
         onConfirm={handleCancelToday}
         onCancel={() => setCancelModalVisible(false)}
       />
@@ -278,9 +321,20 @@ export default function HomeScreen() {
         confirmText="Lưu số khách"
         cancelText="Đóng"
         iconName="people-outline"
+        loading={updateGuestsMutation.isPending}
         onConfirm={handleSaveGuests}
         onCancel={() => setGuestModalVisible(false)}
-      />
+      >
+        <View style={styles.modalGuestCounterBox}>
+          <GuestCounter
+            value={guestCountInput}
+            onChange={setGuestCountInput}
+            min={0}
+            max={10}
+            label="Số suất khách đăng ký thêm"
+          />
+        </View>
+      </ConfirmDialog>
     </ScreenContainer>
   );
 }
@@ -409,5 +463,8 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes['2xs'],
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  modalGuestCounterBox: {
+    paddingVertical: spacing.sm,
   },
 });
