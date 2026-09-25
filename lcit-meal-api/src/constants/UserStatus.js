@@ -1,0 +1,8 @@
+const USER_STATUS = {
+  STATUS_ACTIVE: "1",
+  STATUS_INACTIVE: "0",
+  STATUS_BANNED: "2",
+  STATUS_DELETED: "-1",
+};
+
+module.exports = USER_STATUS;
