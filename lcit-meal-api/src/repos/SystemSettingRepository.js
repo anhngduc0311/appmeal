@@ -50,14 +50,48 @@ const SETTING_SELECT_FIELDS = `
     updated_by
 `;
 
+let defaultsEnsured = false;
+let defaultsPromise = null;
+
 class SystemSettingRepository {
   async ensureDefaults() {
-    await pool.query(
-      `INSERT IGNORE INTO system_setting
-       (setting_key, setting_value, display_name, data_type, description)
-       VALUES ?`,
-      [DEFAULT_SETTINGS],
-    );
+    if (defaultsEnsured) {
+      return;
+    }
+    if (defaultsPromise) {
+      return defaultsPromise;
+    }
+
+    defaultsPromise = (async () => {
+      try {
+        await pool.query(
+          `INSERT IGNORE INTO system_setting
+           (setting_key, setting_value, display_name, data_type, description)
+           VALUES ?`,
+          [DEFAULT_SETTINGS],
+        );
+        defaultsEnsured = true;
+      } catch (err) {
+        if (err.code === "ER_LOCK_DEADLOCK") {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 50 + Math.random() * 100),
+          );
+          await pool.query(
+            `INSERT IGNORE INTO system_setting
+             (setting_key, setting_value, display_name, data_type, description)
+             VALUES ?`,
+            [DEFAULT_SETTINGS],
+          );
+          defaultsEnsured = true;
+        } else {
+          throw err;
+        }
+      } finally {
+        defaultsPromise = null;
+      }
+    })();
+
+    return defaultsPromise;
   }
 
   async list() {

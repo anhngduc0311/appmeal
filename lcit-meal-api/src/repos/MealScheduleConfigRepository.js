@@ -29,18 +29,52 @@ const JOINS = `
     LEFT JOIN user u ON u.id = msc.updated_by
 `;
 
+let defaultsEnsured = false;
+let defaultsPromise = null;
+
 class MealScheduleConfigRepository {
   // Đảm bảo luôn có đủ 7 dòng (0-6) - tự "vá" dữ liệu nếu vì lý do gì đó
   // migration ban đầu (qlsa_clean.sql) chưa tạo đủ, tương tự cách
   // SystemSettingRepository.ensureDefaults() tự vá các setting mặc định.
   // Không ghi đè is_enabled/notes của những ngày đã tồn tại.
   async ensureDefaults() {
-    await pool.query(
-      `INSERT IGNORE INTO meal_schedule_config
-       (day_of_week, is_enabled, notes)
-       VALUES ?`,
-      [DEFAULT_DAYS],
-    );
+    if (defaultsEnsured) {
+      return;
+    }
+    if (defaultsPromise) {
+      return defaultsPromise;
+    }
+
+    defaultsPromise = (async () => {
+      try {
+        await pool.query(
+          `INSERT IGNORE INTO meal_schedule_config
+           (day_of_week, is_enabled, notes)
+           VALUES ?`,
+          [DEFAULT_DAYS],
+        );
+        defaultsEnsured = true;
+      } catch (err) {
+        if (err.code === "ER_LOCK_DEADLOCK") {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 50 + Math.random() * 100),
+          );
+          await pool.query(
+            `INSERT IGNORE INTO meal_schedule_config
+             (day_of_week, is_enabled, notes)
+             VALUES ?`,
+            [DEFAULT_DAYS],
+          );
+          defaultsEnsured = true;
+        } else {
+          throw err;
+        }
+      } finally {
+        defaultsPromise = null;
+      }
+    })();
+
+    return defaultsPromise;
   }
 
   async list() {

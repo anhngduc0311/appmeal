@@ -23,7 +23,7 @@ import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
 import { useAuth } from '../../src/providers/AuthProvider';
 import { adminToolsService } from '../../src/services/adminToolsService';
-import { formatBusinessDateDisplay } from '../../src/utils/formatters';
+import { formatBusinessDate, formatBusinessDateDisplay } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
@@ -36,14 +36,17 @@ export default function ManagementAdminToolsScreen() {
   const isAdmin = role === 'admin';
   const hasAccess = role === 'admin' || role === 'manager';
 
-  // Form states
+  // Form states - tính chuẩn theo múi giờ Việt Nam / Local, không dùng toISOString() gây lùi ngày/tháng
   const now = new Date();
-  const currentMonthStr = now.toISOString().slice(0, 7);
-  const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const nextMonthStr = nextMonthDate.toISOString().slice(0, 7);
+  const currentYear = now.getFullYear();
+  const currentMonthNum = now.getMonth() + 1;
+  const currentMonthStr = `${currentYear}-${String(currentMonthNum).padStart(2, '0')}`;
+  const nextMonthNum = currentMonthNum === 12 ? 1 : currentMonthNum + 1;
+  const nextMonthYear = currentMonthNum === 12 ? currentYear + 1 : currentYear;
+  const nextMonthStr = `${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')}`;
 
   const [selectedMonth, setSelectedMonth] = useState(currentMonthStr);
-  const [selectedDate, setSelectedDate] = useState(now.toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(formatBusinessDate(now));
 
   // Running states
   const [isRunningSchedule, setIsRunningSchedule] = useState(false);
@@ -137,7 +140,7 @@ export default function ManagementAdminToolsScreen() {
           <View style={styles.monthChipsRow}>
             {[currentMonthStr, nextMonthStr].map((m) => (
               <TouchableOpacity
-                key={m}
+                key={`month-chip-${m}`}
                 style={[styles.monthChip, selectedMonth === m && styles.monthChipActive]}
                 onPress={() => setSelectedMonth(m)}
                 activeOpacity={0.7}

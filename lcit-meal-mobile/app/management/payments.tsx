@@ -220,7 +220,9 @@ export default function ManagementPaymentsScreen() {
               style={styles.headerBtn}
               onPress={() => {
                 if (users.length > 0) setFormUserId(users[0].id);
-                setFormPaymentDate(new Date().toISOString().slice(0, 7) + '-25');
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                setFormPaymentDate(`${currentMonth}-25`);
                 setFormAmount('660000');
                 setFormStatus('unpaid');
                 setIsCreateOpen(true);

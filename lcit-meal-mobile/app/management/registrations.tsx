@@ -43,7 +43,7 @@ import {
 import { useUsersList } from '../../src/hooks/useManagementUsers';
 import { useManagementMeals } from '../../src/hooks/useManagementMeals';
 import { exportService } from '../../src/services/exportService';
-import { formatBusinessDateDisplay } from '../../src/utils/formatters';
+import { formatBusinessDate, formatBusinessDateDisplay } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
@@ -305,7 +305,7 @@ export default function ManagementRegistrationsScreen() {
             style={styles.onBehalfBtn}
             onPress={() => {
               if (users.length > 0) setSelectedUserId(users[0].id);
-              const today = new Date().toISOString().slice(0, 10);
+              const today = formatBusinessDate(new Date());
               setOptionFromDate(today);
               setOptionToDate(today);
               setOptionNote('');

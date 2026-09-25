@@ -37,7 +37,7 @@ import {
   useCreateHoliday,
   useRestoreHoliday,
 } from '../../src/hooks/useManagementMeals';
-import { formatBusinessDateDisplay } from '../../src/utils/formatters';
+import { formatBusinessDate, formatBusinessDateDisplay } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
@@ -172,11 +172,11 @@ export default function ManagementMealsScreen() {
               if (activeTab === 'meals') {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                setMealDateInput(tomorrow.toISOString().slice(0, 10));
+                setMealDateInput(formatBusinessDate(tomorrow));
                 setMealNoteInput('');
                 setIsCreateMealOpen(true);
               } else {
-                const today = new Date().toISOString().slice(0, 10);
+                const today = formatBusinessDate(new Date());
                 setHolidayFromInput(today);
                 setHolidayToInput(today);
                 setHolidayNameInput('');
