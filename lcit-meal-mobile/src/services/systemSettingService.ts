@@ -163,7 +163,7 @@ export const systemSettingService = {
         autoRegisterEnabled: true,
         autoRegisterStartDay: 20,
         activeDaysOfWeek: activeDays,
-        cutoffTime: closeTimeSetting?.settingValue || '09:00',
+        cutoffTime: closeTimeSetting?.settingValue || '08:00',
         mealCompletionTime: '12:00',
         paymentDueDay: 25,
         mealPrice: priceSetting?.settingValue ? parseInt(priceSetting.settingValue, 10) : 30000,

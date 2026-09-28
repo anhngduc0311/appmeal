@@ -37,6 +37,7 @@ import {
   formatDisplayDate,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
+import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
 
 export default function HomeScreen() {
@@ -105,7 +106,7 @@ function PersonalHomeScreen() {
 
   const totalUnpaidAmount = paymentSummary?.totalUnpaidAmount || 0;
   const unpaidCount = paymentSummary?.unpaidCount || 0;
-  const cutoffTime = scheduleConfig?.cutoffTime || '09:00';
+  const cutoffTime = scheduleConfig?.cutoffTime || '08:00';
 
   return (
     <ScreenContainer
@@ -178,23 +179,100 @@ function PersonalHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: {flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, marginBottom: 14},
-  brandIcon: {width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primaryDark, alignItems: 'center', justifyContent: 'center'},
-  brand: {fontSize: 17, fontWeight: '800', letterSpacing: 1, color: colors.primaryDark}, brandLight: {fontWeight: '400'},
-  brandCaption: {marginLeft: 'auto', fontSize: 9, letterSpacing: 1.3, color: colors.textSecondary},
-  notifBtn: {width: 48, height: 48, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center'},
-  hero: {backgroundColor: colors.primaryDark, borderRadius: 24, padding: 28, marginBottom: 26, flexDirection: 'row', alignItems: 'center', overflow: 'hidden'},
-  heroCopy: {flex: 1}, eyebrow: {fontSize: 10, fontWeight: '700', letterSpacing: 2, color: '#DCEAA0', marginBottom: 14},
-  heroTitle: {fontSize: 28, lineHeight: 40, fontWeight: '700', letterSpacing: -0.6, color: '#FFFFFF'},
-  cutoff: {flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 22}, heroNote: {fontSize: 12, color: '#D5E4D8', flexShrink: 1, lineHeight: 19},
-  plateOuter: {width: 168, height: 168, borderRadius: 84, borderWidth: 1, borderColor: '#587B5F', alignItems: 'center', justifyContent: 'center', marginHorizontal: 32},
-  plateInner: {width: 136, height: 136, borderRadius: 68, borderWidth: 14, borderColor: '#325D46', backgroundColor: '#244F3D', alignItems: 'center', justifyContent: 'center'},
-  columns: {gap: 26}, columnsWide: {flexDirection: 'row', alignItems: 'flex-start'}, mainColumn: {flex: 1, minWidth: 0}, sideColumn: {gap: 0},
-  sectionHeader: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginBottom: 10, gap: 8},
-  sectionTitle: {fontSize: 18, fontWeight: '700', color: colors.text}, textLink: {minHeight: 44, justifyContent: 'center'}, link: {fontSize: 12, fontWeight: '600', color: colors.primary},
-  quickGrid: {flexDirection: 'row', gap: 12}, quickCard: {flex: 1}, actionIcon: {width: 46, height: 46, borderRadius: 14, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginBottom: 18},
-  actionTitle: {fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 8}, body: {fontSize: 13, lineHeight: 21, color: colors.textSecondary},
-  paymentCard: {backgroundColor: '#EEF2E3', borderColor: '#DAE2CA'}, paymentTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}, paymentLabel: {fontSize: 10, letterSpacing: 1.3, fontWeight: '700', color: colors.primaryDark},
-  paymentAmount: {fontSize: 30, fontWeight: '700', letterSpacing: -0.8, color: colors.primaryDark, marginTop: 22, marginBottom: 6}, divider: {height: 1, backgroundColor: '#D6DEC8', marginVertical: 22},
-  managementCard: {marginTop: 16, gap: 8}, empty: {gap: 14, alignItems: 'center'},
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, marginBottom: 12 },
+  brandIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
+  brand: { fontSize: 16, fontWeight: '800', letterSpacing: 1.2, color: colors.primaryDark },
+  brandLight: { fontWeight: '400', color: colors.primary },
+  brandCaption: { marginLeft: 'auto', fontSize: 10, letterSpacing: 1.2, fontWeight: '600', color: colors.textSecondary },
+  notifBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hero: {
+    backgroundColor: colors.primaryDark,
+    borderRadius: radius['2xl'],
+    padding: 24,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  heroCopy: { flex: 1 },
+  eyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.8, color: '#DCEAA0', marginBottom: 10 },
+  heroTitle: { fontSize: 24, lineHeight: 34, fontWeight: '800', letterSpacing: -0.6, color: '#FFFFFF' },
+  cutoff: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    alignSelf: 'flex-start',
+  },
+  heroNote: { fontSize: 12, color: '#E4EFE7', fontWeight: '500' },
+  plateOuter: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 234, 160, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 24,
+  },
+  plateInner: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    borderWidth: 10,
+    borderColor: '#185743',
+    backgroundColor: '#0F4434',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  columns: { gap: 20 },
+  columnsWide: { flexDirection: 'row', alignItems: 'flex-start' },
+  mainColumn: { flex: 1, minWidth: 0 },
+  sideColumn: { gap: 16 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36, marginBottom: 10 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
+  textLink: { minHeight: 36, justifyContent: 'center' },
+  link: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  quickGrid: { flexDirection: 'row', gap: 12 },
+  quickCard: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  actionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  body: { fontSize: 13, lineHeight: 19, color: colors.textSecondary },
+  paymentCard: {
+    backgroundColor: '#F3F7F2',
+    borderColor: '#DFE8E1',
+    borderRadius: radius.xl,
+  },
+  paymentTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  paymentLabel: { fontSize: 11, letterSpacing: 1.2, fontWeight: '700', color: colors.primaryDark },
+  paymentAmount: { fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: colors.primaryDark, marginTop: 14, marginBottom: 4 },
+  divider: { height: 1, backgroundColor: '#DFE8E1', marginVertical: 16 },
+  managementCard: {
+    gap: 8,
+    borderColor: colors.primary300,
+    backgroundColor: colors.primary50,
+    borderRadius: radius.xl,
+  },
+  empty: { gap: 12, alignItems: 'center', backgroundColor: colors.surface },
 });

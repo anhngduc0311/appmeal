@@ -377,9 +377,9 @@ export const mockNotifications: NotificationItem[] = [
   {
     id: 701,
     title: 'Nhắc nhở đóng đăng ký suất ăn hôm nay',
-    content: 'Hệ thống sẽ khóa đăng ký và cắt suất ăn trưa hôm nay vào lúc 09:00. Vui lòng kiểm tra lại số lượng khách và suất ăn của bạn.',
+    content: 'Hệ thống sẽ khóa đăng ký và cắt suất ăn trưa hôm nay vào lúc 08:00. Vui lòng kiểm tra lại số lượng khách và suất ăn của bạn.',
     type: 'SYSTEM',
-    createdAt: '2026-09-25 08:00:00',
+    createdAt: '2026-09-25 07:30:00',
     isSeen: false,
   },
   {
@@ -435,7 +435,7 @@ export const mockScheduleConfig: MealScheduleConfig = {
   autoRegisterEnabled: true,
   autoRegisterStartDay: 20,
   activeDaysOfWeek: [1, 2, 3, 4, 5], // Thứ 2 đến Thứ 6
-  cutoffTime: '09:00',
+  cutoffTime: '08:00',
   mealCompletionTime: '12:00',
   paymentDueDay: 25,
   mealPrice: 30000,

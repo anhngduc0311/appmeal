@@ -174,19 +174,30 @@ export const MealCard: React.FC<MealCardProps> = ({
 };
 
 const styles = StyleSheet.create({
-  dateDetail: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginVertical: spacing.xs },
-  calendarTile: {width: 52, height: 60, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12},
-  calendarMonth: {fontSize: 8, letterSpacing: 0.5, fontWeight: '700', color: colors.primary},
-  calendarDay: {fontSize: 23, fontWeight: '700', color: colors.primaryDark},
+  dateDetail: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: 2, marginBottom: spacing.xs },
+  calendarTile: {
+    width: 54,
+    height: 58,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary50,
+    borderWidth: 1,
+    borderColor: colors.primary100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  calendarMonth: { fontSize: 9, letterSpacing: 0.8, fontWeight: '700', color: colors.primary },
+  calendarDay: { fontSize: 22, fontWeight: '800', color: colors.primaryDark, marginTop: -2 },
   card: {
     marginBottom: spacing.md,
     backgroundColor: colors.surface,
     borderColor: colors.border,
+    borderRadius: radius.xl,
   },
   cardToday: {
     borderColor: colors.primary300,
-    borderWidth: 1,
-    backgroundColor: '#FAFDFB',
+    borderWidth: 1.5,
+    backgroundColor: '#FAFCFA',
   },
   cardCancelledMeal: {
     backgroundColor: '#FFFBFB',
@@ -210,16 +221,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   dateText: {
-    fontSize: typography.sizes.sm,
+    fontSize: typography.sizes.sm + 1,
     fontWeight: typography.weights.bold,
     color: colors.text,
+    letterSpacing: -0.3,
   },
   dateTextToday: {
     color: colors.primaryDark,
   },
   todayPill: {
     backgroundColor: colors.primaryLight,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: radius.full,
   },
@@ -230,10 +242,11 @@ const styles = StyleSheet.create({
   },
   contentBox: {
     backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.md,
-    padding: spacing.lg,
+    borderRadius: radius.lg,
+    padding: spacing.md,
     marginBottom: spacing.sm,
-    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
   },
   kitchenAlert: {
     flexDirection: 'row',
@@ -255,7 +268,7 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.textSecondary,
     flex: 1,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -264,7 +277,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
     height: 'auto',
   },
 });

@@ -134,7 +134,7 @@ async function seed() {
     const settings = [
       { key: 'meal_price', value: '30000', name: 'Giá suất cán bộ', type: 'integer', desc: 'Đơn giá suất ăn của cán bộ (VNĐ)' },
       { key: 'guest_meal_price', value: '35000', name: 'Giá suất khách', type: 'integer', desc: 'Đơn giá suất ăn của khách ăn kèm (VNĐ)' },
-      { key: 'registration_close_time', value: '09:00', name: 'Giờ đóng báo suất', type: 'string', desc: 'Giờ chốt đăng ký và cắt suất hàng ngày' },
+      { key: 'registration_close_time', value: '08:00', name: 'Giờ đóng báo suất', type: 'string', desc: 'Giờ chốt đăng ký và cắt suất hàng ngày' },
       { key: 'meal_completion_time', value: '12:00', name: 'Giờ hoàn thành suất', type: 'string', desc: 'Giờ tự động hoàn thành suất ăn' },
       { key: 'payment_qr_image', value: 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=2|99|0987654321|NGUYEN%20VAN%20ADMIN||0|0|30000|DONG%20TIEN%20AN', name: 'Mã QR thanh toán', type: 'string', desc: 'Link ảnh QR ngân hàng nhận tiền ăn' },
       { key: 'auto_register_start_day', value: '1', name: 'Ngày bắt đầu tự động', type: 'integer', desc: 'Ngày trong tháng bắt đầu tạo lịch tự động' },
@@ -297,7 +297,7 @@ async function seed() {
     const notifs = [
       {
         title: 'Thực đơn cơm trưa tuần mới (28/09 - 02/10/2026)',
-        content: 'Nhà bếp cơ quan xin thông báo thực đơn dinh dưỡng cho tuần tới đã được cập nhật. Cán bộ vui lòng kiểm tra và báo suất đúng giờ quy định (trước 09:00 hàng ngày).',
+        content: 'Nhà bếp cơ quan xin thông báo thực đơn dinh dưỡng cho tuần tới đã được cập nhật. Cán bộ vui lòng kiểm tra và báo suất đúng giờ quy định (trước 08:00 hàng ngày).',
         url: '',
       },
       {

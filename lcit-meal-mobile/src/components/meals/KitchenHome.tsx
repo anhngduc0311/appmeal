@@ -42,7 +42,7 @@ export function KitchenHome() {
           <Text style={styles.dateHint}>{selectedDate === today ? 'Hôm nay' : getFullDayOfWeek(selectedDate)}</Text>
           <View style={styles.dateLabel}>
             <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-            <Text style={styles.title}>{formatDisplayDate(selectedDate)}</Text>
+            <Text style={styles.dateNavTitle}>{formatDisplayDate(selectedDate)}</Text>
             <Ionicons name="chevron-down" size={16} color={colors.primary} />
           </View>
         </TouchableOpacity>
@@ -54,13 +54,27 @@ export function KitchenHome() {
       {isLoading ? <LoadingState message="Đang tải số suất cần nấu..." /> : error ? (
         <ErrorState message={error.message} onRetry={() => { void refetch(); }} />
       ) : (
-        <Card padding="xl">
-          <Text style={styles.title}>{formatDisplayDate(selectedDate)}</Text>
+        <Card padding="2xl" style={styles.kpiCard}>
+          <Text style={styles.kpiDate}>{formatDisplayDate(selectedDate)}</Text>
           <Text style={styles.total}>{total}</Text>
-          <Text style={styles.title}>Tổng suất cần chuẩn bị</Text>
-          <Text style={styles.detail}>Cán bộ: {cancelled ? 0 : Number(staff?.registeredStaffCount ?? staff?.registered_staff_count ?? 0)}</Text>
-          <Text style={styles.detail}>Khách: {cancelled ? 0 : Number(staff?.totalGuestCount ?? staff?.total_guest_count ?? 0)}</Text>
-          {(!meal || cancelled) && <Text style={styles.detail}>{cancelled ? 'Bếp nghỉ phục vụ ngày này.' : 'Ngày này chưa có lịch nấu ăn.'}</Text>}
+          <Text style={styles.kpiTitle}>Tổng suất cần chuẩn bị</Text>
+          
+          <View style={styles.kpiBreakdownRow}>
+            <View style={styles.breakdownBox}>
+              <Text style={styles.breakdownNum}>{cancelled ? 0 : Number(staff?.registeredStaffCount ?? staff?.registered_staff_count ?? 0)}</Text>
+              <Text style={styles.breakdownLabel}>Cán bộ</Text>
+            </View>
+            <View style={[styles.breakdownBox, { backgroundColor: '#FEF3C7', borderColor: '#FDE68A' }]}>
+              <Text style={[styles.breakdownNum, { color: '#B45309' }]}>{cancelled ? 0 : Number(staff?.totalGuestCount ?? staff?.total_guest_count ?? 0)}</Text>
+              <Text style={[styles.breakdownLabel, { color: '#92400E' }]}>Khách mời</Text>
+            </View>
+          </View>
+
+          {(!meal || cancelled) && (
+            <Text style={styles.alertDetail}>
+              {cancelled ? 'Bếp nghỉ phục vụ ngày này.' : 'Ngày này chưa có lịch nấu ăn.'}
+            </Text>
+          )}
         </Card>
       )}
       {datePickerOpen && <DatePickerModal visible mode="single" initialDate={selectedDate}
@@ -70,13 +84,41 @@ export function KitchenHome() {
 }
 
 const styles = StyleSheet.create({
-  dateNavigation: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, marginBottom: spacing.md },
-  dateArrow: { width: 48, minHeight: 64, alignItems: 'center', justifyContent: 'center' },
-  dateSelect: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
-  dateHint: { fontSize: 13, color: colors.textSecondary, marginBottom: spacing.xs },
+  dateNavigation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    marginBottom: spacing.md,
+  },
+  dateArrow: { width: 48, minHeight: 60, alignItems: 'center', justifyContent: 'center' },
+  dateSelect: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
+  dateHint: { fontSize: 12, color: colors.textSecondary, marginBottom: 2, fontWeight: '500' },
   dateLabel: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: spacing.xs },
+  dateNavTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
   todayButton: { alignSelf: 'center', marginBottom: spacing.sm },
-  title: { fontSize: 18, fontWeight: '600', color: colors.text },
-  total: { fontSize: 48, fontWeight: '700', color: colors.primary, marginVertical: spacing.md },
-  detail: { fontSize: 16, color: colors.textSecondary, marginTop: spacing.sm },
+  kpiCard: {
+    alignItems: 'center',
+    borderRadius: radius['2xl'],
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
+  kpiDate: { fontSize: 14, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.5 },
+  kpiTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: spacing.md },
+  total: { fontSize: 52, fontWeight: '800', color: colors.primaryDark, marginVertical: spacing.xs, letterSpacing: -1 },
+  kpiBreakdownRow: { flexDirection: 'row', gap: 12, width: '100%', marginTop: spacing.xs },
+  breakdownBox: {
+    flex: 1,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary50,
+    borderWidth: 1,
+    borderColor: colors.primary100,
+    alignItems: 'center',
+  },
+  breakdownNum: { fontSize: 20, fontWeight: '800', color: colors.primaryDark },
+  breakdownLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginTop: 2 },
+  alertDetail: { fontSize: 13, color: colors.danger, marginTop: spacing.md, fontWeight: '500' },
 });

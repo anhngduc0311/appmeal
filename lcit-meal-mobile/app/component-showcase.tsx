@@ -187,7 +187,7 @@ export default function ComponentShowcaseScreen() {
         <ResultBanner
           variant="warning"
           title="Lưu ý quan trọng"
-          message="Hôm nay đã quá giờ chốt cắt suất trực tiếp (09:00)."
+          message="Hôm nay đã quá giờ chốt cắt suất trực tiếp (08:00)."
         />
         <ResultBanner
           variant="error"

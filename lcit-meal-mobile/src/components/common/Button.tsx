@@ -19,6 +19,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
+import { shadows } from '../../theme/shadows';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'lg';
@@ -105,6 +106,7 @@ export const Button: React.FC<ButtonProps> = ({
             backgroundColor: colors.primary,
             borderColor: colors.primary,
             borderWidth: 1,
+            ...shadows.sm,
           },
           text: {
             color: colors.textInverse,
@@ -119,35 +121,41 @@ export const Button: React.FC<ButtonProps> = ({
       case 'sm':
         return {
           container: {
-            height: 44,
-            minHeight: 44,
+            height: 40,
+            minHeight: 40,
             paddingHorizontal: spacing.md,
+            borderRadius: radius.md,
           },
           text: {
             fontSize: typography.sizes.sm,
+            fontWeight: typography.weights.semibold,
           },
         };
       case 'lg':
         return {
           container: {
-            height: 54,
-            minHeight: 54,
+            height: 52,
+            minHeight: 52,
             paddingHorizontal: spacing['2xl'],
+            borderRadius: radius.xl,
           },
           text: {
             fontSize: typography.sizes.base,
+            fontWeight: typography.weights.bold,
           },
         };
       case 'md':
       default:
         return {
           container: {
-            height: spacing.minTouchTarget, // Đảm bảo tối thiểu 48px
+            height: spacing.minTouchTarget, // 48px
             minHeight: spacing.minTouchTarget,
             paddingHorizontal: spacing.lg,
+            borderRadius: radius.lg,
           },
           text: {
-            fontSize: typography.sizes.base,
+            fontSize: typography.sizes.sm + 1,
+            fontWeight: typography.weights.semibold,
           },
         };
     }
@@ -158,7 +166,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <TouchableOpacity
-      activeOpacity={0.7}
+      activeOpacity={0.8}
       disabled={!isInteractive}
       style={[
         styles.baseContainer,
@@ -214,6 +222,7 @@ const styles = StyleSheet.create({
   baseText: {
     fontWeight: typography.weights.semibold,
     textAlign: 'center',
+    letterSpacing: -0.2,
   },
   disabledContainer: {
     opacity: 0.5,

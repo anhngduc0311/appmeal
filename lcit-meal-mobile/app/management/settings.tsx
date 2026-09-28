@@ -66,7 +66,7 @@ export default function ManagementSettingsScreen() {
   // Settings values state
   const [mealPrice, setMealPrice] = useState('30000');
   const [guestPrice, setGuestPrice] = useState('35000');
-  const [closeTime, setCloseTime] = useState('09:00');
+  const [closeTime, setCloseTime] = useState('08:00');
   const [completionTime, setCompletionTime] = useState('12:00');
   const [paymentQrUrl, setPaymentQrUrl] = useState('');
 
@@ -267,7 +267,7 @@ export default function ManagementSettingsScreen() {
                   label="Giờ đóng báo suất (HH:mm)"
                   value={closeTime}
                   onChangeText={setCloseTime}
-                  placeholder="09:00"
+                  placeholder="08:00"
                 />
               </View>
               <View style={styles.halfCol}>

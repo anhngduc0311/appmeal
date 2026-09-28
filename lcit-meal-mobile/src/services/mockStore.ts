@@ -99,10 +99,10 @@ class MockStore {
       logAction: 'update_setting',
       logTarget: 'system_setting:registration_close_time',
       logResult: 'success',
-      logDetail: 'Cập nhật giờ đóng đăng ký thành 09:00',
+      logDetail: 'Cập nhật giờ đóng đăng ký thành 08:00',
       ipAddress: '192.168.1.100',
       userAgent: 'LCIT-Mobile-App/1.0',
-      createdAt: '2026-09-22 09:00:00',
+      createdAt: '2026-09-22 08:00:00',
     },
   ];
 

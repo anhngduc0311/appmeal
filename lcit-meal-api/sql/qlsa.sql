@@ -249,7 +249,7 @@ INSERT INTO `role` (`id`, `display_name`, `code`, `description`, `status`, `crea
 --
 
 INSERT INTO `system_setting` (`id`, `setting_key`, `setting_value`, `display_name`, `data_type`, `description`, `updated_at`, `updated_by`) VALUES
-(1, 'registration_close_time', '09:00', 'Thời gian đóng đăng ký', 'string', 'Giờ đóng đăng ký/hủy suất ăn trong ngày (HH:mm)', '2026-01-01 08:00:00', 1),
+(1, 'registration_close_time', '08:00', 'Thời gian đóng đăng ký', 'string', 'Giờ đóng đăng ký/hủy suất ăn trong ngày (HH:mm)', '2026-01-01 08:00:00', 1),
 (2, 'meal_price', '35000', 'Giá tiền', 'integer', 'Đơn giá một suất ăn (VNĐ)', '2026-01-01 08:00:00', 1),
 (3, 'guest_meal_price', '40000', 'Giá tiền (khách)', 'integer', 'Đơn giá một suất ăn khách mời (VNĐ)', '2026-01-01 08:00:00', 1),
 (4, 'auto_register_enabled', '1', 'Tự động đăng ký', 'boolean', 'Bật/tắt tự động đăng ký ăn theo lịch mặc định', '2026-01-01 08:00:00', 1),

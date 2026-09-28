@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-28T07:24:09.021Z",
+  "timestamp": "2026-09-28T09:30:58.686Z",
   "database": "disposable schema; config only copied",
   "results": [
     {
@@ -251,7 +251,7 @@
       "status": "PASS"
     },
     {
-      "name": "Cancel date range syncs registration",
+      "name": "Cancel date range creates pending option and syncs registration after approval",
       "status": "PASS"
     },
     {

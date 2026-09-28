@@ -26,7 +26,7 @@ export const env = {
   // Timeout cho HTTP request (ms)
   requestTimeoutMs: 15000,
   // Cutoff time mặc định nếu chưa lấy được từ server
-  defaultCutoffTime: '09:00',
+  defaultCutoffTime: '08:00',
   // Giá suất ăn mặc định (VNĐ)
   defaultMealPrice: 30000,
 };

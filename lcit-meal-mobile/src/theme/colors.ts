@@ -5,36 +5,43 @@
  */
 
 export const colors = {
-  // Brand / Primary Colors (Xanh lá)
-  primary: '#126B52',      // Green 600 - Màu thương hiệu chính
-  primaryLight: '#E4F0E8', // Green 100 - Nền nhạt cho badge, highlight
-  primaryDark: '#143E33',  // Green 700 - Trạng thái nhấn, active
-  primary50: '#F0F5EE',    // Green 50 - Nền thẻ được chọn, tint
-  primary300: '#B9D6BE',   // Green 300 - Border highlight
+  // Brand / Primary Colors (Emerald Forest & Mint)
+  primary: '#0D5C46',      // Premium Deep Emerald
+  primaryLight: '#E6F4EA', // Soft Mint for badges & highlights
+  primaryDark: '#093F30',  // Darker Forest for hero banners & deep accents
+  primary50: '#F2F9F5',    // Lightest tint for active cards & selection
+  primary100: '#E1F2E8',
+  primary200: '#C3E5D1',
+  primary300: '#9FD5B7',   // Crisp border highlight
+  primary400: '#34A853',
+  primary500: '#147A5D',
+  primary600: '#0D5C46',
+  primary700: '#093F30',
 
-  // Secondary / Accent Colors (Teal & Cyan)
-  secondary: '#0D9488',    // Teal 600
+  // Secondary / Accent Colors (Teal, Cyan, Gold)
+  secondary: '#0F766E',    // Teal 700
   secondaryLight: '#CCFBF1',
   accent: '#0284C7',       // Sky 600
+  accentGold: '#D97706',   // Warm Gold for highlights & notifications
 
-  // Neutral / Background Colors (Nền sáng hiện đại)
-  background: '#F4F6F3',   // Slate 50 - Nền ứng dụng chính
-  backgroundDark: '#EDF1EC', // Slate 100 - Nền chip, box phụ
-  surface: '#FFFFFF',      // Pure White - Nền thẻ, sheet, modal
-  surfaceSubtle: '#EDF1EC',// Slate 100 - Nền input, header phụ
-  surfaceActive: '#DEE5DC',// Slate 200 - Nền khi chạm
+  // Neutral / Canvas Colors (Nền sáng hiện đại, thoáng đãng)
+  background: '#F8FAF8',     // Ultra-clean canvas
+  backgroundDark: '#EFF3F0', // Card secondary & chip bg
+  surface: '#FFFFFF',        // Pure White
+  surfaceSubtle: '#F1F5F2',  // Subtle inputs & containers
+  surfaceActive: '#E2EBE5',  // Pressed state feedback
 
-  // Text Colors
-  text: '#193A30',         // Slate 900 - Chữ chính, độ tương phản cao
-  textSecondary: '#5D6E65',// Slate 600 - Chữ phụ, mô tả
-  textMuted: '#75847B',    // Slate 400 - Placeholder, nhãn mờ
-  textInverse: '#FFFFFF',  // Chữ trên nền tối/xanh
+  // Text Colors (High legibility, elegant dark emerald charcoal)
+  text: '#11261F',           // Slate Charcoal Dark - Độ tương phản cao
+  textSecondary: '#4E655C',  // Medium Slate Green - Chữ phụ, mô tả rõ ràng
+  textMuted: '#7B8F87',      // Placeholder, nhãn thời gian
+  textInverse: '#FFFFFF',    // Chữ trên nền tối/xanh
 
   // Borders & Dividers
-  border: '#DEE5DC',       // Slate 200 - Viền thẻ, divider
-  borderLight: '#EDF1EC',  // Slate 100
-  borderDark: '#C7D2C7',   // Slate 300 - Viền input active
-  borderFocus: '#126B52',  // Viền khi focus ô nhập
+  border: '#E3EBE5',         // Viền thẻ sắc nét nhẹ
+  borderLight: '#EDF3EF',
+  borderDark: '#CBD8D0',
+  borderFocus: '#0D5C46',
 
   // Helpers
   warning: '#D97706',
@@ -44,58 +51,58 @@ export const colors = {
   status: {
     // Đã đăng ký / Đã xác nhận / Đã thanh toán / Thành công
     confirmed: {
-      text: '#143E33',
-      bg: '#E4F0E8',
-      border: '#B9D6BE',
-      dot: '#126B52',
+      text: '#093F30',
+      bg: '#E6F4EA',
+      border: '#B6E0C7',
+      dot: '#0D5C46',
     },
     // Chờ duyệt / Đang chờ xử lý / Cảnh báo
     pending: {
-      text: '#B45309',
+      text: '#92400E',
       bg: '#FEF3C7',
-      border: '#FCD34D',
+      border: '#FDE68A',
       dot: '#D97706',
     },
     // Đã hoàn thành (suất ăn đã diễn ra)
     completed: {
-      text: '#1D4ED8',
+      text: '#1E40AF',
       bg: '#DBEAFE',
       border: '#93C5FD',
       dot: '#2563EB',
     },
     // Đã hủy / Đã cắt suất / Quá hạn / Thất bại
     cancelled: {
-      text: '#B91C1C',
+      text: '#991B1B',
       bg: '#FEE2E2',
-      border: '#FCA5A5',
+      border: '#FECACA',
       dot: '#DC2626',
     },
     // Lịch nghỉ / Sự kiện lễ
     holiday: {
-      text: '#6D28D9',
+      text: '#5B21B6',
       bg: '#EDE9FE',
-      border: '#C4B5FD',
+      border: '#DDD6FE',
       dot: '#7C3AED',
     },
     // Bếp nghỉ / Không phục vụ
     kitchenClosed: {
-      text: '#BE123C',
+      text: '#9F1239',
       bg: '#FFE4E6',
-      border: '#FDA4AF',
+      border: '#FECDD3',
       dot: '#E11D48',
     },
     // Chưa thanh toán
     unpaid: {
-      text: '#C2410C',
+      text: '#9A3412',
       bg: '#FFEDD5',
-      border: '#FDBA74',
+      border: '#FED7AA',
       dot: '#EA580C',
     },
     // Quá hạn thanh toán
     overdue: {
       text: '#991B1B',
       bg: '#FEE2E2',
-      border: '#F87171',
+      border: '#FCA5A5',
       dot: '#DC2626',
     },
   },
@@ -113,9 +120,9 @@ export const colors = {
       border: '#93C5FD',
     },
     employee: {
-      text: '#166534',
-      bg: '#E4F0E8',
-      border: '#B9D6BE',
+      text: '#093F30',
+      bg: '#E6F4EA',
+      border: '#B6E0C7',
     },
     kitchen: {
       text: '#86198F',
@@ -125,5 +132,5 @@ export const colors = {
   },
 
   // Overlay
-  overlay: 'rgba(15, 23, 42, 0.5)',
+  overlay: 'rgba(11, 38, 31, 0.45)',
 };

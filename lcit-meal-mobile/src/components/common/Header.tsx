@@ -18,6 +18,7 @@ import { Badge } from './Badge';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { UserRole } from '../../types';
 
 export interface HeaderProps {
@@ -99,22 +100,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: spacing.headerHeight,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.lg,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
     backgroundColor: 'transparent',
   },
   leftRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap: spacing.sm,
   },
   backButton: {
-    width: spacing.minTouchTarget,
-    height: spacing.minTouchTarget,
+    width: 40,
+    height: 40,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.xs,
-    marginLeft: -spacing.sm,
   },
   titleWrapper: {
     flex: 1,
@@ -125,16 +129,18 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   title: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: 22,
+    lineHeight: 28,
     flexShrink: 1,
     fontWeight: typography.weights.bold,
     color: colors.text,
+    letterSpacing: -0.5,
   },
   demoBadge: {
     backgroundColor: colors.primaryLight,
-    paddingHorizontal: 6,
+    paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.primary300,
   },
@@ -142,12 +148,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: typography.weights.bold,
     color: colors.primaryDark,
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
-    marginTop: 6,
-    lineHeight: 19,
+    marginTop: 2,
+    lineHeight: 18,
   },
   rightRow: {
     flexDirection: 'row',

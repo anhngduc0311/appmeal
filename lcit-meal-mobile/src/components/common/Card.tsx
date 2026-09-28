@@ -56,7 +56,7 @@ export const Card: React.FC<CardProps> = ({
 const styles = StyleSheet.create({
   base: {
     backgroundColor: colors.surface,
-    borderRadius: radius['2xl'],
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   elevated: {
@@ -66,8 +66,8 @@ const styles = StyleSheet.create({
   },
   outlined: {
     backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderWidth: 1.5,
+    borderColor: colors.borderDark,
+    borderWidth: 1,
   },
   flat: {
     backgroundColor: colors.surfaceSubtle,
