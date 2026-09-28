@@ -8,7 +8,7 @@ class DashboardController {
   // GET /api/dashboard/home
   getHome = async (req, res, next) => {
     try {
-      const data = await this.dashboardService.getHomeData(req.user.id);
+      const data = await this.dashboardService.getHomeData(req.user.id, req.query.date);
 
       return ApiResponse.success(res, data);
     } catch (error) {

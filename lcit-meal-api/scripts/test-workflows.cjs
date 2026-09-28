@@ -85,6 +85,21 @@ async function main() {
   await check('Admin cannot self-register', () => request('admin','/meal-registrations','POST',{mealId:meal.id,guestCount:0},403));
   let reg;
   await check('Employee registers with 2 guests', async () => { reg = await request('user1','/meal-registrations','POST',{mealId:meal.id,guestCount:2},201); assert.equal(reg.status,'confirmed'); assert.equal(reg.guestCount,2); });
+  await check('Kitchen dashboard uses selected day and exact guest totals', async () => {
+    const data = await request('kitchen', `/dashboard/home?date=${date}`);
+    assert.equal(data.todayMeal.meal_date, date);
+    assert.equal(Number(data.todayStaff.registered_staff_count), 1);
+    assert.equal(Number(data.todayStaff.total_guest_count), 2);
+    assert.equal(Number(data.todayStaff.total_meal_slots), 3);
+  });
+  await check('Kitchen dashboard empty day does not reuse another day totals', async () => {
+    const data = await request('kitchen', '/dashboard/home?date=2099-12-31');
+    assert.equal(data.todayMeal, null);
+    assert.equal(Number(data.todayStaff.total_meal_slots), 0);
+  });
+  for (const invalidDate of ['2026-02-30', '2026-13-01', 'invalid', '']) {
+    await check(`Dashboard rejects invalid date ${invalidDate}`, () => request('kitchen', `/dashboard/home?date=${invalidDate}`, 'GET', undefined, 400));
+  }
   await check('Duplicate registration rejected', () => request('user1','/meal-registrations','POST',{mealId:meal.id,guestCount:2},409));
   for (const count of [-1,11,1.5]) await check(`Reject guestCount ${count}`, () => request('user1','/meal-registrations','POST',{mealId:meal.id,guestCount:count},400));
   await check('Update guests keeps same registration', async () => { const r = await request('user1','/meal-registrations','POST',{mealId:meal.id,guestCount:3},201); assert.equal(r.id,reg.id); assert.equal(r.guestCount,3); });

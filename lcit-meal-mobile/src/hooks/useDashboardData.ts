@@ -7,12 +7,12 @@ import { useQuery } from '@tanstack/react-query';
 import { dashboardService } from '../services/dashboardService';
 import { useAuth } from '../providers/AuthProvider';
 
-export function useDashboardHome() {
+export function useDashboardHome(date?: string) {
   const { isMockMode } = useAuth();
 
   return useQuery({
-    queryKey: ['dashboard', 'home', isMockMode],
-    queryFn: () => dashboardService.getHome(isMockMode),
+    queryKey: ['dashboard', 'home', isMockMode, date],
+    queryFn: () => dashboardService.getHome(isMockMode, date),
     refetchInterval: 30000,
   });
 }

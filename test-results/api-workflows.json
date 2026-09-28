@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-25T07:41:14.815Z",
+  "timestamp": "2026-09-28T07:24:09.021Z",
   "database": "disposable schema; config only copied",
   "results": [
     {
@@ -184,6 +184,30 @@
     },
     {
       "name": "Employee registers with 2 guests",
+      "status": "PASS"
+    },
+    {
+      "name": "Kitchen dashboard uses selected day and exact guest totals",
+      "status": "PASS"
+    },
+    {
+      "name": "Kitchen dashboard empty day does not reuse another day totals",
+      "status": "PASS"
+    },
+    {
+      "name": "Dashboard rejects invalid date 2026-02-30",
+      "status": "PASS"
+    },
+    {
+      "name": "Dashboard rejects invalid date 2026-13-01",
+      "status": "PASS"
+    },
+    {
+      "name": "Dashboard rejects invalid date invalid",
+      "status": "PASS"
+    },
+    {
+      "name": "Dashboard rejects invalid date ",
       "status": "PASS"
     },
     {

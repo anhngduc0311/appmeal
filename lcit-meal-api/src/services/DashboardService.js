@@ -1,3 +1,4 @@
+const AppError = require("../ultis/AppError");
 const DASHBOARD_CHART_PERIODS = ["week", "month", "year"];
 
 class DashboardService {
@@ -5,8 +6,15 @@ class DashboardService {
     this.dashboardRepository = dashboardRepository;
   }
 
-  async getHomeData(userId) {
-    return this.dashboardRepository.getHomeData(userId);
+  async getHomeData(userId, date) {
+    if (date !== undefined) {
+      const parsed = typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? new Date(`${date}T00:00:00Z`) : null;
+      if (!parsed || !Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) {
+        throw new AppError("Ngày xem không hợp lệ (YYYY-MM-DD)", 400);
+      }
+    }
+    return this.dashboardRepository.getHomeData(userId, date);
   }
 
   // Dữ liệu biểu đồ trang chủ theo filter tuần/tháng/năm.

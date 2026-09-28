@@ -18,6 +18,9 @@ import { Meal, MealRegistration } from '../../types';
 import {
   formatFullDisplayDate,
   formatBusinessDate,
+  getFullDayOfWeek,
+  formatDisplayDate,
+  getRelativeDateLabel,
 } from '../../utils/formatters';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -32,6 +35,8 @@ export interface MealCardProps {
   onCancel?: (registrationId: number) => void;
   onUpdateGuests?: (mealId: number, currentGuests: number) => void;
   onPress?: () => void;
+  registering?: boolean;
+  actionsDisabled?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -43,6 +48,8 @@ export const MealCard: React.FC<MealCardProps> = ({
   onCancel,
   onUpdateGuests,
   onPress,
+  registering = false,
+  actionsDisabled = false,
   style,
 }) => {
   const isMealCancelled = !!meal?.isCancelled;
@@ -80,22 +87,18 @@ export const MealCard: React.FC<MealCardProps> = ({
           <View style={styles.dateCol}>
             <View style={styles.dateBadgeRow}>
               <Text style={[styles.dateText, isToday && styles.dateTextToday]}>
-                {formatFullDisplayDate(dateStr)}
+                {isToday || getRelativeDateLabel(dateStr) === 'Ngày mai' ? getRelativeDateLabel(dateStr) : getFullDayOfWeek(dateStr)}
               </Text>
-              {isToday && (
-                <View style={styles.todayPill}>
-                  <Text style={styles.todayPillText}>Hôm nay</Text>
-                </View>
-              )}
             </View>
-          </View>
-
+            <Text style={styles.dateDetail}>{formatDisplayDate(dateStr)}</Text>
           <Badge
             type="mealRegistration"
             value={regStatus}
             isMealCancelled={isMealCancelled}
             size="sm"
           />
+          </View>
+          {onPress && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
         </View>
 
         {/* Thông tin món ăn hoặc thông báo bếp nghỉ */}
@@ -114,18 +117,18 @@ export const MealCard: React.FC<MealCardProps> = ({
           ) : (
             <View style={styles.menuRow}>
               <Ionicons name="restaurant-outline" size={18} color={colors.primary} />
-              <Text style={styles.menuText} numberOfLines={2}>
+              <Text style={styles.menuText}>
                 {meal?.note || 'Thực đơn cơm trưa tiêu chuẩn văn phòng'}
               </Text>
             </View>
           )}
 
           {/* Khách ăn kèm nếu có */}
-          {registration && guestCount > 0 && !isMealCancelled && (
+          {registration && !isCancelled && guestCount > 0 && !isMealCancelled && (
             <View style={styles.guestPill}>
               <Ionicons name="people-outline" size={14} color={colors.primaryDark} />
               <Text style={styles.guestPillText}>
-                Kèm {guestCount} khách ăn
+                Bạn + {guestCount} khách · {guestCount + 1} suất
               </Text>
             </View>
           )}
@@ -139,7 +142,8 @@ export const MealCard: React.FC<MealCardProps> = ({
             <>
               {onUpdateGuests && (
                 <Button
-                  title={`Khách (${guestCount})`}
+                  title={guestCount > 0 ? `Sửa khách (${guestCount})` : 'Thêm khách'}
+                  disabled={actionsDisabled}
                   variant="secondary"
                   size="sm"
                   leftIcon={
@@ -156,6 +160,7 @@ export const MealCard: React.FC<MealCardProps> = ({
               {onCancel && registration && (
                 <Button
                   title="Cắt suất"
+                  disabled={actionsDisabled}
                   variant="outline"
                   size="sm"
                   leftIcon={
@@ -175,6 +180,8 @@ export const MealCard: React.FC<MealCardProps> = ({
               {onRegister && meal && (
                 <Button
                   title={isCancelled ? 'Đăng ký lại' : 'Đăng ký ăn'}
+                  loading={registering}
+                  disabled={actionsDisabled}
                   variant="primary"
                   size="sm"
                   leftIcon={
@@ -197,6 +204,7 @@ export const MealCard: React.FC<MealCardProps> = ({
 };
 
 const styles = StyleSheet.create({
+  dateDetail: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginVertical: spacing.xs },
   calendarTile: {width: 52, height: 60, borderRadius: 12, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', marginRight: 12},
   calendarMonth: {fontSize: 8, letterSpacing: 0.5, fontWeight: '700', color: colors.primary},
   calendarDay: {fontSize: 23, fontWeight: '700', color: colors.primaryDark},
@@ -222,6 +230,7 @@ const styles = StyleSheet.create({
   },
   dateCol: {
     flex: 1,
+    alignItems: 'flex-start',
     marginRight: spacing.sm,
   },
   dateBadgeRow: {
@@ -269,7 +278,7 @@ const styles = StyleSheet.create({
   },
   menuRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.xs,
   },
   menuText: {
@@ -301,5 +310,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
+    minHeight: 48,
+    height: 'auto',
   },
 });

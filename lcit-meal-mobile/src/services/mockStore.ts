@@ -1,3 +1,4 @@
+import { formatBusinessDate } from '../utils/formatters';
 /**
  * Mock Store
  * Quản lý trạng thái dữ liệu mẫu trong bộ nhớ khi chạy chế độ Mock
@@ -721,10 +722,11 @@ class MockStore {
   }
 
   // ==================== DASHBOARD KPI & CHARTS ====================
-  getDashboardHome(): DashboardHomeData {
-    const today = new Date().toISOString().slice(0, 10);
+  getDashboardHome(date?: string): DashboardHomeData {
+    const today = date || formatBusinessDate(new Date());
     const todayMeal = this.meals.find((m) => m.mealDate === today);
-    const todayRegs = this.registrations.filter((r) => r.mealDate === today && r.status === 'confirmed');
+    const todayRegs = todayMeal && !todayMeal.isCancelled && todayMeal.status === 'active'
+      ? this.registrations.filter((r) => r.mealId === todayMeal.id && r.status === 'confirmed') : [];
     const totalGuests = todayRegs.reduce((sum, r) => sum + (r.guestCount || 0), 0);
     const totalSlots = todayRegs.length + totalGuests;
 
@@ -733,18 +735,18 @@ class MockStore {
     const pendingCount = this.registrations.filter((r) => r.status === 'pending').length + this.mealOptions.filter((o) => o.status === 'pending').length;
 
     return {
-      todayMeal: {
-        meal_id: todayMeal?.id || 108,
+      todayMeal: todayMeal ? {
+        meal_id: todayMeal.id,
         meal_date: today,
         is_cancelled: todayMeal ? (todayMeal.isCancelled ? 1 : 0) : 0,
-        total_meal_slots: totalSlots || 142,
+        total_meal_slots: totalSlots,
         meal_price: this.scheduleConfig.mealPrice,
         guest_meal_price: this.scheduleConfig.guestMealPrice || 35000,
-      },
+      } : null,
       todayStaff: {
-        registered_staff_count: todayRegs.length || 135,
-        total_guest_count: totalGuests || 7,
-        total_meal_slots: totalSlots || 142,
+        registered_staff_count: todayRegs.length,
+        total_guest_count: totalGuests,
+        total_meal_slots: totalSlots,
       },
       weeklyChart: [
         { meal_date: 'T2 (21/09)', total_meal_slots: 138, registered_staff_count: 132 },

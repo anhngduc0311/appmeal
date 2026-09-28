@@ -11,12 +11,12 @@ export const dashboardService = {
   /**
    * Lấy dữ liệu tổng quan trang chủ quản lý: GET /api/dashboard/home
    */
-  async getHome(useMock = true): Promise<DashboardHomeData> {
+  async getHome(useMock = true, date?: string): Promise<DashboardHomeData> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
-      return mockStore.getDashboardHome();
+      return mockStore.getDashboardHome(date);
     }
-    return await apiClient<DashboardHomeData>('/dashboard/home');
+    return await apiClient<DashboardHomeData>(`/dashboard/home${date ? `?date=${encodeURIComponent(date)}` : ''}`);
   },
 
   /**

@@ -68,8 +68,8 @@ const resolvePeriodRange = (period, anchorDate) => {
 // (mục 1, 2, 3, 4, 4b, 4c, 4d) - giữ nguyên để tham khảo/đối chiếu.
 class DashboardRepository {
   // 1) Suất ăn hôm nay
-  async getTodayMeal() {
-    const today = getVietnamDate();
+  async getTodayMeal(date) {
+    const today = date || getVietnamDate();
     const [rows] = await pool.query(
       `SELECT
           m.id                                                        AS meal_id,
@@ -94,8 +94,8 @@ class DashboardRepository {
   }
 
   // 2) Cán bộ đăng ký hôm nay
-  async getTodayStaff() {
-    const today = getVietnamDate();
+  async getTodayStaff(date) {
+    const today = date || getVietnamDate();
     const [rows] = await pool.query(
       `SELECT
           COUNT(DISTINCT mr.user_id)               AS registered_staff_count,
@@ -310,7 +310,7 @@ class DashboardRepository {
   }
 
   // Chạy song song toàn bộ 7 truy vấn trên cho trang chủ.
-  async getHomeData(userId) {
+  async getHomeData(userId, date) {
     const [
       todayMeal,
       todayStaff,
@@ -320,8 +320,8 @@ class DashboardRepository {
       pendingMealOptionCount,
       unseenNotificationCount,
     ] = await Promise.all([
-      this.getTodayMeal(),
-      this.getTodayStaff(),
+      this.getTodayMeal(date),
+      this.getTodayStaff(date),
       this.getWeeklyChart(),
       this.getPaymentList(),
       this.getOutstanding(),

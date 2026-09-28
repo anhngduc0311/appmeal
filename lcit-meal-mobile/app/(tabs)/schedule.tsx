@@ -23,6 +23,7 @@ import { DatePickerModal } from '../../src/components/meals/DatePickerModal';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { EmptyState } from '../../src/components/states/EmptyState';
+import { LoadingState } from '../../src/components/states/LoadingState';
 import {
   useMeals,
   useMyRegistrations,
@@ -33,6 +34,7 @@ import {
 } from '../../src/hooks/useMealsData';
 import {
   formatDisplayDate,
+  formatBusinessDate,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
@@ -41,6 +43,7 @@ import { radius } from '../../src/theme/radius';
 
 export default function ScheduleScreen() {
   const router = useRouter();
+  const [period, setPeriod] = useState<'upcoming' | 'history'>('upcoming');
   const [filterMode, setFilterMode] = useState<'all' | 'registered' | 'cancelled'>('all');
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
 
@@ -53,8 +56,8 @@ export default function ScheduleScreen() {
   const [rangePickerVisible, setRangePickerVisible] = useState(false);
 
   // Queries
-  const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
-  const { data: registrations = [], isLoading: loadingRegs, refetch: refetchRegs } = useMyRegistrations();
+  const { data: meals = [], isLoading: loadingMeals, isRefetching: refreshingMeals, isError: mealsError, refetch: refetchMeals } = useMeals();
+  const { data: registrations = [], isLoading: loadingRegs, isRefetching: refreshingRegs, isError: regsError, refetch: refetchRegs } = useMyRegistrations();
 
   // Mutations
   const registerMutation = useRegisterMealMutation();
@@ -62,7 +65,9 @@ export default function ScheduleScreen() {
   const updateGuestsMutation = useUpdateGuestCountMutation();
   const createMealOptionMutation = useCreateMealOptionMutation();
 
-  const isRefreshing = loadingMeals || loadingRegs;
+  const isLoading = loadingMeals || loadingRegs;
+  const isRefreshing = refreshingMeals || refreshingRegs;
+  const today = formatBusinessDate(new Date());
 
   const handleRefresh = async () => {
     await Promise.all([refetchMeals(), refetchRegs()]);
@@ -140,17 +145,30 @@ export default function ScheduleScreen() {
     }
   };
 
-  // Lọc danh sách theo filterMode
-  const filteredMeals = meals.filter((meal) => {
+  const periodMeals = meals.filter((meal) => period === 'upcoming'
+    ? meal.mealDate >= today : meal.mealDate < today);
+  const matchesFilter = (meal: typeof meals[number], mode: typeof filterMode) => {
     const reg = registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate);
-    if (filterMode === 'registered') {
+    if (mode === 'registered') {
       return reg && (reg.status === 'confirmed' || reg.status === 'completed' || reg.status === 'pending');
     }
-    if (filterMode === 'cancelled') {
+    if (mode === 'cancelled') {
       return reg && reg.status === 'cancelled';
     }
     return true;
-  });
+  };
+  const filters = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'registered', label: 'Đã đăng ký' },
+    { key: 'cancelled', label: 'Đã cắt suất' },
+  ] as const;
+  const filteredMeals = periodMeals.filter((meal) => matchesFilter(meal, filterMode))
+    .sort((a, b) => period === 'upcoming'
+      ? a.mealDate.localeCompare(b.mealDate) : b.mealDate.localeCompare(a.mealDate));
+  const selectedCancelReg = registrations.find((reg) => reg.id === selectedRegId);
+  const cancelDate = meals.find((meal) => meal.id === selectedCancelReg?.mealId)?.mealDate
+    || selectedCancelReg?.mealDate;
+  const guestDate = meals.find((meal) => meal.id === selectedMealId)?.mealDate;
 
   return (
     <ScreenContainer
@@ -161,19 +179,31 @@ export default function ScheduleScreen() {
     >
       <Header
         title="Lịch ăn cơ quan"
-        subtitle="Đăng ký, điều chỉnh khách và cắt suất theo ngày"
-        rightAction={
+        subtitle="Xem thực đơn và quản lý suất ăn của bạn"
+      />
+      <View style={styles.toolsRow}>
+        <View style={styles.periodControl}>
+          {([{ key: 'upcoming', label: 'Sắp tới' }, { key: 'history', label: 'Lịch sử' }] as const).map((item) => (
+            <TouchableOpacity key={item.key} accessibilityRole="tab"
+              accessibilityState={{ selected: period === item.key }}
+              onPress={() => { setPeriod(item.key); setFilterMode('all'); }}
+              style={[styles.periodTab, period === item.key && styles.periodTabActive]}>
+              <Text style={[styles.filterText, period === item.key && styles.periodTextActive]}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => setRangePickerVisible(true)}
             style={styles.rangeBtn}
-            accessibilityLabel="Cắt suất theo khoảng"
+            accessibilityRole="button"
+            accessibilityLabel="Cắt suất nhiều ngày"
+            disabled={createMealOptionMutation.isPending}
           >
             <Ionicons name="calendar-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.rangeBtnText}>Cắt khoảng</Text>
+            <Text style={styles.rangeBtnText}>{createMealOptionMutation.isPending ? 'Đang gửi…' : 'Cắt suất nhiều ngày'}</Text>
           </TouchableOpacity>
-        }
-      />
+      </View>
 
       {bannerMessage && (
         <ResultBanner
@@ -183,63 +213,35 @@ export default function ScheduleScreen() {
         />
       )}
 
-      {/* Bộ lọc trạng thái */}
       <View style={styles.filterRow}>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setFilterMode('all')}
-          style={[styles.filterChip, filterMode === 'all' && styles.filterChipActive]}
-        >
-          <Text
-            style={[
-              styles.filterText,
-              filterMode === 'all' && styles.filterTextActive,
-            ]}
-          >
-            Tất cả ({meals.length})
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setFilterMode('registered')}
-          style={[
-            styles.filterChip,
-            filterMode === 'registered' && styles.filterChipActive,
-          ]}
-        >
-          <Text
-            style={[
-              styles.filterText,
-              filterMode === 'registered' && styles.filterTextActive,
-            ]}
-          >
-            Đã đăng ký
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => setFilterMode('cancelled')}
-          style={[
-            styles.filterChip,
-            filterMode === 'cancelled' && styles.filterChipActive,
-          ]}
-        >
-          <Text
-            style={[
-              styles.filterText,
-              filterMode === 'cancelled' && styles.filterTextActive,
-            ]}
-          >
-            Đã cắt suất
-          </Text>
-        </TouchableOpacity>
+        {filters.map((filter) => (
+          <TouchableOpacity key={filter.key} activeOpacity={0.7}
+            accessibilityRole="button" accessibilityState={{ selected: filterMode === filter.key }}
+            onPress={() => setFilterMode(filter.key)}
+            style={[styles.filterChip, filterMode === filter.key && styles.filterChipActive]}>
+            <Text style={[styles.filterText, filterMode === filter.key && styles.filterTextActive]}>
+              {filter.label} ({periodMeals.filter((meal) => matchesFilter(meal, filter.key)).length})
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
+      <View style={styles.listHeading}>
+        <Text style={styles.listTitle}>{period === 'upcoming' ? 'Hôm nay & sắp tới' : 'Lịch sử suất ăn'}</Text>
+        <Text style={styles.listHint}>{filteredMeals.length} ngày</Text>
+      </View>
+      <Text style={styles.listDescription}>
+        {period === 'upcoming' ? 'Ngày gần nhất ở đầu · Chạm vào thẻ để xem chi tiết' : 'Các ngày đã qua, mới nhất ở đầu'}
+      </Text>
 
       {/* Danh sách ngày ăn */}
       <View style={styles.listContainer}>
-        {filteredMeals.length > 0 ? (
+        {isLoading ? (
+          <LoadingState message="Đang tải lịch ăn…" />
+        ) : mealsError || regsError ? (
+          <EmptyState iconName="cloud-offline-outline" title="Chưa tải được lịch ăn"
+            description="Vui lòng kiểm tra kết nối và thử lại."
+            actionText="Thử lại" onAction={handleRefresh} />
+        ) : filteredMeals.length > 0 ? (
           filteredMeals.map((meal) => {
             const reg = registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate);
             return (
@@ -249,6 +251,8 @@ export default function ScheduleScreen() {
                 meal={meal}
                 registration={reg}
                 onPress={() => router.push(`/meal/${meal.id}` as any)}
+                registering={registerMutation.isPending && registerMutation.variables?.mealId === meal.id}
+                actionsDisabled={registerMutation.isPending}
                 onRegister={handleRegister}
                 onCancel={handleOpenCancel}
                 onUpdateGuests={handleOpenGuestCounter}
@@ -259,9 +263,9 @@ export default function ScheduleScreen() {
           <EmptyState
             iconName="calendar-outline"
             title="Không tìm thấy ngày ăn phù hợp"
-            description="Không có ngày ăn nào khớp với bộ lọc bạn đã chọn."
-            actionText="Xem tất cả"
-            onAction={() => setFilterMode('all')}
+            description={filterMode !== 'all' ? 'Thử xem tất cả trạng thái trong khoảng thời gian này.' : period === 'upcoming' ? 'Chưa có lịch ăn từ hôm nay. Bạn có thể xem lại các ngày đã qua.' : 'Chưa có lịch ăn cho các ngày đã qua.'}
+            actionText={filterMode !== 'all' ? 'Xóa bộ lọc' : period === 'upcoming' ? 'Xem lịch sử' : 'Xem sắp tới'}
+            onAction={() => filterMode !== 'all' ? setFilterMode('all') : setPeriod(period === 'upcoming' ? 'history' : 'upcoming')}
           />
         )}
       </View>
@@ -270,7 +274,7 @@ export default function ScheduleScreen() {
       <ConfirmDialog
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
-        message="Bạn có chắc chắn muốn hủy suất ăn này? Hệ thống sẽ cập nhật trạng thái theo quy định của nhà bếp."
+        message={`Cắt suất ăn${cancelDate ? ` ngày ${formatDisplayDate(cancelDate)}` : ''}${selectedCancelReg?.guestCount ? ` cùng ${selectedCancelReg.guestCount} khách ăn kèm` : ''}? Yêu cầu sẽ được xử lý theo quy định của nhà bếp.`}
         confirmText="Xác nhận cắt"
         cancelText="Giữ lại"
         isDestructive
@@ -287,8 +291,8 @@ export default function ScheduleScreen() {
       <ConfirmDialog
         visible={guestModalVisible}
         title="Điều chỉnh số lượng khách"
-        message="Chọn số lượng khách ăn kèm (tối đa 10 người):"
-        confirmText="Xác nhận"
+        message={`Suất ăn${guestDate ? ` ngày ${formatDisplayDate(guestDate)}` : ''}. Thêm tối đa 10 khách; chọn 0 nếu không có khách.`}
+        confirmText="Lưu số khách"
         cancelText="Đóng"
         iconName="people-outline"
         loading={updateGuestsMutation.isPending}
@@ -313,6 +317,7 @@ export default function ScheduleScreen() {
       <DatePickerModal
         visible={rangePickerVisible}
         mode="range"
+        minDate={today}
         title="Chọn khoảng ngày cắt suất"
         onSelectRange={handleSelectDateRange}
         onClose={() => setRangePickerVisible(false)}
@@ -322,7 +327,18 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
+  toolsRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  periodControl: { flexDirection: 'row', backgroundColor: colors.surfaceSubtle, borderRadius: radius.lg, padding: 4, flexGrow: 1 },
+  periodTab: { flex: 1, minHeight: 44, justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.md, borderRadius: radius.md },
+  periodTabActive: { backgroundColor: colors.surface },
+  periodTextActive: { color: colors.primary, fontWeight: typography.weights.bold },
+  listHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  listTitle: { fontSize: typography.sizes.base, fontWeight: typography.weights.bold, color: colors.text },
+  listHint: { fontSize: typography.sizes.xs, color: colors.textSecondary },
+  listDescription: { fontSize: typography.sizes.xs, color: colors.textSecondary, marginTop: spacing.xs, marginBottom: spacing.md },
   rangeBtn: {
+    minHeight: 48,
+    justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primaryLight,
@@ -345,7 +361,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   filterChip: {
-    minHeight: 40,
+    minHeight: 44,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,

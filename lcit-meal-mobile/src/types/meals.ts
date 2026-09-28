@@ -19,6 +19,7 @@ export type MealRegistrationStatus = 'pending' | 'confirmed' | 'completed' | 'ca
 export interface MealRegistration {
   id: number;
   userId: number;
+  userName?: string;
   mealId: number;
   guestCount: number; // 0..10
   status: MealRegistrationStatus;
@@ -41,6 +42,7 @@ export type MealOptionStatus = 'pending' | 'approved' | 'rejected';
 export interface MealOption {
   id: number;
   userId: number;
+  userName?: string;
   type: MealOptionType;
   fromDate: string; // YYYY-MM-DD
   toDate: string;   // YYYY-MM-DD
