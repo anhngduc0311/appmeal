@@ -109,7 +109,13 @@ async function main() {
   await check('Cancel registration', async () => { const r = await request('user1',`/meal-registrations/${reg.id}/cancel`,'PATCH',{}); assert.equal(r.status,'cancelled'); });
   await check('Re-register after cancellation', async () => { const r = await request('user1','/meal-registrations','POST',{mealId:meal.id,guestCount:0},201); assert.equal(r.id,reg.id); assert.equal(r.status,'confirmed'); });
   let option;
-  await check('Cancel date range syncs registration', async () => { option = await request('user1','/meal-options','POST',{type:'cancel_schedule',fromDate:date,toDate:date},201); assert.equal(option.status,'approved'); const r = await request('user1',`/meal-registrations/${reg.id}`); assert.equal(r.status,'cancelled'); });
+  await check('Cancel date range creates pending option and syncs registration after approval', async () => {
+    option = await request('user1','/meal-options','POST',{type:'cancel_schedule',fromDate:date,toDate:date},201);
+    assert.equal(option.status,'pending');
+    await request('manager',`/meal-options/${option.id}/approve`,'PATCH',{},200);
+    const r = await request('user1',`/meal-registrations/${reg.id}`);
+    assert.equal(r.status,'cancelled');
+  });
   await check('Other employee cannot read cancellation request', () => request('user2',`/meal-options/${option.id}`,'GET',undefined,403));
   await check('Employee cannot cancel meals for another user', () => request('user2','/meal-options','POST',{userId:sessions.manager.user.id,type:'cancel_schedule',fromDate:date,toDate:date},403));
   await check('Holiday restore preserves voluntary cancellation', async () => { const event = await request('admin','/holiday-events','POST',{name:'QA holiday',fromDate:date,toDate:date},201); await request('admin',`/holiday-events/${event.id}/restore`,'PATCH',{}); const r = await request('user1',`/meal-registrations/${reg.id}`); assert.equal(r.status,'cancelled'); });
@@ -154,7 +160,8 @@ async function main() {
     const m=await request('admin','/meals','POST',{mealDate:day},201);
     const r=await request('user1','/meal-registrations','POST',{mealId:m.id,guestCount:0},201);
     const h=await request('admin','/holiday-events','POST',{name:'QA personal opt out',fromDate:day,toDate:day},201);
-    await request('user1','/meal-options','POST',{type:'cancel_schedule',fromDate:day,toDate:day},201);
+    const opt = await request('user1','/meal-options','POST',{type:'cancel_schedule',fromDate:day,toDate:day},201);
+    await request('manager',`/meal-options/${opt.id}/approve`,'PATCH',{},200);
     await request('admin',`/holiday-events/${h.id}/restore`,'PATCH',{});
     assert.equal((await request('user1',`/meal-registrations/${r.id}`)).status,'cancelled');
   });

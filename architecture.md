@@ -135,7 +135,7 @@ Khách là guestCount trên suất; validation kiểm giới hạn 0–10 nhưng
 
 ### 6.3. Hai luồng cắt đang cùng tồn tại
 
-**meal-options:** cả cancel_today, cancel_schedule, cancel_permanent đều thuộc AUTO_APPROVE_TYPES; yêu cầu mới tự approved rồi đồng bộ hủy suất trong khoảng. Cả ba bắt buộc fromDate/toDate; “permanent” vẫn là khoảng hữu hạn. TODAY không bị server ép ngày về hôm nay. Giờ đóng được kiểm nếu fromDate đúng hôm nay. Approve/reject giữ để xử lý pending; reject chưa bắt buộc note.
+**meal-options:** cancel_today thuộc AUTO_APPROVE_TYPES (tự động duyệt trước giờ đóng); cancel_schedule (khoảng ngày tùy chỉnh) và cancel_permanent (dài hạn) ở trạng thái pending chờ Quản lý duyệt. Khi duyệt, hệ thống đồng bộ hủy suất trong khoảng. Cả ba bắt buộc fromDate/toDate; “permanent” vẫn là khoảng hữu hạn. TODAY không bị server ép ngày về hôm nay. Giờ đóng được kiểm nếu fromDate đúng hôm nay. Quản lý duyệt/từ chối qua API approve/reject.
 
 **meal-registrations/:id/cancel:** kiểm chủ sở hữu/quản lý, chặn completed, ngày quá khứ hoặc quá giờ hoàn thành. Trước giờ đóng hủy ngay; sau giờ đóng nhưng trước hoàn thành, Employee chuyển chính registration sang pending. Admin/Manager có thể cắt ngay trong khoảng này. Approve-cancel đưa pending → cancelled; reject-cancel đưa pending → confirmed.
 

@@ -53,7 +53,8 @@ FR giữ chủ đề bản 1.0 để đối chiếu nhưng nội dung được t
 
 | Tình huống | Hiện trạng |
 |---|---|
-| Tạo meal-option bất kỳ loại hợp lệ | Approved theo AUTO_APPROVE_TYPES = Object.values(MEAL_OPTION_TYPE) |
+| Tạo meal-option hôm nay (`cancel_today`) | Approved theo AUTO_APPROVE_TYPES = [CANCEL_TODAY] (nếu trước giờ đóng) |
+| Tạo meal-option tùy chỉnh / khoảng ngày / dài hạn (`cancel_schedule`, `cancel_permanent`) | Pending chờ Quản lý duyệt; sau khi duyệt mới tự động hủy registration trong khoảng |
 | Meal-option fromDate hôm nay, quá giờ đóng | Bị từ chối nếu có cấu hình giờ đóng |
 | Employee cắt trực tiếp sau đóng, trước hoàn thành | Registration pending chờ quản lý |
 | Manager/Admin cắt trực tiếp khoảng giờ trên | Cancelled nếu qua các kiểm tra khác |
@@ -62,7 +63,7 @@ FR giữ chủ đề bản 1.0 để đối chiếu nhưng nội dung được t
 | Đăng ký lại registration cancelled | POST cập nhật hàng đó, không xóa meal-option |
 | Reactivate meal-option | Route/controller có, service method thiếu; chưa hoàn chỉnh |
 
-Không giữ quy tắc “cắt khoảng/hẳn luôn chờ duyệt” hoặc “khách chờ xác nhận” từ SPEC cũ. Pending trên registration vẫn tồn tại do cắt trực tiếp và dữ liệu cũ.
+Quy tắc: Cắt hôm nay tự động duyệt trước giờ chốt; Cắt theo khoảng ngày / tùy chỉnh / dài hạn bắt buộc Quản lý duyệt. Pending trên registration vẫn tồn tại do cắt trực tiếp sau giờ chốt.
 
 ### 2.2. Phi chức năng
 

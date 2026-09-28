@@ -464,6 +464,7 @@ class MockStore {
     note?: string,
     userId = this.currentUserId
   ): MealOption {
+    const isAutoApproved = type === 'cancel_today';
     const newOption: MealOption = {
       id: Date.now(),
       userId,
@@ -471,27 +472,31 @@ class MockStore {
       fromDate,
       toDate,
       note,
-      status: 'approved',
+      status: isAutoApproved ? 'approved' : 'pending',
       createdAt: new Date().toISOString(),
+      approvedAt: isAutoApproved ? new Date().toISOString() : undefined,
+      approvedBy: isAutoApproved ? userId : undefined,
     };
     this.mealOptions.unshift(newOption);
 
-    const from = new Date(fromDate).getTime();
-    const to = new Date(toDate).getTime();
+    if (isAutoApproved) {
+      const from = new Date(fromDate).getTime();
+      const to = new Date(toDate).getTime();
 
-    this.registrations.forEach((r) => {
-      if (r.userId === userId) {
-        const meal = this.meals.find((m) => m.id === r.mealId);
-        if (meal) {
-          const mealTime = new Date(meal.mealDate).getTime();
-          if (mealTime >= from && mealTime <= to && r.status !== 'completed') {
-            r.status = 'cancelled';
+      this.registrations.forEach((r) => {
+        if (r.userId === userId) {
+          const meal = this.meals.find((m) => m.id === r.mealId);
+          if (meal) {
+            const mealTime = new Date(meal.mealDate).getTime();
+            if (mealTime >= from && mealTime <= to && r.status !== 'completed') {
+              r.status = 'cancelled';
+            }
           }
         }
-      }
-    });
+      });
+    }
 
-    this.log('create_meal_option', `meal_option:${newOption.id}`, `Tạo yêu cầu cắt suất từ ${fromDate} đến ${toDate}`);
+    this.log('create_meal_option', `meal_option:${newOption.id}`, `Tạo yêu cầu cắt suất (${type}) từ ${fromDate} đến ${toDate}`);
     this.notify();
     return newOption;
   }
@@ -502,6 +507,22 @@ class MockStore {
     opt.status = 'approved';
     opt.approvedAt = new Date().toISOString();
     opt.approvedBy = this.currentUserId;
+
+    const from = new Date(opt.fromDate).getTime();
+    const to = new Date(opt.toDate).getTime();
+
+    this.registrations.forEach((r) => {
+      if (r.userId === opt.userId) {
+        const meal = this.meals.find((m) => m.id === r.mealId);
+        if (meal) {
+          const mealTime = new Date(meal.mealDate).getTime();
+          if (mealTime >= from && mealTime <= to && r.status !== 'completed') {
+            r.status = 'cancelled';
+          }
+        }
+      }
+    });
+
     this.log('approve_meal_option', `meal_option:${id}`, `Duyệt yêu cầu cắt suất ID ${id}`);
     this.notify();
     return opt;

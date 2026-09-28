@@ -1,7 +1,7 @@
 # TÀI LIỆU HƯỚNG DẪN SỬ DỤNG HỆ THỐNG QUẢN LÝ SUẤT ĂN LCIT MEAL
 
-> **Phiên bản tài liệu**: 2.1  
-> **Cập nhật ngày**: 25/09/2026  
+> **Phiên bản tài liệu**: 2.2  
+> **Cập nhật ngày**: 28/09/2026  
 > **Áp dụng cho**: Hệ thống LCIT Meal (Backend API Express + Mobile App React Native Expo)
 
 ---
@@ -24,12 +24,11 @@
 4. [QUY TRÌNH & HƯỚNG DẪN CHO CÁN BỘ NHÂN VIÊN (EMPLOYEE)](#4-quy-trình--hướng-dẫn-cho-cán-bộ-nhân-viên-employee)
    - Luồng E1: Đăng nhập & Đổi mật khẩu
    - Luồng E2: Xem lịch ăn & Đăng ký suất ăn
-   - Luồng E3: Đăng ký thêm khách ăn kèm (0–10 khách)
-   - Luồng E4: Cắt suất ăn trực tiếp (Trước & Sau giờ chốt)
-   - Luồng E5: Báo cắt suất theo yêu cầu (Hôm nay / Khoảng ngày / Dài hạn)
-   - Luồng E6: Theo dõi công nợ & Quét mã QR thanh toán
-   - Luồng E7: Nhận và quản lý hộp thư thông báo
-   - Luồng E8: Quản lý hồ sơ cá nhân
+   - Luồng E3: Cắt suất ăn trực tiếp (Trước & Sau giờ chốt)
+   - Luồng E4: Báo cắt suất theo yêu cầu (Hôm nay / Khoảng ngày / Dài hạn)
+   - Luồng E5: Theo dõi công nợ & Quét mã QR thanh toán
+   - Luồng E6: Nhận và quản lý hộp thư thông báo
+   - Luồng E7: Quản lý hồ sơ cá nhân
 5. [QUY TRÌNH & HƯỚNG DẪN CHO QUẢN LÝ BẾP (MANAGER)](#5-quy-trình--hướng-dẫn-cho-quản-lý-bếp-manager)
    - Luồng M1: Bảng điều khiển Quản lý & Biểu đồ thống kê
    - Luồng M2: Duyệt / Từ chối yêu cầu cắt suất ăn (Hàng chờ Pending)
@@ -46,7 +45,7 @@
    - Luồng A4: Quyền can thiệp & Xóa dữ liệu lịch sử
 7. [QUY TRÌNH & HƯỚNG DẪN CHO NHÂN VIÊN BẾP (KITCHEN)](#7-quy-trình--hướng-dẫn-cho-nhân-viên-bếp-kitchen)
    - Luồng K1: Đăng nhập & Theo dõi số suất cần nấu hôm nay
-   - Luồng K2: Phân biệt suất cán bộ và suất khách mời
+   - Luồng K2: Cập nhật trạng thái nhà bếp
 8. [BẢNG TRA CỨU TRẠNG THÁI NGHIỆP VỤ](#8-bảng-tra-cứu-trạng-thái-nghiệp-vụ)
 9. [CÂU HỎI THƯỜNG GẶP (FAQ) & XỬ LÝ SỰ CỐ](#9-câu-hỏi-thường-gặp-faq--xử-lý-sự-cố)
 
@@ -57,7 +56,7 @@
 ### 1.1. Mục đích và phạm vi
 **LCIT Meal** là giải pháp số hóa toàn diện quy trình phục vụ bữa ăn trưa nội bộ cho cơ quan, đơn vị:
 - **Tự động hóa đăng ký**: Tự động lên lịch ăn cho toàn bộ nhân viên theo lịch làm việc thứ 2 đến thứ 6.
-- **Linh hoạt cắt suất**: Cho phép nhân viên chủ động báo cắt suất, đăng ký thêm khách ăn kèm ngay trên điện thoại di động.
+- **Linh hoạt cắt suất**: Cho phép nhân viên chủ động báo cắt suất ngay trên điện thoại di động.
 - **Minh bạch tài chính**: Quản lý số suất thực tế, công nợ tiền ăn từng tháng, hỗ trợ quét mã QR chuyển khoản và xuất báo cáo đối soát Excel.
 - **Hỗ trợ bếp ăn**: Dự báo chính xác số lượng suất ăn cần nấu mỗi ngày, tránh lãng phí thực phẩm.
 
@@ -73,10 +72,10 @@ Hệ thống phân định rành mạch 4 vai trò người dùng:
 
 | Vai trò (Role) | Mã quyền | Quyền hạn & Trách nhiệm chính |
 | :--- | :--- | :--- |
-| **Cán bộ Nhân viên**<br>*(Employee)* | `employee` | • Xem lịch ăn cá nhân các ngày trong tháng.<br>• Đăng ký suất ăn, đăng ký thêm từ 1–10 khách kèm.<br>• Cắt suất hôm nay hoặc gửi yêu cầu cắt theo khoảng ngày / dài hạn.<br>• Xem công nợ tiền ăn cá nhân, quét mã QR thanh toán.<br>• Nhận thông báo cá nhân, cập nhật hồ sơ & đổi mật khẩu. |
+| **Cán bộ Nhân viên**<br>*(Employee)* | `employee` | • Xem lịch ăn cá nhân các ngày trong tháng.<br>• Đăng ký suất ăn, hủy/đăng ký lại suất ăn.<br>• Cắt suất hôm nay hoặc gửi yêu cầu cắt theo khoảng ngày / dài hạn.<br>• Xem công nợ tiền ăn cá nhân, quét mã QR thanh toán.<br>• Nhận thông báo cá nhân, cập nhật hồ sơ & đổi mật khẩu. |
 | **Quản lý Bếp**<br>*(Manager)* | `manager` | • Toàn bộ quyền của Cán bộ nhân viên.<br>• Xem Dashboard thống kê số suất cần nấu, biểu đồ suất ăn thực tế.<br>• Phê duyệt hoặc từ chối yêu cầu cắt suất muộn (Pending).<br>• Tạo, chỉnh sửa lịch nấu ăn và sự kiện nghỉ lễ.<br>• Đăng ký suất hoặc cắt suất hộ cán bộ khác.<br>• Quản lý thu tiền ăn, xác nhận đã nộp tiền, xuất Excel báo cáo.<br>• Soạn và gửi thông báo cơ quan (broadcast hoặc chọn người nhận).<br>• Kích hoạt thủ công tiến trình sinh lịch và chốt hoàn thành suất. |
 | **Quản trị viên**<br>*(Admin)* | `admin` | • Toàn quyền tối cao của hệ thống (kế thừa Quản lý).<br>• Tạo mới người dùng, kích hoạt/khóa tài khoản, phân quyền Role.<br>• Cấu hình hệ thống: Lịch thứ trong tuần, đơn giá suất ăn, giờ đóng đăng ký, giờ chốt hoàn thành, tải lên mã QR ngân hàng.<br>• Tra cứu Nhật ký hệ thống (Audit Logs) kiểm soát an toàn thông tin.<br>• Xóa ngày bếp, xóa bản ghi thanh toán khi cần điều chỉnh đặc biệt.<br>*(Lưu ý: Admin không tự đăng ký suất ăn cho bản thân).* |
-| **Nhân viên Bếp**<br>*(Kitchen)* | `kitchen` | • Giao diện tinh gọn dành riêng cho bộ phận nấu nướng.<br>• Xem tổng số suất cần chuẩn bị hôm nay (tách rõ cán bộ & khách kèm).<br>• Xem trạng thái bếp hoạt động hay nghỉ phục vụ.<br>• Không truy cập các phân hệ quản lý tài chính và nhân sự. |
+| **Nhân viên Bếp**<br>*(Kitchen)* | `kitchen` | • Giao diện tinh gọn dành riêng cho bộ phận nấu nướng.<br>• Xem tổng số suất cần chuẩn bị hôm nay.<br>• Xem trạng thái bếp hoạt động hay nghỉ phục vụ.<br>• Không truy cập các phân hệ quản lý tài chính và nhân sự. |
 
 ---
 
@@ -112,8 +111,8 @@ sequenceDiagram
 
     Note over NV,HT: 06:00 - 09:00 (Sáng hôm nay)
     alt Cán bộ có nhu cầu điều chỉnh trước 09:00
-        NV->>HT: Đăng ký thêm khách ăn kèm (0..10) -> Confirmed ngay
-        NV->>HT: Hoặc bấm Cắt suất -> Cancelled ngay
+        NV->>HT: Bấm Cắt suất -> Cancelled ngay
+        NV->>HT: Hoặc bấm Đăng ký lại -> Confirmed ngay
     end
 
     Note over NV,QL: 09:00 - 10:00 (Sau giờ chốt đăng ký)
@@ -124,11 +123,11 @@ sequenceDiagram
     end
 
     Note over Bep,HT: 09:30 - 11:30 (Chuẩn bị nấu nướng)
-    Bep->>HT: Mở app xem Tổng suất cần nấu (Cán bộ + Khách)
+    Bep->>HT: Mở app xem Tổng suất cần nấu
     Bep->>Bep: Nấu nướng theo đúng số lượng đã chốt
 
     Note over NV,Bep: 11:30 - 12:30 (Dùng bữa trưa)
-    NV->>Bep: Cán bộ và khách dùng bữa tại nhà ăn cơ quan
+    NV->>Bep: Cán bộ dùng bữa tại nhà ăn cơ quan
 
     Note over HT: 12:00 (Chốt hoàn thành bữa ăn)
     HT->>HT: Tự động chuyển các suất Confirmed sang Completed
@@ -161,7 +160,6 @@ Tự động sinh suất  ➔  Cán bộ kiểm tra/cắt  ➔  Quản lý duy�
 
 #### Bước 2: Cán bộ kiểm tra & điều chỉnh suất (06:00 – 09:00 sáng)
 - Cán bộ mở app, màn hình Trang chủ hiển thị ngay trạng thái: **Đã xác nhận** suất ăn trưa nay.
-- **Nếu có khách mời/đối tác**: Cán bộ nhấn **"Đổi khách"**, chọn số lượng từ 1–10. Suất khách được chấp nhận ngay lập tức, không qua khâu phê duyệt.
 - **Nếu bận việc/không ăn**: Cán bộ nhấn **"Cắt suất"** trước 09:00 sáng. Hệ thống hủy suất ngay lập tức (`status = cancelled`), bếp sẽ trừ bớt 1 suất.
 
 #### Bước 3: Giờ chốt & Xử lý cắt suất muộn (09:00 – 10:00 sáng)
@@ -172,11 +170,10 @@ Tự động sinh suất  ➔  Cán bộ kiểm tra/cắt  ➔  Quản lý duy�
 
 #### Bước 4: Nhà bếp xem số liệu chốt & Nấu nướng (09:30 – 11:30 trưa)
 - Nhân viên bếp đăng nhập tài khoản `kitchen`, màn hình hiển thị trực quan con số to nhất: **Tổng số suất ăn cần chuẩn bị**.
-- Xem chi tiết: Số suất Cán bộ + Số suất Khách mời.
 - Bếp nấu đúng số lượng thực tế đã chốt, đảm bảo chất lượng và loại bỏ lãng phí.
 
 #### Bước 5: Phục vụ bữa trưa (11:30 – 12:30 trưa)
-- Cán bộ và khách đến nhà ăn cơ quan dùng bữa.
+- Cán bộ đến nhà ăn cơ quan dùng bữa.
 
 #### Bước 6: Tự động chốt hoàn thành suất ăn (12:00 trưa)
 - Đúng **12:00 trưa** (`meal_completion_time`), tiến trình `mealCompletionJob` tự động quét tất cả các suất ăn đang `confirmed` của ngày hôm nay và chuyển sang `completed`.
@@ -196,7 +193,7 @@ Tổng hợp suất ăn       ➔   Lập phiếu thu tiền     ➔      Hệ t
 
 #### Bước 1: Tổng hợp số lượng suất ăn thực tế (Cuối tháng)
 - Quản lý vào Bảng điều khiển Quản lý ➔ Xem biểu đồ thống kê chu kỳ **Tháng**.
-- Hệ thống đếm chính xác số suất `completed` của từng cán bộ (đã bao gồm các bữa có khách ăn kèm).
+- Hệ thống đếm chính xác số suất `completed` của từng cán bộ.
 
 #### Bước 2: Lập phiếu thu tiền ăn cho cán bộ (Đầu tháng)
 - Quản lý truy cập: **Quản lý Thu tiền** ➔ nhấn **"Tạo khoản thu"**.
@@ -215,7 +212,7 @@ Tổng hợp suất ăn       ➔   Lập phiếu thu tiền     ➔      Hệ t
 #### Bước 5: Quản lý đối soát và Gạch nợ
 - Khi nhận được tiền báo về tài khoản ngân hàng, Quản lý vào mục **Quản lý Thu tiền** ➔ tìm khoản nợ của cán bộ ➔ nhấn **"Xác nhận đã đóng"**.
 - Quản lý nhập số tiền thực nhận (mặc định bằng số tiền phiếu thu), dán đường dẫn ảnh bill chuyển khoản (nếu cần đối soát) ➔ Bấm **Lưu xác nhận**.
-- Trạng thái lập tức đổi sang `Paid` (Đã thanh toán) và thông báo chúc mừng hiển thị trên app của cán bộ.
+- Trạng thái lập tức đổi sang `Paid` (Đã thanh toán) và thông báo hiển thị trên app của cán bộ.
 
 #### Bước 6: Xuất báo cáo quyết toán Excel
 - Quản lý hoặc Admin bấm biểu tượng **Xuất Excel** tại màn hình Quản lý Thu tiền.
@@ -245,7 +242,7 @@ Tạo tài khoản, gán Role           Lịch thứ, Đơn giá,               
 #### Bước 2: Thiết lập cấu hình hệ thống
 - Admin truy cập **Cấu hình hệ thống**:
   - **Lịch thứ**: Bật Thứ 2 đến Thứ 6, tắt Thứ 7 và Chủ nhật.
-  - **Đơn giá**: Cài đặt giá suất ăn cán bộ (ví dụ: `30,000` đ) và giá suất khách (ví dụ: `35,000` đ).
+  - **Đơn giá**: Cài đặt giá suất ăn cán bộ (ví dụ: `30,000` đ).
   - **Giờ chốt đăng ký (`registration_close_time`)**: Đặt `09:00` sáng.
   - **Giờ hoàn thành (`meal_completion_time`)**: Đặt `12:00` trưa.
   - **Ảnh mã QR**: Tải lên ảnh mã QR tài khoản ngân hàng nhận tiền ăn.
@@ -329,7 +326,7 @@ Theo mặc định, hệ thống chạy tiến trình tự động đăng ký su
 
 1. **Xem trên Trang chủ**:
    - Ngay đầu màn hình Trang chủ hiển thị thẻ **"Suất ăn hôm nay"**.
-   - Cán bộ xem được ngày ăn, trạng thái (*Đã đăng ký*, *Chưa đăng ký*, hoặc *Bếp nghỉ*), số khách kèm và giờ chốt quy định.
+   - Cán bộ xem được ngày ăn, trạng thái (*Đã đăng ký*, *Chưa đăng ký*, hoặc *Bếp nghỉ*) và giờ chốt quy định.
 2. **Xem trên Lịch ăn tháng (Tab "Lịch ăn")**:
    - Chọn tháng và xem danh sách tất cả các ngày trong tháng.
    - Nhãn trạng thái màu sắc trực quan:
@@ -344,17 +341,7 @@ Theo mặc định, hệ thống chạy tiến trình tự động đăng ký su
 
 ---
 
-### Luồng E3: Đăng ký thêm khách ăn kèm (0–10 khách)
-Khi có khách, đối tác hoặc đồng nghiệp cần dùng bữa cùng:
-1. Tại thẻ suất ăn (ở Trang chủ, Lịch ăn hoặc Chi tiết ngày ăn), nhấn vào nút **"Đổi khách"** hoặc biểu tượng người kèm.
-2. Hộp thoại **"Cập nhật số khách ăn kèm"** xuất hiện.
-3. Sử dụng nút `+` hoặc `-` để điều chỉnh số lượng khách (giới hạn từ **0 đến 10 khách**).
-4. Nhấn **"Lưu thay đổi"**.
-5. *Lưu ý*: Suất khách **được xác nhận ngay lập tức**, không cần đợi quản lý phê duyệt. Quản lý bếp sẽ tự động nhận được thông báo để kịp chuẩn bị thêm khẩu phẩm.
-
----
-
-### Luồng E4: Cắt suất ăn trực tiếp (Trước & Sau giờ chốt)
+### Luồng E3: Cắt suất ăn trực tiếp (Trước & Sau giờ chốt)
 Khi bận công tác, nghỉ phép hoặc không có nhu cầu ăn trưa:
 
 #### Tình huống A: Cắt suất TRƯỚC giờ chốt (Mặc định trước 09:00 sáng)
@@ -371,7 +358,7 @@ Khi bận công tác, nghỉ phép hoặc không có nhu cầu ăn trưa:
 
 ---
 
-### Luồng E5: Báo cắt suất theo yêu cầu (Hôm nay / Khoảng ngày / Dài hạn)
+### Luồng E4: Báo cắt suất theo yêu cầu (Hôm nay / Khoảng ngày / Dài hạn)
 Để cắt trước nhiều ngày (ví dụ đi công tác 1 tuần hoặc nghỉ chế độ thai sản/dài hạn):
 
 1. Tại Trang chủ, chọn mục Thao tác nhanh: **"Báo cắt suất"** (hoặc truy cập từ màn hình chi tiết ngày ăn).
@@ -381,12 +368,14 @@ Khi bận công tác, nghỉ phép hoặc không có nhu cầu ăn trưa:
    - **Cắt dài hạn (`cancel_permanent`)**: Cắt liên tục từ một ngày cho đến khi có thông báo ăn lại.
 3. Nhập **Lý do / Ghi chú** (ví dụ: *Đi công tác chi nhánh*, *Nghỉ phép thường niên*).
 4. Nhấn **"Xác nhận gửi yêu cầu"**.
-5. **Cơ chế**: Hệ thống tự động phê duyệt yêu cầu (`Approved`) và tự động đồng bộ hủy tất cả các ngày ăn nằm trong khoảng được chọn.
-6. Chuyển sang tab **"Lịch sử yêu cầu"** để xem lại các đợt cắt suất trước đây.
+5. **Cơ chế**:
+   - **Cắt hôm nay**: Hệ thống tự động duyệt ngay (`Approved`) nếu trong khung giờ cho phép.
+   - **Cắt theo khoảng ngày / tùy chỉnh & Cắt dài hạn**: Chuyển sang trạng thái **Chờ duyệt** (`Pending`) và gửi thông báo tới Quản lý. Khi Quản lý bấm duyệt (`Approved`), hệ thống tự động đồng bộ hủy tất cả các suất ăn nằm trong khoảng ngày được chọn.
+6. Chuyển sang tab **"Lịch sử yêu cầu"** để theo dõi trạng thái (*Chờ duyệt*, *Đã duyệt*, *Từ chối*) của các yêu cầu.
 
 ---
 
-### Luồng E6: Theo dõi công nợ & Quét mã QR thanh toán
+### Luồng E5: Theo dõi công nợ & Quét mã QR thanh toán
 1. Vào tab **"Thanh toán"** ở thanh điều hướng dưới đáy màn hình.
 2. **Xem số dư công nợ**:
    - Thẻ trên cùng hiển thị: **Tổng tiền cần thanh toán** (VND) và tổng số kỳ chưa thanh toán.
@@ -403,7 +392,7 @@ Khi bận công tác, nghỉ phép hoặc không có nhu cầu ăn trưa:
 
 ---
 
-### Luồng E7: Nhận và quản lý hộp thư thông báo
+### Luồng E6: Nhận và quản lý hộp thư thông báo
 1. Vào tab **"Thông báo"** (hoặc nhấn biểu tượng quả chuông ở góc phải Trang chủ).
 2. Xem các thông báo từ Ban Quản lý / Bếp ăn:
    - Thông báo nhắc thanh toán tiền ăn hàng tháng.
@@ -415,7 +404,7 @@ Khi bận công tác, nghỉ phép hoặc không có nhu cầu ăn trưa:
 
 ---
 
-### Luồng E8: Quản lý hồ sơ cá nhân
+### Luồng E7: Quản lý hồ sơ cá nhân
 1. Vào tab **"Tài khoản"**.
 2. Xem thông tin: Họ và tên, Username, Mã vai trò, Email, Số điện thoại.
 3. Chọn **"Chỉnh sửa hồ sơ"** để cập nhật thông tin liên hệ hoặc thay đổi mật khẩu.
@@ -431,7 +420,7 @@ Tài khoản `manager` sở hữu đầy đủ quyền hạn của nhân viên v
 1. Đăng nhập tài khoản `manager`.
 2. Tại Trang chủ, nhấn vào thẻ đặc quyền: **"Trung Tâm Quản Lý & Admin"** (hoặc nút Quản lý trong Thao tác nhanh).
 3. **Theo dõi các chỉ số KPI hôm nay**:
-   - **Tổng suất hôm nay**: Bao gồm chi tiết *Suất cán bộ* và *Suất khách*.
+   - **Tổng suất hôm nay**: Số lượng suất ăn cần chuẩn bị cho toàn cơ quan.
    - **Yêu cầu chờ duyệt**: Số lượng suất ăn đang xin cắt muộn cần xử lý.
    - **Công nợ tồn**: Tổng số tiền ăn chưa thanh toán của toàn đơn vị.
 4. **Biểu đồ suất ăn thực tế**:
@@ -448,54 +437,33 @@ Khi nhân viên cắt suất sau giờ đóng quy định (sau 09:00), yêu cầ
    - Nhấn **"Duyệt cắt"**: Suất ăn chuyển sang trạng thái `Cancelled`, nhà bếp bớt 1 phần nấu.
    - Nhấn **"Từ chối"**: Suất ăn quay lại trạng thái `Confirmed`, nhà bếp tiếp tục nấu suất ăn này.
 2. **Xử lý tại phân hệ "Đăng ký & Duyệt cắt"**:
-   - Vào phân hệ ➔ chọn tab **"Đăng ký suất"** ➔ chọn bộ lọc **"Chờ duyệt"**.
-   - Quản lý có thể xem danh sách đầy đủ, lý do và thời gian xin cắt của từng cán bộ để đưa ra quyết định phù hợp.
+   - Quản lý có thể lọc các yêu cầu theo trạng thái để xử lý tập trung.
 
 ---
 
 ### Luồng M3: Quản lý Lịch nấu bếp & Sự kiện nghỉ lễ
 Truy cập: **Trung tâm Quản lý ➔ Lịch bếp & Nghỉ lễ**.
 
-#### 1. Quản lý Lịch nấu ăn hàng ngày (Tab "Lịch bếp")
-- **Tạo ngày ăn mới**:
-  - Nhấn nút **"Thêm ngày ăn"**.
-  - Chọn ngày nấu và nhập ghi chú (ví dụ: *Thực đơn đặc biệt*, *Liên hoan đầu tháng*).
-  - Nhấn **"Tạo lịch ăn"**.
-- **Hủy lịch bếp đột xuất (Báo bếp nghỉ)**:
-  - Chọn ngày cần hủy trên danh sách ➔ Nhấn **"Hủy bếp"**.
-  - Nhập lý do hủy (ví dụ: *Mất điện nhà ăn*, *Bếp sửa chữa cơ sở vật chất*).
-  - Hệ thống cảnh báo tác động và tự động gửi thông báo đến toàn bộ cán bộ đã đăng ký ngày đó.
-- **Mở lại bếp ăn**:
-  - Nhấn **"Mở lại bếp"** trên ngày đang nghỉ để tiếp tục phục vụ.
-
-#### 2. Quản lý Ngày nghỉ lễ / Sự kiện (Tab "Nghỉ lễ & Sự kiện")
-- **Tạo sự kiện nghỉ lễ (Tết, 30/4 - 1/5, Du lịch cơ quan)**:
-  - Nhấn **"Tạo lịch nghỉ"**.
-  - Nhập: Tên sự kiện, Từ ngày, Đến ngày, Lý do nghỉ.
-  - Nhấn **"Tạo sự kiện"**.
-  - **Tác động**: Hệ thống tự động đánh dấu tất cả các ngày bếp trong khoảng thành Bếp nghỉ và hủy bỏ tất cả các suất ăn đã đăng ký trong thời gian này.
-- **Mở lại ngày nghỉ**:
-  - Khi có quyết định đi làm bù hoặc hủy đợt nghỉ, Quản lý nhấn **"Mở lại"** tại sự kiện.
-  - Hệ thống sẽ khôi phục lại các ngày bếp và hoàn lại suất ăn cho các cán bộ.
+1. **Xem lịch bếp**:
+   - Lưới lịch hiển thị trạng thái từng ngày trong tháng: *Đang phục vụ*, *Đã hoàn thành*, *Bếp nghỉ*.
+2. **Hủy bếp một ngày đột xuất**:
+   - Chọn ngày ăn ➔ nhấn **"Hủy bếp"** ➔ nhập lý do (ví dụ: *Bảo trì đường ống nước*). Hệ thống tự động chuyển tất cả các suất ăn ngày đó sang trạng thái hủy và thông báo cho nhân viên.
+3. **Mở lại bếp**:
+   - Chọn ngày bếp nghỉ ➔ nhấn **"Mở lại bếp"** để khôi phục trạng thái phục vụ.
+4. **Thêm sự kiện Nghỉ lễ / Tết**:
+   - Nhấn **"Thêm kỳ nghỉ lễ"** ➔ Nhập tên sự kiện (ví dụ: *Nghỉ Tết Dương lịch*), chọn **Từ ngày** đến **Đến ngày** ➔ Nhấn **"Tạo kỳ nghỉ"**. Toàn bộ các ngày trong khoảng này sẽ tự động đóng bếp.
 
 ---
 
 ### Luồng M4: Quản lý danh sách suất ăn, Thao tác hộ & Xuất Excel
-Truy cập: **Trung tâm Quản lý ➔ Đăng ký & Duyệt cắt**.
+Truy cập: **Trung tâm Quản lý ➔ Danh sách Suất ăn**.
 
-1. **Tìm kiếm và Lọc**:
-   - Ô tìm kiếm: Nhập tên cán bộ hoặc username.
-   - Bộ lọc trạng thái: *Tất cả*, *Đã xác nhận*, *Chờ duyệt*, *Hoàn thành*, *Đã cắt*.
-2. **Đăng ký ăn hộ cán bộ**:
-   - Nhấn nút **"Đăng ký hộ"** (Góc phải trên).
-   - Chọn tên cán bộ cần đăng ký, chọn ngày ăn, nhập số lượng khách kèm.
-   - Nhấn **"Xác nhận đăng ký"**.
-3. **Báo cắt suất hộ cán bộ**:
-   - Nhấn nút **"Cắt suất hộ"**.
-   - Chọn cán bộ, chọn hình thức cắt (hôm nay, theo khoảng ngày, dài hạn) và ghi chú.
-4. **Xuất báo cáo Excel**:
-   - Nhấn biểu tượng **Tải về (Excel)** ở góc phải tiêu đề.
-   - Ứng dụng tự động tải về file báo cáo danh sách suất ăn thực tế có xác thực và kích hoạt menu Chia sẻ (gửi qua Zalo, Email, Drive hoặc Lưu vào máy).
+1. **Đăng ký ăn hộ cán bộ**:
+   - Nhấn nút **"Đăng ký hộ"** ➔ Chọn tên cán bộ và ngày ăn ➔ Nhấn **"Xác nhận"**.
+2. **Cắt suất hộ cán bộ**:
+   - Tìm kiếm cán bộ trong danh sách ➔ Nhấn nút **"Cắt suất hộ"** ➔ Suất ăn chuyển sang `Cancelled`.
+3. **Xuất danh sách ra file Excel**:
+   - Chọn bộ lọc theo ngày hoặc trạng thái ➔ Nhấn biểu tượng **Xuất Excel** để tải báo cáo.
 
 ---
 
@@ -594,7 +562,6 @@ Truy cập: **Trung tâm Quản lý ➔ Cấu hình hệ thống**. *(Chức nă
    - Nhập ghi chú cho từng ngày nếu cần.
 2. **Cấu hình Đơn giá suất ăn**:
    - **Giá suất ăn cán bộ**: Giá tiêu chuẩn mỗi bữa (Ví dụ: `30,000` VND).
-   - **Giá suất ăn khách kèm**: Đơn giá áp dụng cho khách ngoài (Ví dụ: `35,000` VND).
 3. **Cấu hình Khung giờ nghiệp vụ**:
    - **Giờ chốt đăng ký & cắt suất (`registration_close_time`)**: Giờ giới hạn cuối cùng nhân viên được tự do cắt suất (Mặc định `09:00`). Sau giờ này, việc cắt suất phải chờ quản lý duyệt.
    - **Giờ chốt hoàn thành bữa ăn (`meal_completion_time`)**: Giờ hệ thống tự động xác nhận bữa ăn đã phục vụ xong (Mặc định `12:00`).
@@ -642,11 +609,8 @@ Vai trò `kitchen` được thiết kế chuyên biệt để nhân viên phục
 
 ---
 
-### Luồng K2: Phân biệt suất cán bộ và suất khách mời
-Bên dưới con số tổng thể, màn hình thể hiện rõ cơ cấu:
-- **Suất Cán bộ**: Số lượng nhân viên chính thức trong cơ quan dùng bữa.
-- **Suất Khách kèm**: Số lượng khách phát sinh do nhân viên đăng ký thêm.
-- Giúp nhân viên bếp dễ dàng phân bổ định lượng và bố trí bàn ăn riêng cho khách mời (nếu cần).
+### Luồng K2: Cập nhật trạng thái nhà bếp
+- Nhà bếp theo dõi số suất ăn đã chốt tại thời điểm 09:00 sáng để tiến hành chế biến đúng số lượng phần ăn, tránh thiếu hụt hoặc dư thừa lãng phí.
 
 ---
 
@@ -656,7 +620,7 @@ Bên dưới con số tổng thể, màn hình thể hiện rõ cơ cấu:
 
 | Trạng thái | Màu hiển thị | Ý nghĩa nghiệp vụ | Hành động tiếp theo |
 | :--- | :--- | :--- | :--- |
-| **Confirmed**<br>*(Đã xác nhận)* | Xanh lá | Cán bộ đã đăng ký ăn, hệ thống đã tính vào số suất nấu. | Có thể đổi số khách hoặc cắt suất trước giờ đóng. |
+| **Confirmed**<br>*(Đã xác nhận)* | Xanh lá | Cán bộ đã đăng ký ăn, hệ thống đã tính vào số suất nấu. | Có thể cắt suất trước giờ đóng. |
 | **Pending**<br>*(Chờ duyệt)* | Vàng cam | Cán bộ xin cắt suất sau giờ đóng quy định. | Đang chờ Quản lý bấm "Duyệt cắt" hoặc "Từ chối". |
 | **Completed**<br>*(Đã hoàn thành)* | Xanh lam | Bữa ăn đã diễn ra và hoàn tất qua giờ trưa (12:00). | Không thể sửa đổi; dùng làm cơ sở tính tiền cuối tháng. |
 | **Cancelled**<br>*(Đã cắt)* | Xám / Đỏ | Suất ăn đã được hủy bỏ thành công; bếp không nấu. | Có thể đăng ký lại nếu nhà bếp còn mở đăng ký. |
@@ -692,16 +656,13 @@ Bên dưới con số tổng thể, màn hình thể hiện rõ cơ cấu:
 ### Q2: Tôi đã chuyển khoản tiền ăn qua ngân hàng nhưng app vẫn báo "Chưa thanh toán"?
 > **Trả lời**: Do hiện tại hệ thống sử dụng cơ chế đối soát hóa đơn thủ công. Sau khi bạn chuyển khoản, Quản lý bếp sẽ kiểm tra tài khoản ngân hàng và bấm **"Xác nhận đã đóng"** trên hệ thống thì trạng thái của bạn mới chuyển sang **Đã thanh toán**. Bạn nên giữ lại ảnh chụp biên lai chuyển tiền để cung cấp khi cần đối soát.
 
-### Q3: Tôi muốn đăng ký thêm 2 người bạn cùng ăn trưa thì làm thế nào?
-> **Trả lời**: Bạn chỉ cần vào thẻ suất ăn của ngày hôm đó ➔ Nhấn **"Đổi khách"** ➔ Chọn số lượng là `2` ➔ Nhấn **"Lưu"**. Suất khách sẽ được chấp nhận ngay lập tức mà không cần đợi duyệt.
-
-### Q4: Tôi chuẩn bị đi công tác 2 tuần, làm sao để cắt suất liên tục?
+### Q3: Tôi chuẩn bị đi công tác 2 tuần, làm sao để cắt suất liên tục?
 > **Trả lời**: Bạn vào mục **"Báo cắt suất"** tại Trang chủ ➔ Chọn loại **"Theo khoảng ngày"** ➔ Chọn ngày bắt đầu và ngày kết thúc ➔ Nhập ghi chú *"Đi công tác"* ➔ Nhấn **Xác nhận**. Hệ thống sẽ tự động hủy toàn bộ các ngày ăn trong thời gian bạn công tác.
 
-### Q5: Làm thế nào để dùng thử app mà không cần mở máy tính chạy Server backend?
+### Q4: Làm thế nào để dùng thử app mà không cần mở máy tính chạy Server backend?
 > **Trả lời**: Vào tab **Tài khoản** ➔ Cuộn xuống mục **Môi trường & Kết nối** ➔ Bật công tắc **"Chế độ dữ liệu mẫu (Mock)"**. Toàn bộ dữ liệu mẫu chuẩn của các vai trò Admin, Manager, Employee, Kitchen sẽ sẵn sàng để bạn trải nghiệm ngay lập tức.
 
-### Q6: Khi chạy app trên điện thoại thật bị báo lỗi kết nối máy chủ?
+### Q5: Khi chạy app trên điện thoại thật bị báo lỗi kết nối máy chủ?
 > **Trả lời**: 
 > 1. Đảm bảo điện thoại và máy tính chạy Backend kết nối cùng một mạng Wi-Fi.
 > 2. Vào tab **Tài khoản** ➔ nhấn **"Đổi máy chủ API"** ➔ nhập IP nội bộ của máy tính dạng: `http://192.168.x.x:3000/api`.

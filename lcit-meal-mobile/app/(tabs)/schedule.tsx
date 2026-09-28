@@ -1,7 +1,7 @@
 /**
  * Tab Screen - Lịch ăn (Meal Schedule)
  * Xem lịch ăn các ngày trong tháng, trạng thái suất ăn cá nhân,
- * đăng ký ăn, cập nhật số khách, cắt suất hoặc cắt theo khoảng ngày.
+ * đăng ký ăn, cắt suất hoặc cắt theo khoảng ngày.
  * Kết nối thực tế TanStack React Query (T22, T25)
  */
 
@@ -18,7 +18,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { MealCard } from '../../src/components/meals/MealCard';
-import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { DatePickerModal } from '../../src/components/meals/DatePickerModal';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
@@ -29,7 +28,6 @@ import {
   useMyRegistrations,
   useRegisterMealMutation,
   useCancelRegistrationMutation,
-  useUpdateGuestCountMutation,
   useCreateMealOptionMutation,
 } from '../../src/hooks/useMealsData';
 import {
@@ -50,9 +48,6 @@ export default function ScheduleScreen() {
   // Dialogs
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
-  const [guestModalVisible, setGuestModalVisible] = useState(false);
-  const [selectedMealId, setSelectedMealId] = useState<number | null>(null);
-  const [guestCount, setGuestCount] = useState(0);
   const [rangePickerVisible, setRangePickerVisible] = useState(false);
 
   // Queries
@@ -62,7 +57,6 @@ export default function ScheduleScreen() {
   // Mutations
   const registerMutation = useRegisterMealMutation();
   const cancelMutation = useCancelRegistrationMutation();
-  const updateGuestsMutation = useUpdateGuestCountMutation();
   const createMealOptionMutation = useCreateMealOptionMutation();
 
   const isLoading = loadingMeals || loadingRegs;
@@ -106,30 +100,6 @@ export default function ScheduleScreen() {
     }
   };
 
-  const handleOpenGuestCounter = (mealId: number, currentGuests: number) => {
-    setSelectedMealId(mealId);
-    setGuestCount(currentGuests);
-    setGuestModalVisible(true);
-  };
-
-  const handleSaveGuests = async () => {
-    if (!selectedMealId) return;
-    try {
-      const reg = registrations.find((r) => r.mealId === selectedMealId);
-      await updateGuestsMutation.mutateAsync({
-        mealId: selectedMealId,
-        guestCount,
-        registrationId: reg?.id,
-      });
-      setGuestModalVisible(false);
-      setSelectedMealId(null);
-      setBannerMessage(`Đã cập nhật số khách (${guestCount} khách) thành công.`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
-      Alert.alert('Lỗi thao tác', msg);
-    }
-  };
-
   const handleSelectDateRange = async (fromDate: string, toDate: string) => {
     try {
       await createMealOptionMutation.mutateAsync({
@@ -138,7 +108,7 @@ export default function ScheduleScreen() {
         toDate,
         note: 'Cắt suất theo khoảng ngày',
       });
-      setBannerMessage(`Đã tạo yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate)}.`);
+      setBannerMessage(`Đã tạo yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate)} (Đang chờ Quản lý duyệt).`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Tạo yêu cầu cắt suất thất bại.';
       Alert.alert('Lỗi thao tác', msg);
@@ -168,7 +138,6 @@ export default function ScheduleScreen() {
   const selectedCancelReg = registrations.find((reg) => reg.id === selectedRegId);
   const cancelDate = meals.find((meal) => meal.id === selectedCancelReg?.mealId)?.mealDate
     || selectedCancelReg?.mealDate;
-  const guestDate = meals.find((meal) => meal.id === selectedMealId)?.mealDate;
 
   return (
     <ScreenContainer
@@ -255,7 +224,6 @@ export default function ScheduleScreen() {
                 actionsDisabled={registerMutation.isPending}
                 onRegister={handleRegister}
                 onCancel={handleOpenCancel}
-                onUpdateGuests={handleOpenGuestCounter}
               />
             );
           })
@@ -274,7 +242,7 @@ export default function ScheduleScreen() {
       <ConfirmDialog
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
-        message={`Cắt suất ăn${cancelDate ? ` ngày ${formatDisplayDate(cancelDate)}` : ''}${selectedCancelReg?.guestCount ? ` cùng ${selectedCancelReg.guestCount} khách ăn kèm` : ''}? Yêu cầu sẽ được xử lý theo quy định của nhà bếp.`}
+        message={`Bạn có chắc chắn muốn cắt suất ăn${cancelDate ? ` ngày ${formatDisplayDate(cancelDate)}` : ''}? Yêu cầu sẽ được xử lý theo quy định của nhà bếp.`}
         confirmText="Xác nhận cắt"
         cancelText="Giữ lại"
         isDestructive
@@ -286,32 +254,6 @@ export default function ScheduleScreen() {
           setSelectedRegId(null);
         }}
       />
-
-      {/* Modal chọn số lượng khách */}
-      <ConfirmDialog
-        visible={guestModalVisible}
-        title="Điều chỉnh số lượng khách"
-        message={`Suất ăn${guestDate ? ` ngày ${formatDisplayDate(guestDate)}` : ''}. Thêm tối đa 10 khách; chọn 0 nếu không có khách.`}
-        confirmText="Lưu số khách"
-        cancelText="Đóng"
-        iconName="people-outline"
-        loading={updateGuestsMutation.isPending}
-        onConfirm={handleSaveGuests}
-        onCancel={() => {
-          setGuestModalVisible(false);
-          setSelectedMealId(null);
-        }}
-      >
-        <View style={styles.modalGuestCounterBox}>
-          <GuestCounter
-            value={guestCount}
-            onChange={setGuestCount}
-            min={0}
-            max={10}
-            label="Số khách ăn kèm"
-          />
-        </View>
-      </ConfirmDialog>
 
       {/* Modal chọn khoảng ngày để cắt suất */}
       <DatePickerModal
@@ -384,8 +326,5 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: spacing['3xl'],
-  },
-  modalGuestCounterBox: {
-    paddingVertical: spacing.sm,
   },
 });

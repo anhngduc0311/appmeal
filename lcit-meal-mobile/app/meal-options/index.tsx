@@ -83,9 +83,11 @@ export default function MealOptionsScreen() {
       setBannerMessage({
         variant: 'success',
         text:
-          optionType === 'cancel_permanent'
-            ? `Đã tạo yêu cầu cắt suất dài hạn từ ${formatDisplayDate(fromDate)} thành công!`
-            : `Đã cắt suất ăn từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(finalToDate)} thành công!`,
+          optionType === 'cancel_today'
+            ? `Đã cắt suất ăn ngày ${formatDisplayDate(fromDate)} thành công!`
+            : optionType === 'cancel_schedule'
+            ? `Đã gửi yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(finalToDate)} (Đang chờ Quản lý duyệt).`
+            : `Đã gửi yêu cầu cắt suất dài hạn từ ${formatDisplayDate(fromDate)} (Đang chờ Quản lý duyệt).`,
       });
 
       setNote('');
@@ -120,7 +122,9 @@ export default function MealOptionsScreen() {
           <View>
             <Text style={styles.historyType}>{typeLabel}</Text>
             <Text style={styles.historyDates}>
-              {formatDisplayDate(item.fromDate)} → {formatDisplayDate(item.toDate)}
+              {item.type === 'cancel_permanent'
+                ? `Từ ${formatDisplayDate(item.fromDate)} (Dài hạn)`
+                : `${formatDisplayDate(item.fromDate)} → ${formatDisplayDate(item.toDate)}`}
             </Text>
           </View>
           <Badge type="mealOption" value={item.status} size="sm" />
@@ -333,9 +337,23 @@ export default function MealOptionsScreen() {
 
                 {/* Thông tin quy định duyệt */}
                 <View style={styles.policyNotice}>
-                  <Ionicons name="checkmark-circle" size={18} color={colors.status.confirmed.dot} />
+                  <Ionicons
+                    name={optionType === 'cancel_today' ? 'checkmark-circle' : 'time-outline'}
+                    size={18}
+                    color={optionType === 'cancel_today' ? colors.status.confirmed.dot : colors.status.pending.dot}
+                  />
                   <Text style={styles.policyText}>
-                    Yêu cầu cắt suất sẽ được <Text style={styles.policyBold}>tự động duyệt ngay</Text> và đồng bộ hủy các suất ăn tương ứng trong khoảng ngày đã chọn.
+                    {optionType === 'cancel_today' ? (
+                      <>
+                        Yêu cầu cắt hôm nay sẽ được{' '}
+                        <Text style={styles.policyBold}>tự động duyệt ngay</Text> nếu thực hiện trước giờ chốt quy định.
+                      </>
+                    ) : (
+                      <>
+                        Yêu cầu cắt suất tùy chỉnh / dài hạn sẽ ở trạng thái{' '}
+                        <Text style={styles.policyBold}>Chờ duyệt</Text> và cần Quản lý phê duyệt.
+                      </>
+                    )}
                   </Text>
                 </View>
 

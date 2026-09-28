@@ -4,7 +4,7 @@
  * - Ngày ăn, Thứ, Tình trạng bếp (Hoạt động / Bếp nghỉ)
  * - Thực đơn nhà bếp
  * - Trạng thái suất ăn cá nhân (Confirmed, Pending, Completed, Cancelled) dựa trên response thực tế
- * - Thao tác hợp lệ: Đăng ký, Đổi khách (0..10), Cắt suất trực tiếp
+ * - Thao tác hợp lệ: Đăng ký ăn, Cắt suất trực tiếp
  * - Khóa nút khi đang gửi mutation và hiển thị kết quả chính xác
  */
 
@@ -24,7 +24,6 @@ import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
-import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { EmptyState } from '../../src/components/states/EmptyState';
 import { useAuth } from '../../src/providers/AuthProvider';
 import {
@@ -33,7 +32,6 @@ import {
   useScheduleConfig,
   useRegisterMealMutation,
   useCancelRegistrationMutation,
-  useUpdateGuestCountMutation,
 } from '../../src/hooks/useMealsData';
 import {
   formatFullDisplayDate,
@@ -55,8 +53,6 @@ export default function MealDetailScreen() {
 
   // States thao tác
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [guestModalVisible, setGuestModalVisible] = useState(false);
-  const [guestCountInput, setGuestCountInput] = useState(0);
   const [bannerMessage, setBannerMessage] = useState<{
     variant: 'success' | 'error' | 'warning';
     text: string;
@@ -70,7 +66,6 @@ export default function MealDetailScreen() {
   // Mutations
   const registerMutation = useRegisterMealMutation();
   const cancelMutation = useCancelRegistrationMutation();
-  const updateGuestsMutation = useUpdateGuestCountMutation();
 
   const isRefreshing = loadingMeals || loadingRegs;
 
@@ -108,18 +103,15 @@ export default function MealDetailScreen() {
   const isCompleted = regStatus === 'completed';
   const isPending = regStatus === 'pending';
   const isCancelled = regStatus === 'cancelled';
-  const currentGuests = registration?.guestCount || 0;
   const mealPrice = scheduleConfig?.mealPrice || 30000;
 
-  const handleRegister = async (guests = 0) => {
+  const handleRegister = async () => {
     if (!meal) return;
     try {
-      await registerMutation.mutateAsync({ mealId: meal.id, guestCount: guests });
+      await registerMutation.mutateAsync({ mealId: meal.id, guestCount: 0 });
       setBannerMessage({
         variant: 'success',
-        text: guests > 0
-          ? `Đăng ký suất ăn kèm ${guests} khách thành công!`
-          : 'Đăng ký suất ăn thành công!',
+        text: 'Đăng ký suất ăn thành công!',
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Đăng ký suất ăn thất bại.';
@@ -152,30 +144,6 @@ export default function MealDetailScreen() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Cắt suất ăn thất bại.';
-      Alert.alert('Lỗi thao tác', msg);
-    }
-  };
-
-  const handleOpenGuestModal = () => {
-    setGuestCountInput(currentGuests);
-    setGuestModalVisible(true);
-  };
-
-  const handleSaveGuests = async () => {
-    if (!meal) return;
-    try {
-      await updateGuestsMutation.mutateAsync({
-        mealId: meal.id,
-        guestCount: guestCountInput,
-        registrationId: registration?.id,
-      });
-      setGuestModalVisible(false);
-      setBannerMessage({
-        variant: 'success',
-        text: `Đã cập nhật số khách (${guestCountInput} khách) thành công.`,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
       Alert.alert('Lỗi thao tác', msg);
     }
   };
@@ -280,17 +248,10 @@ export default function MealDetailScreen() {
             </View>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Khách ăn kèm:</Text>
-              <Text style={styles.infoValue}>
-                {currentGuests > 0 ? `${currentGuests} người` : 'Không có khách'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Tiền ăn dự kiến:</Text>
               <Text style={[styles.infoValue, styles.priceHighlight]}>
                 {isRegistered || isPending
-                  ? formatCurrency(mealPrice * (1 + currentGuests))
+                  ? formatCurrency(mealPrice)
                   : '0 đ'}
               </Text>
             </View>
@@ -313,24 +274,11 @@ export default function MealDetailScreen() {
           {isRegistered || isPending ? (
             <View style={styles.btnStack}>
               <Button
-                title={`Điều chỉnh khách (${currentGuests} khách)`}
-                variant="secondary"
-                size="lg"
-                loading={updateGuestsMutation.isPending}
-                disabled={updateGuestsMutation.isPending || cancelMutation.isPending}
-                leftIcon={
-                  <Ionicons name="people-outline" size={20} color={colors.text} />
-                }
-                onPress={handleOpenGuestModal}
-                fullWidth
-              />
-
-              <Button
                 title="Cắt suất ăn ngày này"
                 variant="danger"
                 size="lg"
                 loading={cancelMutation.isPending}
-                disabled={cancelMutation.isPending || updateGuestsMutation.isPending}
+                disabled={cancelMutation.isPending}
                 leftIcon={
                   <Ionicons
                     name="close-circle-outline"
@@ -357,19 +305,7 @@ export default function MealDetailScreen() {
                     color={colors.textInverse}
                   />
                 }
-                onPress={() => handleRegister(0)}
-                fullWidth
-              />
-
-              <Button
-                title="Đăng ký kèm thêm khách"
-                variant="outline"
-                size="md"
-                disabled={registerMutation.isPending}
-                leftIcon={
-                  <Ionicons name="people-outline" size={20} color={colors.primary} />
-                }
-                onPress={handleOpenGuestModal}
+                onPress={handleRegister}
                 fullWidth
               />
             </View>
@@ -390,29 +326,6 @@ export default function MealDetailScreen() {
         onConfirm={handleConfirmCancel}
         onCancel={() => setCancelModalVisible(false)}
       />
-
-      {/* Modal điều chỉnh số khách */}
-      <ConfirmDialog
-        visible={guestModalVisible}
-        title="Chọn số lượng khách ăn kèm"
-        message="Số lượng khách sẽ được cập nhật cùng với suất ăn của bạn:"
-        confirmText="Lưu thay đổi"
-        cancelText="Hủy"
-        iconName="people-outline"
-        loading={updateGuestsMutation.isPending}
-        onConfirm={handleSaveGuests}
-        onCancel={() => setGuestModalVisible(false)}
-      >
-        <View style={styles.modalGuestCounterBox}>
-          <GuestCounter
-            value={guestCountInput}
-            onChange={setGuestCountInput}
-            min={0}
-            max={10}
-            label="Số khách ăn kèm"
-          />
-        </View>
-      </ConfirmDialog>
     </ScreenContainer>
   );
 }
@@ -550,8 +463,5 @@ const styles = StyleSheet.create({
   },
   btnStack: {
     gap: spacing.md,
-  },
-  modalGuestCounterBox: {
-    paddingVertical: spacing.sm,
   },
 });

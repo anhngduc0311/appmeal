@@ -122,12 +122,12 @@ Trạng thái `meal_registration.status`:
 
 ### 6.2 Cắt suất ăn
 
-- **Người dùng chỉ cần xác nhận là cắt được ngay, KHÔNG cần quản lý duyệt.**
-- Cả 3 loại trong `meal_option.type` đều tự động duyệt khi tạo
+- **Cắt hôm nay tự động duyệt trước giờ chốt; Cắt theo khoảng ngày / tùy chỉnh và dài hạn cần Quản lý duyệt.**
+- Phân loại duyệt theo `meal_option.type`:
   (`AUTO_APPROVE_TYPES` tại `src/constants/MealOption.js`):
-  - `cancel_today` — cắt suất hôm nay
-  - `cancel_schedule` — cắt theo khoảng ngày
-  - `cancel_permanent` — cắt hẳn từ hôm nay
+  - `cancel_today` — cắt suất hôm nay (tự động duyệt trước giờ đóng)
+  - `cancel_schedule` — cắt theo khoảng ngày / tùy chỉnh (chờ Quản lý duyệt)
+  - `cancel_permanent` — cắt dài hạn (chờ Quản lý duyệt)
 - Khi tạo, `syncMealRegistrations()` hủy luôn các đăng ký đã tồn tại trong khoảng
   ngày, để bếp / báo cáo không tính thừa suất.
 - Quản lý nhận thông báo mang tính thông tin để điều chỉnh số suất cần nấu.

@@ -1,6 +1,6 @@
 /**
  * Tab Screen - Trang chủ (Home)
- * Màn hình tổng quan: Suất ăn hôm nay, số khách, giờ đóng, thao tác nhanh và khoản thanh toán cá nhân.
+ * Màn hình tổng quan: Suất ăn hôm nay, giờ đóng, thao tác nhanh và khoản thanh toán cá nhân.
  * Tuân thủ GAP-01: Chỉ hiển thị dữ liệu cá nhân, không hiển thị dữ liệu tài chính toàn cơ quan.
  */
 
@@ -21,7 +21,6 @@ import { Card } from '../../src/components/common/Card';
 import { Button } from '../../src/components/common/Button';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { MealCard } from '../../src/components/meals/MealCard';
-import { GuestCounter } from '../../src/components/meals/GuestCounter';
 import { MockModeBanner } from '../../src/components/meals/MockModeBanner';
 import { useAuth } from '../../src/providers/AuthProvider';
 import {
@@ -30,7 +29,6 @@ import {
   useScheduleConfig,
   useRegisterMealMutation,
   useCancelRegistrationMutation,
-  useUpdateGuestCountMutation,
 } from '../../src/hooks/useMealsData';
 import { useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
 import {
@@ -52,8 +50,6 @@ function PersonalHomeScreen() {
   const { user, role, useMockData } = useAuth();
 
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [guestModalVisible, setGuestModalVisible] = useState(false);
-  const [guestCountInput, setGuestCountInput] = useState(0);
 
   const todayStr = formatBusinessDate(new Date());
 
@@ -66,7 +62,6 @@ function PersonalHomeScreen() {
   // Mutations
   const registerMutation = useRegisterMealMutation();
   const cancelMutation = useCancelRegistrationMutation();
-  const updateGuestsMutation = useUpdateGuestCountMutation();
 
   const isRefreshing = loadingMeals || loadingRegs || loadingPayments;
 
@@ -108,21 +103,6 @@ function PersonalHomeScreen() {
     }
   };
 
-  const handleSaveGuests = async () => {
-    if (!todayMeal) return;
-    try {
-      await updateGuestsMutation.mutateAsync({
-        mealId: todayMeal.id,
-        guestCount: guestCountInput,
-        registrationId: todayReg?.id,
-      });
-      setGuestModalVisible(false);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Cập nhật số khách thất bại.';
-      Alert.alert('Lỗi thao tác', msg);
-    }
-  };
-
   const totalUnpaidAmount = paymentSummary?.totalUnpaidAmount || 0;
   const unpaidCount = paymentSummary?.unpaidCount || 0;
   const cutoffTime = scheduleConfig?.cutoffTime || '09:00';
@@ -158,7 +138,7 @@ function PersonalHomeScreen() {
           <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Suất ăn hôm nay</Text><TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(tabs)/schedule')} style={styles.textLink}><Text style={styles.link}>Xem lịch ăn →</Text></TouchableOpacity></View>
           {todayMeal ? <MealCard dateStr={todayStr} meal={todayMeal} registration={todayReg}
             onPress={() => router.push(`/meal/${todayMeal.id}` as any)} onRegister={handleRegisterToday}
-            onCancel={() => setCancelModalVisible(true)} onUpdateGuests={(_id, guests) => {setGuestCountInput(guests); setGuestModalVisible(true);}}
+            onCancel={() => setCancelModalVisible(true)}
           /> : <Card padding="2xl" style={styles.empty}><Ionicons name="cafe-outline" size={32} color={colors.primary} /><Text style={styles.body}>Hôm nay nhà bếp không bố trí lịch nấu ăn.</Text></Card>}
           <Text style={[styles.sectionTitle, {marginTop: 18, marginBottom: 16}]}>Tiện ích của bạn</Text>
           <View style={styles.quickGrid}>
@@ -193,29 +173,6 @@ function PersonalHomeScreen() {
         onConfirm={handleCancelToday}
         onCancel={() => setCancelModalVisible(false)}
       />
-
-      {/* Modal cập nhật số khách */}
-      <ConfirmDialog
-        visible={guestModalVisible}
-        title="Cập nhật số khách ăn kèm"
-        message="Chọn số lượng khách dùng bữa cùng bạn hôm nay (0 - 10 người):"
-        confirmText="Lưu số khách"
-        cancelText="Đóng"
-        iconName="people-outline"
-        loading={updateGuestsMutation.isPending}
-        onConfirm={handleSaveGuests}
-        onCancel={() => setGuestModalVisible(false)}
-      >
-        <View style={styles.modalGuestCounterBox}>
-          <GuestCounter
-            value={guestCountInput}
-            onChange={setGuestCountInput}
-            min={0}
-            max={10}
-            label="Số suất khách đăng ký thêm"
-          />
-        </View>
-      </ConfirmDialog>
     </ScreenContainer>
   );
 }
@@ -239,5 +196,5 @@ const styles = StyleSheet.create({
   actionTitle: {fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 8}, body: {fontSize: 13, lineHeight: 21, color: colors.textSecondary},
   paymentCard: {backgroundColor: '#EEF2E3', borderColor: '#DAE2CA'}, paymentTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}, paymentLabel: {fontSize: 10, letterSpacing: 1.3, fontWeight: '700', color: colors.primaryDark},
   paymentAmount: {fontSize: 30, fontWeight: '700', letterSpacing: -0.8, color: colors.primaryDark, marginTop: 22, marginBottom: 6}, divider: {height: 1, backgroundColor: '#D6DEC8', marginVertical: 22},
-  managementCard: {marginTop: 16, gap: 8}, empty: {gap: 14, alignItems: 'center'}, modalGuestCounterBox: {paddingVertical: 8},
+  managementCard: {marginTop: 16, gap: 8}, empty: {gap: 14, alignItems: 'center'},
 });

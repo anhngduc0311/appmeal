@@ -4,8 +4,7 @@
  * - Thứ & ngày tháng rõ ràng
  * - Trạng thái suất ăn cá nhân (có cả nhãn tiếng Việt và màu tương ứng)
  * - Tình trạng bếp (hoạt động / bếp nghỉ)
- * - Số lượng khách ăn kèm
- * - Các nút thao tác nhanh: Đăng ký, Đổi khách, Cắt suất
+ * - Các nút thao tác nhanh: Đăng ký ăn, Cắt suất
  */
 
 import React from 'react';
@@ -46,7 +45,6 @@ export const MealCard: React.FC<MealCardProps> = ({
   registration,
   onRegister,
   onCancel,
-  onUpdateGuests,
   onPress,
   registering = false,
   actionsDisabled = false,
@@ -61,7 +59,6 @@ export const MealCard: React.FC<MealCardProps> = ({
   const isCompleted = regStatus === 'completed';
   const isPending = regStatus === 'pending';
   const isCancelled = regStatus === 'cancelled';
-  const guestCount = registration?.guestCount || 0;
 
   return (
     <Card
@@ -122,16 +119,6 @@ export const MealCard: React.FC<MealCardProps> = ({
               </Text>
             </View>
           )}
-
-          {/* Khách ăn kèm nếu có */}
-          {registration && !isCancelled && guestCount > 0 && !isMealCancelled && (
-            <View style={styles.guestPill}>
-              <Ionicons name="people-outline" size={14} color={colors.primaryDark} />
-              <Text style={styles.guestPillText}>
-                Bạn + {guestCount} khách · {guestCount + 1} suất
-              </Text>
-            </View>
-          )}
         </View>
       </TouchableOpacity>
 
@@ -140,23 +127,6 @@ export const MealCard: React.FC<MealCardProps> = ({
         <View style={styles.actionsRow}>
           {isRegistered || isPending ? (
             <>
-              {onUpdateGuests && (
-                <Button
-                  title={guestCount > 0 ? `Sửa khách (${guestCount})` : 'Thêm khách'}
-                  disabled={actionsDisabled}
-                  variant="secondary"
-                  size="sm"
-                  leftIcon={
-                    <Ionicons
-                      name="people-outline"
-                      size={16}
-                      color={colors.text}
-                    />
-                  }
-                  onPress={() => meal && onUpdateGuests(meal.id, guestCount)}
-                  style={styles.actionBtn}
-                />
-              )}
               {onCancel && registration && (
                 <Button
                   title="Cắt suất"
@@ -171,7 +141,7 @@ export const MealCard: React.FC<MealCardProps> = ({
                     />
                   }
                   onPress={() => onCancel(registration.id)}
-                  style={styles.actionBtn}
+                  fullWidth
                 />
               )}
             </>
@@ -286,22 +256,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     flex: 1,
     lineHeight: 22,
-  },
-  guestPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: radius.full,
-    gap: 4,
-    marginTop: 2,
-  },
-  guestPillText: {
-    fontSize: typography.sizes['2xs'],
-    fontWeight: typography.weights.bold,
-    color: colors.primaryDark,
   },
   actionsRow: {
     flexDirection: 'row',

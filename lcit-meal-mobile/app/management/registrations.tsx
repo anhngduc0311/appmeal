@@ -367,7 +367,7 @@ export default function ManagementRegistrationsScreen() {
         <View style={styles.itemMetaRow}>
           <Text style={styles.itemMetaText}>
             Từ: {formatBusinessDateDisplay(opt.fromDate)} - Đến:{' '}
-            {formatBusinessDateDisplay(opt.toDate)}
+            {opt.type === 'cancel_permanent' ? 'Dài hạn' : formatBusinessDateDisplay(opt.toDate)}
           </Text>
         </View>
 
