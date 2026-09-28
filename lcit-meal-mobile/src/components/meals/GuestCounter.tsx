@@ -114,7 +114,7 @@ export const GuestCounter: React.FC<GuestCounterProps> = ({
         </TouchableOpacity>
       </View>
 
-      {helperText && <Text style={styles.helperText}>{helperText}</Text>}
+      {Boolean(helperText) && <Text style={styles.helperText}>{helperText}</Text>}
     </View>
   );
 };

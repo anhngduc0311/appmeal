@@ -371,7 +371,7 @@ export default function ManagementRegistrationsScreen() {
           </Text>
         </View>
 
-        {opt.note && <Text style={styles.optNoteText}>Lý do: {opt.note}</Text>}
+        {Boolean(opt.note) && <Text style={styles.optNoteText}>Lý do: {opt.note}</Text>}
 
         {isPending && (
           <View style={styles.itemActionsRow}>

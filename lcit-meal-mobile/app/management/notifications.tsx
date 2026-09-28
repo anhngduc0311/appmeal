@@ -147,7 +147,7 @@ export default function ManagementNotificationsScreen() {
         </View>
 
         <Text style={styles.historyContent}>{n.content}</Text>
-        {n.url && <Text style={styles.historyUrl}>Liên kết: {n.url}</Text>}
+        {Boolean(n.url) && <Text style={styles.historyUrl}>Liên kết: {n.url}</Text>}
       </Card>
     ),
     [role]
@@ -156,11 +156,11 @@ export default function ManagementNotificationsScreen() {
   if (!hasAccess) {
     return (
       <ScreenContainer scrollable={false}>
-        <Header title="Phát Thông Báo" showBack onBack={() => router.back()} />
+        <Header title="Phát Thông Báo" showBack />
         <ForbiddenState
           title="Không có quyền truy cập"
           message={`Tài khoản (${user?.fullName} - ${role}) không có quyền phát thông báo toàn cơ quan.`}
-          onGoBack={() => router.back()}
+          onGoBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
         />
       </ScreenContainer>
     );
@@ -172,7 +172,6 @@ export default function ManagementNotificationsScreen() {
         title="Quản lý & Phát Thông Báo"
         subtitle="Soạn tin, broadcast hoặc gửi đích danh cán bộ"
         showBack
-        onBack={() => router.back()}
         userRole={role || undefined}
       />
 

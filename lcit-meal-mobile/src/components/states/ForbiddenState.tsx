@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '../common/Button';
 import { colors } from '../../theme/colors';
@@ -24,6 +25,18 @@ export const ForbiddenState: React.FC<ForbiddenStateProps> = ({
   onGoBack,
   style,
 }) => {
+  const router = useRouter();
+
+  const handleGoBack = () => {
+    if (onGoBack) {
+      onGoBack();
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconCircle}>
@@ -36,15 +49,13 @@ export const ForbiddenState: React.FC<ForbiddenStateProps> = ({
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.message}>{message}</Text>
 
-      {onGoBack && (
-        <Button
-          title="Quay lại trang chủ"
-          variant="outline"
-          size="md"
-          onPress={onGoBack}
-          style={styles.backBtn}
-        />
-      )}
+      <Button
+        title="Quay lại trang chủ"
+        variant="outline"
+        size="md"
+        onPress={handleGoBack}
+        style={styles.backBtn}
+      />
     </View>
   );
 };

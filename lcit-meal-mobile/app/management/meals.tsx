@@ -234,7 +234,7 @@ export default function ManagementMealsScreen() {
           />
         </View>
 
-        {h.reason && <Text style={styles.mealNote}>Lý do: {h.reason}</Text>}
+        {Boolean(h.reason) && <Text style={styles.mealNote}>Lý do: {h.reason}</Text>}
 
         {h.status !== 'active' && (
           <View style={styles.mealFooter}>

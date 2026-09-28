@@ -50,7 +50,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {Boolean(label) && <Text style={styles.label}>{label}</Text>}
 
       <TouchableOpacity
         activeOpacity={0.7}
@@ -87,7 +87,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         />
       </TouchableOpacity>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {Boolean(error) && <Text style={styles.errorText}>{error}</Text>}
 
       <DatePickerModal
         visible={modalVisible}

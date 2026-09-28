@@ -24,7 +24,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     <View style={[styles.container, style]}>
       <ActivityIndicator size="large" color={colors.primary} />
       <Text style={styles.message}>{message}</Text>
-      {subMessage && <Text style={styles.subMessage}>{subMessage}</Text>}
+      {Boolean(subMessage) && <Text style={styles.subMessage}>{subMessage}</Text>}
     </View>
   );
 };
