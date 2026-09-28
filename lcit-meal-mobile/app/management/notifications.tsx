@@ -2,18 +2,18 @@
  * Soạn & Phát Thông Báo (Admin & Manager)
  * T33: Soạn/gửi thông báo theo người nhận hoặc broadcast đúng contract;
  * xem lại nội dung và đối tượng trước khi gửi.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  RefreshControl,
   Modal,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,6 +37,7 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { NotificationItem } from '../../src/types';
 
 export default function ManagementNotificationsScreen() {
   const router = useRouter();
@@ -63,19 +64,6 @@ export default function ManagementNotificationsScreen() {
 
   const sendMutation = useSendNotification();
   const deleteMutation = useDeleteNotification();
-
-  if (!hasAccess) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Phát Thông Báo" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Không có quyền truy cập"
-          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền phát thông báo toàn cơ quan.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -133,8 +121,53 @@ export default function ManagementNotificationsScreen() {
     setDeleteTargetId(null);
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderHistoryItem = useCallback(
+    ({ item: n }: { item: NotificationItem }) => (
+      <Card key={n.id} variant="elevated" padding="md" style={styles.historyCard}>
+        <View style={styles.historyHeader}>
+          <View style={styles.historyIconBox}>
+            <Ionicons name="megaphone" size={16} color={colors.primaryDark} />
+          </View>
+          <View style={styles.historyInfo}>
+            <Text style={styles.historyTitle}>{n.title}</Text>
+            <Text style={styles.historyDate}>
+              {n.createdAt ? n.createdAt.replace('T', ' ').slice(0, 16) : ''} · Người phát:{' '}
+              {n.creatorName || 'Quản trị viên'}
+            </Text>
+          </View>
+          {role === 'admin' && (
+            <TouchableOpacity
+              style={styles.deleteHistoryBtn}
+              onPress={() => setDeleteTargetId(n.id)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="trash-outline" size={16} color="#DC2626" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <Text style={styles.historyContent}>{n.content}</Text>
+        {n.url && <Text style={styles.historyUrl}>Liên kết: {n.url}</Text>}
+      </Card>
+    ),
+    [role]
+  );
+
+  if (!hasAccess) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Phát Thông Báo" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Không có quyền truy cập"
+          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền phát thông báo toàn cơ quan.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View>
       <Header
         title="Quản lý & Phát Thông Báo"
         subtitle="Soạn tin, broadcast hoặc gửi đích danh cán bộ"
@@ -177,194 +210,182 @@ export default function ManagementNotificationsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {activeTab === 'compose' ? (
-          <View style={styles.composeForm}>
-            <Card variant="elevated" padding="md" style={styles.formCard}>
-              <Text style={styles.formTitle}>Thông tin bản tin thông báo</Text>
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      {activeTab === 'compose' ? (
+        <FlatList
+          data={[]}
+          renderItem={null}
+          ListHeaderComponent={
+            <>
+              {ListHeader}
+              <View style={styles.composeForm}>
+                <Card variant="elevated" padding="md" style={styles.formCard}>
+                  <Text style={styles.formTitle}>Thông tin bản tin thông báo</Text>
 
-              <Input
-                label="Tiêu đề thông báo (bắt buộc)"
-                value={title}
-                onChangeText={setTitle}
-                placeholder="VD: Nhắc nhở nộp tiền ăn kỳ tháng 09/2026"
-              />
-
-              <Input
-                label="Nội dung chi tiết (bắt buộc)"
-                value={content}
-                onChangeText={setContent}
-                placeholder="Nhập nội dung thông báo đầy đủ..."
-                multiline
-                style={{ height: 90 }}
-              />
-
-              {/* Loại thông báo */}
-              <Text style={styles.fieldLabel}>Phân loại thông báo:</Text>
-              <View style={styles.chipsRow}>
-                {[
-                  { id: 'SYSTEM', label: 'Hệ thống' },
-                  { id: 'PAYMENT_DUE', label: 'Thanh toán' },
-                  { id: 'LATE_REGISTRATION', label: 'Bếp ăn' },
-                  { id: 'APPROVAL', label: 'Duyệt cắt' },
-                ].map((t) => (
-                  <TouchableOpacity
-                    key={t.id}
-                    style={[styles.chip, notifType === t.id && styles.chipActive]}
-                    onPress={() => setNotifType(t.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.chipText, notifType === t.id && styles.chipTextActive]}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Input
-                label="Đường dẫn liên kết (tùy chọn)"
-                value={url}
-                onChangeText={setUrl}
-                placeholder="VD: /(tabs)/payments hoặc /(tabs)/schedule"
-              />
-            </Card>
-
-            {/* Phạm vi đối tượng */}
-            <Card variant="elevated" padding="md" style={styles.formCard}>
-              <Text style={styles.formTitle}>Đối tượng tiếp nhận</Text>
-
-              <View style={styles.scopeRow}>
-                <TouchableOpacity
-                  style={[styles.scopeBtn, targetScope === 'broadcast' && styles.scopeBtnActive]}
-                  onPress={() => setTargetScope('broadcast')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="globe-outline"
-                    size={18}
-                    color={targetScope === 'broadcast' ? colors.primaryDark : colors.textMuted}
+                  <Input
+                    label="Tiêu đề thông báo (bắt buộc)"
+                    value={title}
+                    onChangeText={setTitle}
+                    placeholder="VD: Nhắc nhở nộp tiền ăn kỳ tháng 09/2026"
                   />
-                  <Text
-                    style={[
-                      styles.scopeBtnText,
-                      targetScope === 'broadcast' && styles.scopeBtnTextActive,
-                    ]}
-                  >
-                    Toàn cơ quan (Broadcast)
-                  </Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={[styles.scopeBtn, targetScope === 'custom' && styles.scopeBtnActive]}
-                  onPress={() => setTargetScope('custom')}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name="people-outline"
-                    size={18}
-                    color={targetScope === 'custom' ? colors.primaryDark : colors.textMuted}
+                  <Input
+                    label="Nội dung chi tiết (bắt buộc)"
+                    value={content}
+                    onChangeText={setContent}
+                    placeholder="Nhập nội dung thông báo đầy đủ..."
+                    multiline
+                    style={{ height: 90 }}
                   />
-                  <Text
-                    style={[
-                      styles.scopeBtnText,
-                      targetScope === 'custom' && styles.scopeBtnTextActive,
-                    ]}
-                  >
-                    Chọn từng cán bộ ({selectedUserIds.length})
-                  </Text>
-                </TouchableOpacity>
-              </View>
 
-              {targetScope === 'custom' && (
-                <View style={styles.customUsersList}>
-                  <Text style={styles.selectUsersTitle}>Chọn cán bộ cần nhận thông báo:</Text>
-                  <View style={styles.usersGrid}>
-                    {users.map((u) => {
-                      const isChecked = selectedUserIds.includes(u.id);
-                      return (
-                        <TouchableOpacity
-                          key={u.id}
-                          style={[styles.userItemCheck, isChecked && styles.userItemCheckActive]}
-                          onPress={() => toggleUserSelection(u.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons
-                            name={isChecked ? 'checkbox' : 'square-outline'}
-                            size={18}
-                            color={isChecked ? colors.primary : colors.textMuted}
-                          />
-                          <Text
-                            style={[
-                              styles.userItemCheckText,
-                              isChecked && styles.userItemCheckTextActive,
-                            ]}
-                          >
-                            {u.fullName}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
+                  {/* Loại thông báo */}
+                  <Text style={styles.fieldLabel}>Phân loại thông báo:</Text>
+                  <View style={styles.chipsRow}>
+                    {[
+                      { id: 'SYSTEM', label: 'Hệ thống' },
+                      { id: 'PAYMENT_DUE', label: 'Thanh toán' },
+                      { id: 'LATE_REGISTRATION', label: 'Bếp ăn' },
+                      { id: 'APPROVAL', label: 'Duyệt cắt' },
+                    ].map((t) => (
+                      <TouchableOpacity
+                        key={t.id}
+                        style={[styles.chip, notifType === t.id && styles.chipActive]}
+                        onPress={() => setNotifType(t.id)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.chipText, notifType === t.id && styles.chipTextActive]}>
+                          {t.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
-                </View>
-              )}
-            </Card>
 
-            <Button
-              title="Xem trước & Phát thông báo"
-              variant="primary"
-              size="lg"
-              onPress={handleOpenPreview}
-              style={styles.submitBtn}
-            />
-          </View>
-        ) : notifications.length === 0 ? (
-          <EmptyState
-            title="Chưa có thông báo nào được phát"
-            message="Chuyển sang tab Soạn thông báo để gửi tin tức mới đến cán bộ."
-          />
-        ) : (
-          notifications.map((n) => (
-            <Card key={n.id} variant="elevated" padding="md" style={styles.historyCard}>
-              <View style={styles.historyHeader}>
-                <View style={styles.historyIconBox}>
-                  <Ionicons name="megaphone" size={16} color={colors.primaryDark} />
-                </View>
-                <View style={styles.historyInfo}>
-                  <Text style={styles.historyTitle}>{n.title}</Text>
-                  <Text style={styles.historyDate}>
-                    {n.createdAt.replace('T', ' ').slice(0, 16)} · Người phát:{' '}
-                    {n.creatorName || 'Quản trị viên'}
-                  </Text>
-                </View>
-                {role === 'admin' && (
-                  <TouchableOpacity
-                    style={styles.deleteHistoryBtn}
-                    onPress={() => setDeleteTargetId(n.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                  </TouchableOpacity>
-                )}
+                  <Input
+                    label="Đường dẫn liên kết (tùy chọn)"
+                    value={url}
+                    onChangeText={setUrl}
+                    placeholder="VD: /(tabs)/payments hoặc /(tabs)/schedule"
+                  />
+                </Card>
+
+                {/* Phạm vi đối tượng */}
+                <Card variant="elevated" padding="md" style={styles.formCard}>
+                  <Text style={styles.formTitle}>Đối tượng tiếp nhận</Text>
+
+                  <View style={styles.scopeRow}>
+                    <TouchableOpacity
+                      style={[styles.scopeBtn, targetScope === 'broadcast' && styles.scopeBtnActive]}
+                      onPress={() => setTargetScope('broadcast')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="globe-outline"
+                        size={18}
+                        color={targetScope === 'broadcast' ? colors.primaryDark : colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.scopeBtnText,
+                          targetScope === 'broadcast' && styles.scopeBtnTextActive,
+                        ]}
+                      >
+                        Toàn cơ quan (Broadcast)
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[styles.scopeBtn, targetScope === 'custom' && styles.scopeBtnActive]}
+                      onPress={() => setTargetScope('custom')}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons
+                        name="people-outline"
+                        size={18}
+                        color={targetScope === 'custom' ? colors.primaryDark : colors.textMuted}
+                      />
+                      <Text
+                        style={[
+                          styles.scopeBtnText,
+                          targetScope === 'custom' && styles.scopeBtnTextActive,
+                        ]}
+                      >
+                        Chọn từng cán bộ ({selectedUserIds.length})
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {targetScope === 'custom' && (
+                    <View style={styles.customUsersList}>
+                      <Text style={styles.selectUsersTitle}>Chọn cán bộ cần nhận thông báo:</Text>
+                      <View style={styles.usersGrid}>
+                        {users.map((u) => {
+                          const isChecked = selectedUserIds.includes(u.id);
+                          return (
+                            <TouchableOpacity
+                              key={u.id}
+                              style={[styles.userItemCheck, isChecked && styles.userItemCheckActive]}
+                              onPress={() => toggleUserSelection(u.id)}
+                              activeOpacity={0.7}
+                            >
+                              <Ionicons
+                                name={isChecked ? 'checkbox' : 'square-outline'}
+                                size={18}
+                                color={isChecked ? colors.primary : colors.textMuted}
+                              />
+                              <Text
+                                style={[
+                                  styles.userItemCheckText,
+                                  isChecked && styles.userItemCheckTextActive,
+                                ]}
+                              >
+                                {u.fullName}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                </Card>
+
+                <Button
+                  title="Xem trước & Phát thông báo"
+                  variant="primary"
+                  size="lg"
+                  onPress={handleOpenPreview}
+                  style={styles.submitBtn}
+                />
               </View>
-
-              <Text style={styles.historyContent}>{n.content}</Text>
-              {n.url && <Text style={styles.historyUrl}>Liên kết: {n.url}</Text>}
-            </Card>
-          ))
-        )}
-      </ScrollView>
+            </>
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+        />
+      ) : (
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderHistoryItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <EmptyState
+              title="Chưa có thông báo nào được phát"
+              description="Chuyển sang tab Soạn thông báo để gửi tin tức mới đến cán bộ."
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing || isLoading}
+          onRefresh={handleRefresh}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      )}
 
       {/* Modal Xem Trước Trước Khi Gửi (Review & Preview Modal) */}
       <Modal visible={isPreviewOpen} transparent animationType="slide">
@@ -432,9 +453,6 @@ export default function ManagementNotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   scrollContent: {
     padding: spacing.md,
     paddingBottom: spacing['3xl'],
@@ -475,6 +493,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   composeForm: {
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
   formCard: {

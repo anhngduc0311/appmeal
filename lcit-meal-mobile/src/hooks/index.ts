@@ -16,3 +16,4 @@ export * from './useManagementUsers';
 export * from './useManagementNotifications';
 export * from './useManagementSettings';
 export * from './useAuditLogs';
+export * from './useNetworkStatus';

@@ -2,19 +2,20 @@
  * Quản lý Thanh Toán Tiền Ăn (Admin & Manager)
  * T31, T36: Danh sách/lọc thanh toán, tạo/sửa khoản thu thủ công, đánh dấu đã thanh toán (kèm chứng từ theo API thực tế)
  * và xuất báo cáo Excel thanh toán.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà & DatePickerInput chọn ngày trực quan.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Modal,
   ActivityIndicator,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import { Card } from '../../src/components/common/Card';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { Input } from '../../src/components/common/Input';
+import { DatePickerInput } from '../../src/components/common/DatePickerInput';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
 import { EmptyState } from '../../src/components/states/EmptyState';
@@ -80,19 +82,6 @@ export default function ManagementPaymentsScreen() {
   const updateMutation = useUpdatePayment();
   const markPaidMutation = useMarkPaid();
   const deleteMutation = useDeletePayment();
-
-  if (!hasAccess) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Quản lý Thu Tiền" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Không có quyền truy cập"
-          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền quản lý tài chính & thanh toán.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -193,8 +182,112 @@ export default function ManagementPaymentsScreen() {
     setDeleteTargetId(null);
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderPaymentItem = useCallback(
+    ({ item: p }: { item: Payment }) => {
+      const isPaid = p.status === 'paid' || p.isPaid === 1 || p.isPaid === true;
+      return (
+        <Card key={p.id} variant="elevated" padding="md" style={styles.paymentCard}>
+          <View style={styles.paymentHeader}>
+            <View style={styles.userCol}>
+              <Text style={styles.userName}>
+                {p.user?.fullName || p.userName || 'Cán bộ'}
+              </Text>
+              <Text style={styles.paymentDate}>
+                Kỳ: {formatBusinessDateDisplay(p.paymentDate)}
+              </Text>
+            </View>
+            <Badge
+              label={isPaid ? 'Đã thu' : p.status === 'overdue' ? 'Quá hạn' : 'Chưa thu'}
+              variant={isPaid ? 'confirmed' : p.status === 'overdue' ? 'cancelled' : 'pending'}
+              size="sm"
+            />
+          </View>
+
+          <View style={styles.amountRow}>
+            <Text style={styles.amountLabel}>Số tiền cần thu:</Text>
+            <Text style={styles.amountValue}>{formatCurrency(p.amount)}</Text>
+          </View>
+
+          {isPaid && p.paidAmount && (
+            <View style={styles.paidInfoRow}>
+              <Text style={styles.paidInfoText}>
+                Thực thu: <Text style={styles.boldText}>{formatCurrency(p.paidAmount)}</Text>{' '}
+                {p.paidAt ? `(${formatBusinessDateDisplay(p.paidAt.slice(0, 10))})` : ''}
+              </Text>
+              {p.billImg && (
+                <Text style={styles.billImgText} numberOfLines={1}>
+                  Chứng từ: {p.billImg}
+                </Text>
+              )}
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={styles.paymentFooter}>
+            <View style={styles.actionBtnsLeft}>
+              {!isPaid && (
+                <Button
+                  title="Xác nhận đã nộp"
+                  variant="primary"
+                  size="sm"
+                  style={styles.markPaidBtn}
+                  onPress={() => {
+                    setSelectedPayment(p);
+                    setMarkPaidAmount(String(p.amount));
+                    setMarkPaidBillImg(p.billImg || '');
+                    setIsMarkPaidOpen(true);
+                  }}
+                />
+              )}
+            </View>
+
+            <View style={styles.actionBtnsRight}>
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={() => {
+                  setSelectedPayment(p);
+                  setFormPaymentDate(p.paymentDate);
+                  setFormAmount(String(p.amount));
+                  setFormStatus(p.status);
+                  setIsEditOpen(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+
+              {role === 'admin' && (
+                <TouchableOpacity
+                  style={[styles.iconBtn, { backgroundColor: '#FEE2E2' }]}
+                  onPress={() => setDeleteTargetId(p.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="trash-outline" size={18} color="#DC2626" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Card>
+      );
+    },
+    [role]
+  );
+
+  if (!hasAccess) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Quản lý Thu Tiền" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Không có quyền truy cập"
+          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền quản lý tài chính & thanh toán.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View>
       <Header
         title="Quản lý Thu Tiền Ăn"
         subtitle="Lập đợt thu, xác nhận đã đóng và xuất báo cáo"
@@ -290,117 +383,32 @@ export default function ManagementPaymentsScreen() {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Payment List */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {filteredPayments.length === 0 ? (
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      <FlatList
+        data={filteredPayments}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderPaymentItem}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
           <EmptyState
             title="Không có khoản thanh toán nào"
-            message="Thử thay đổi bộ lọc hoặc bấm nút tạo khoản thu mới."
+            description="Thử thay đổi bộ lọc hoặc bấm nút tạo khoản thu mới."
           />
-        ) : (
-          filteredPayments.map((p) => {
-            const isPaid = p.status === 'paid' || p.isPaid === 1 || p.isPaid === true;
-            return (
-              <Card key={p.id} variant="elevated" padding="md" style={styles.paymentCard}>
-                <View style={styles.paymentHeader}>
-                  <View style={styles.userCol}>
-                    <Text style={styles.userName}>
-                      {p.user?.fullName || p.userName || 'Cán bộ'}
-                    </Text>
-                    <Text style={styles.paymentDate}>
-                      Kỳ: {formatBusinessDateDisplay(p.paymentDate)}
-                    </Text>
-                  </View>
-                  <Badge
-                    label={isPaid ? 'Đã thu' : p.status === 'overdue' ? 'Quá hạn' : 'Chưa thu'}
-                    variant={isPaid ? 'confirmed' : p.status === 'overdue' ? 'cancelled' : 'pending'}
-                    size="sm"
-                  />
-                </View>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing || isLoading}
+        onRefresh={handleRefresh}
+        initialNumToRender={12}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
 
-                <View style={styles.amountRow}>
-                  <Text style={styles.amountLabel}>Số tiền cần thu:</Text>
-                  <Text style={styles.amountValue}>{formatCurrency(p.amount)}</Text>
-                </View>
-
-                {isPaid && p.paidAmount && (
-                  <View style={styles.paidInfoRow}>
-                    <Text style={styles.paidInfoText}>
-                      Thực thu: <Text style={styles.boldText}>{formatCurrency(p.paidAmount)}</Text>{' '}
-                      {p.paidAt ? `(${formatBusinessDateDisplay(p.paidAt.slice(0, 10))})` : ''}
-                    </Text>
-                    {p.billImg && (
-                      <Text style={styles.billImgText} numberOfLines={1}>
-                        Chứng từ: {p.billImg}
-                      </Text>
-                    )}
-                  </View>
-                )}
-
-                {/* Actions */}
-                <View style={styles.paymentFooter}>
-                  <View style={styles.actionBtnsLeft}>
-                    {!isPaid && (
-                      <Button
-                        title="Xác nhận đã nộp"
-                        variant="primary"
-                        size="sm"
-                        style={styles.markPaidBtn}
-                        onPress={() => {
-                          setSelectedPayment(p);
-                          setMarkPaidAmount(String(p.amount));
-                          setMarkPaidBillImg(p.billImg || '');
-                          setIsMarkPaidOpen(true);
-                        }}
-                      />
-                    )}
-                  </View>
-
-                  <View style={styles.actionBtnsRight}>
-                    <TouchableOpacity
-                      style={styles.iconBtn}
-                      onPress={() => {
-                        setSelectedPayment(p);
-                        setFormPaymentDate(p.paymentDate);
-                        setFormAmount(String(p.amount));
-                        setFormStatus(p.status);
-                        setIsEditOpen(true);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
-                    </TouchableOpacity>
-
-                    {role === 'admin' && (
-                      <TouchableOpacity
-                        style={[styles.iconBtn, { backgroundColor: '#FEE2E2' }]}
-                        onPress={() => setDeleteTargetId(p.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="trash-outline" size={18} color="#DC2626" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-              </Card>
-            );
-          })
-        )}
-      </ScrollView>
-
-      {/* Modal Tạo Khoản Thu */}
+      {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput */}
       <Modal visible={isCreateOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
@@ -430,11 +438,11 @@ export default function ManagementPaymentsScreen() {
               })}
             </ScrollView>
 
-            <Input
-              label="Kỳ thanh toán (YYYY-MM-DD)"
+            <DatePickerInput
+              label="Kỳ thanh toán"
               value={formPaymentDate}
-              onChangeText={setFormPaymentDate}
-              placeholder="VD: 2026-09-25"
+              onChangeDate={setFormPaymentDate}
+              placeholder="Chọn ngày thanh toán..."
             />
 
             <Input
@@ -464,7 +472,7 @@ export default function ManagementPaymentsScreen() {
         </View>
       </Modal>
 
-      {/* Modal Sửa Khoản Thu */}
+      {/* Modal Sửa Khoản Thu - Tích hợp DatePickerInput */}
       <Modal visible={isEditOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
@@ -475,10 +483,11 @@ export default function ManagementPaymentsScreen() {
               </TouchableOpacity>
             </View>
 
-            <Input
-              label="Kỳ thanh toán (YYYY-MM-DD)"
+            <DatePickerInput
+              label="Kỳ thanh toán"
               value={formPaymentDate}
-              onChangeText={setFormPaymentDate}
+              onChangeDate={setFormPaymentDate}
+              placeholder="Chọn ngày thanh toán..."
             />
 
             <Input
@@ -599,9 +608,6 @@ export default function ManagementPaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   scrollContent: {
     padding: spacing.md,
     paddingBottom: spacing['3xl'],

@@ -1,10 +1,12 @@
 /**
  * Tab Screen - Thanh toán cá nhân (Payments) - T16, T23
- * Hiển thị danh sách các khoản tiền ăn cá nhân, trạng thái thanh toán và hướng dẫn quét mã QR
+ * Hiển thị danh sách các khoản tiền ăn cá nhân, trạng thái thanh toán,
+ * hỗ trợ quét mã QR, chia sẻ mã QR và sao chép cú pháp chuyển khoản nhanh.
  * TUÂN THỦ GAP-01: Chỉ hiển thị dữ liệu cá nhân từ /payments/me
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,8 +15,14 @@ import {
   Modal,
   Image,
   TouchableWithoutFeedback,
+  FlatList,
+  Alert,
+  Platform,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
@@ -42,6 +50,7 @@ export default function PaymentsScreen() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [qrModalVisible, setQrModalVisible] = useState(false);
   const [filterMode, setFilterMode] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [isSharingQr, setIsSharingQr] = useState(false);
 
   // Queries
   const { data: payments = [], isLoading: loadingPayments, refetch: refetchPayments } = useMyPayments();
@@ -72,13 +81,129 @@ export default function PaymentsScreen() {
     return true;
   });
 
-  return (
-    <ScreenContainer
-      scrollable
-      refreshing={isRefreshing}
-      onRefresh={handleRefresh}
-      backgroundColor={colors.background}
-    >
+  // Chia sẻ / Lưu ảnh QR
+  const handleShareQr = async () => {
+    if (!selectedPayment) return;
+    setIsSharingQr(true);
+
+    const qrUrl =
+      scheduleConfig?.paymentQrImage ||
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LCITMEAL_PAYMENT_${selectedPayment.id}`;
+
+    const transferContent = `TIEN AN ${user?.username?.toUpperCase() || 'CAN BO'} P${selectedPayment.id}`;
+    const shareMessage = `Thông tin chuyển khoản tiền ăn LCIT:\n• Số tiền: ${formatCurrency(selectedPayment.amount)}\n• Ngân hàng: MB Bank\n• STK: 0888999888\n• Tên TK: LCIT BẾP ĂN CƠ QUAN\n• Nội dung: ${transferContent}`;
+
+    try {
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: 'Mã QR thanh toán tiền ăn LCIT',
+            text: shareMessage,
+            url: qrUrl,
+          });
+        } else {
+          await navigator.clipboard.writeText(shareMessage);
+          Alert.alert('Đã sao chép', 'Đã sao chép thông tin chuyển khoản vào clipboard.');
+        }
+      } else {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          const destinationFile = new File(Paths.cache, `qr_payment_${selectedPayment.id}.png`);
+          const downloadedFile = await File.downloadFileAsync(qrUrl, destinationFile, {
+            idempotent: true,
+          });
+          await Sharing.shareAsync(downloadedFile.uri, {
+            mimeType: 'image/png',
+            dialogTitle: 'Chia sẻ mã QR thanh toán',
+            UTI: 'public.png',
+          });
+        } else {
+          await Share.share({
+            title: 'Thanh toán tiền ăn LCIT',
+            message: shareMessage,
+          });
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error)?.message !== 'User did not share') {
+        Alert.alert('Thông báo', 'Không thể chia sẻ mã QR vào lúc này.');
+      }
+    } finally {
+      setIsSharingQr(false);
+    }
+  };
+
+  const handleCopyText = async (text: string, label: string) => {
+    if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+      await navigator.clipboard.writeText(text);
+      Alert.alert('Đã sao chép', `Đã sao chép ${label} vào bộ nhớ tạm.`);
+    } else {
+      Alert.alert('Thông tin', `${label}: ${text}`);
+    }
+  };
+
+  const renderPaymentItem = useCallback(
+    ({ item }: { item: Payment }) => {
+      const isUnpaid = item.status === 'unpaid' || item.status === 'overdue';
+
+      return (
+        <Card variant="elevated" padding="lg" style={styles.paymentItemCard}>
+          <View style={styles.itemTopRow}>
+            <View style={{ flex: 1, marginRight: 12 }}>
+              <Text style={styles.itemTitle}>
+                Kỳ tiền ăn ngày {formatDisplayDate(item.paymentDate)}
+              </Text>
+              <Text style={styles.itemDate}>
+                {item.isPaid && item.paidAt
+                  ? `Đã thanh toán lúc: ${formatDateTime(item.paidAt)}`
+                  : `Hạn thanh toán: ${formatDisplayDate(item.paymentDate)}`}
+              </Text>
+            </View>
+
+            <Badge type="payment" value={item.status} size="sm" />
+          </View>
+
+          <View style={styles.itemBottomRow}>
+            <View>
+              <Text style={styles.itemAmountLabel}>Số tiền:</Text>
+              <Text style={styles.itemAmountValue}>
+                {formatCurrency(item.amount)}
+              </Text>
+            </View>
+
+            {isUnpaid ? (
+              <Button
+                title="Quét mã QR"
+                variant="primary"
+                size="sm"
+                leftIcon={
+                  <Ionicons
+                    name="qr-code-outline"
+                    size={16}
+                    color={colors.textInverse}
+                  />
+                }
+                onPress={() => handleOpenQr(item)}
+              />
+            ) : (
+              <View style={styles.paidCheckRow}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={18}
+                  color={colors.status.confirmed.dot}
+                />
+                <Text style={styles.paidCheckText}>Đã hoàn tất</Text>
+              </View>
+            )}
+          </View>
+        </Card>
+      );
+    },
+    []
+  );
+
+  const ListHeader = (
+    <>
       <Header
         title="Thanh toán tiền ăn"
         subtitle="Theo dõi và hoàn tất các khoản thu tiền ăn định kỳ"
@@ -129,7 +254,7 @@ export default function PaymentsScreen() {
           style={[styles.filterChip, filterMode === 'unpaid' && styles.filterChipActive]}
         >
           <Text style={[styles.filterText, filterMode === 'unpaid' && styles.filterTextActive]}>
-            Chưa thanh toán ({summary?.unpaidCount || 0})
+            Chưa thanh toán
           </Text>
         </TouchableOpacity>
 
@@ -144,80 +269,37 @@ export default function PaymentsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Danh sách các kỳ thu */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Lịch sử các kỳ thu ({filteredPayments.length})</Text>
+      <Text style={styles.sectionTitle}>
+        Lịch sử các kỳ thu ({filteredPayments.length})
+      </Text>
+    </>
+  );
 
-        {filteredPayments.length > 0 ? (
-          filteredPayments.map((item) => {
-            const isUnpaid = item.status === 'unpaid' || item.status === 'overdue';
-
-            return (
-              <Card
-                key={item.id}
-                variant="elevated"
-                padding="lg"
-                style={styles.paymentItemCard}
-              >
-                <View style={styles.itemTopRow}>
-                  <View style={{flex: 1, marginRight: 12}}>
-                    <Text style={styles.itemTitle}>
-                      Kỳ tiền ăn ngày {formatDisplayDate(item.paymentDate)}
-                    </Text>
-                    <Text style={styles.itemDate}>
-                      {item.isPaid && item.paidAt
-                        ? `Đã thanh toán lúc: ${formatDateTime(item.paidAt)}`
-                        : `Hạn thanh toán: ${formatDisplayDate(item.paymentDate)}`}
-                    </Text>
-                  </View>
-
-                  <Badge type="payment" value={item.status} size="sm" />
-                </View>
-
-                <View style={styles.itemBottomRow}>
-                  <View>
-                    <Text style={styles.itemAmountLabel}>Số tiền:</Text>
-                    <Text style={styles.itemAmountValue}>
-                      {formatCurrency(item.amount)}
-                    </Text>
-                  </View>
-
-                  {isUnpaid ? (
-                    <Button
-                      title="Quét mã QR"
-                      variant="primary"
-                      size="sm"
-                      leftIcon={
-                        <Ionicons
-                          name="qr-code-outline"
-                          size={16}
-                          color={colors.textInverse}
-                        />
-                      }
-                      onPress={() => handleOpenQr(item)}
-                    />
-                  ) : (
-                    <View style={styles.paidCheckRow}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={18}
-                        color={colors.status.confirmed.dot}
-                      />
-                      <Text style={styles.paidCheckText}>Đã hoàn tất</Text>
-                    </View>
-                  )}
-                </View>
-              </Card>
-            );
-          })
-        ) : (
+  return (
+    <ScreenContainer
+      scrollable={false}
+      backgroundColor={colors.background}
+    >
+      <FlatList
+        data={filteredPayments}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderPaymentItem}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
           <EmptyState
             iconName="wallet-outline"
             title="Chưa có khoản thanh toán"
             description="Bạn hiện chưa có khoản tiền ăn nào phát sinh trên hệ thống."
           />
-        )}
-      </View>
+        }
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
 
       {/* Modal Quét mã QR chuyển khoản */}
       <Modal
@@ -250,44 +332,74 @@ export default function PaymentsScreen() {
                       </Text>
                     </View>
 
-                    {/* QR Code */}
+                    {/* QR Code Image */}
                     <View style={styles.qrImageBox}>
                       <Image
                         source={{
                           uri:
                             scheduleConfig?.paymentQrImage ||
-                            `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=LCITMEAL_PAYMENT_${selectedPayment.id}`,
+                            `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=LCITMEAL_PAYMENT_${selectedPayment.id}`,
                         }}
                         style={styles.qrImage}
                         resizeMode="contain"
                       />
                     </View>
 
+                    {/* QR Transfer Info with Copy buttons */}
                     <View style={styles.qrInfoBox}>
                       <Text style={styles.qrInfoText}>
                         • Ngân hàng: <Text style={styles.qrBold}>MB Bank (Quân Đội)</Text>
                       </Text>
-                      <Text style={styles.qrInfoText}>
-                        • Số tài khoản: <Text style={styles.qrBold}>0888999888</Text>
-                      </Text>
+                      <TouchableOpacity
+                        style={styles.copyRow}
+                        onPress={() => handleCopyText('0888999888', 'Số tài khoản')}
+                      >
+                        <Text style={styles.qrInfoText}>
+                          • Số tài khoản: <Text style={styles.qrBold}>0888999888</Text>
+                        </Text>
+                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                      </TouchableOpacity>
                       <Text style={styles.qrInfoText}>
                         • Chủ tài khoản: <Text style={styles.qrBold}>LCIT BẾP ĂN CƠ QUAN</Text>
                       </Text>
-                      <Text style={styles.qrInfoText}>
-                        • Nội dung CK: <Text style={styles.qrBold}>TIEN AN {user?.username?.toUpperCase()} P{selectedPayment.id}</Text>
-                      </Text>
+                      <TouchableOpacity
+                        style={styles.copyRow}
+                        onPress={() =>
+                          handleCopyText(
+                            `TIEN AN ${user?.username?.toUpperCase()} P${selectedPayment.id}`,
+                            'Nội dung chuyển khoản'
+                          )
+                        }
+                      >
+                        <Text style={styles.qrInfoText}>
+                          • Nội dung CK:{' '}
+                          <Text style={styles.qrBold}>
+                            TIEN AN {user?.username?.toUpperCase()} P{selectedPayment.id}
+                          </Text>
+                        </Text>
+                        <Ionicons name="copy-outline" size={14} color={colors.primary} />
+                      </TouchableOpacity>
                     </View>
 
-                    <Button
-                      title="Đã chuyển khoản xong"
-                      variant="primary"
-                      size="md"
-                      onPress={() => {
-                        setQrModalVisible(false);
-                      }}
-                      fullWidth
-                      style={styles.doneBtn}
-                    />
+                    {/* Share / Save QR action buttons */}
+                    <View style={styles.qrActionButtons}>
+                      <Button
+                        title={isSharingQr ? 'Đang chia sẻ...' : 'Lưu / Chia sẻ mã QR'}
+                        variant="secondary"
+                        size="md"
+                        leftIcon={<Ionicons name="share-social-outline" size={18} color={colors.text} />}
+                        onPress={handleShareQr}
+                        disabled={isSharingQr}
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        title="Đã chuyển"
+                        variant="primary"
+                        size="md"
+                        onPress={() => setQrModalVisible(false)}
+                        style={{ flex: 1 }}
+                      />
+                    </View>
                   </>
                 )}
               </View>
@@ -300,8 +412,11 @@ export default function PaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
+  listContent: {
+    paddingBottom: spacing['3xl'],
+  },
   summaryCard: {
-    padding: 28,
+    padding: 24,
     backgroundColor: colors.primaryDark,
     marginBottom: spacing.lg,
   },
@@ -317,7 +432,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.medium,
   },
   summaryAmount: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: typography.weights.extrabold,
     marginVertical: 4,
   },
@@ -360,9 +475,6 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: colors.textInverse,
-  },
-  section: {
-    marginBottom: spacing['2xl'],
   },
   sectionTitle: {
     fontSize: typography.sizes.base,
@@ -425,7 +537,7 @@ const styles = StyleSheet.create({
   },
   qrCard: {
     width: '100%',
-    maxWidth: 380,
+    maxWidth: 400,
     backgroundColor: colors.surface,
     borderRadius: radius['2xl'],
     padding: spacing.xl,
@@ -448,7 +560,7 @@ const styles = StyleSheet.create({
   },
   qrAmountBox: {
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   qrAmountLabel: {
     fontSize: typography.sizes.xs,
@@ -482,18 +594,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSubtle,
     borderRadius: radius.lg,
     padding: spacing.md,
-    marginBottom: spacing.lg,
-    gap: 4,
+    marginBottom: spacing.md,
+    gap: 6,
+  },
+  copyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   qrInfoText: {
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
+    flex: 1,
   },
   qrBold: {
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
-  doneBtn: {
+  qrActionButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    width: '100%',
     marginTop: spacing.xs,
   },
 });

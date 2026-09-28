@@ -8,6 +8,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProviders, useAuth } from '../src/providers';
 import { LoadingState } from '../src/components/states';
+import { ErrorBoundary, OfflineBanner } from '../src/components/common';
 import { colors } from '../src/theme/colors';
 
 function RootNavigation() {
@@ -25,6 +26,7 @@ function RootNavigation() {
   return (
     <>
       <StatusBar style="dark" />
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerShown: false,
@@ -138,8 +140,10 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <AppProviders>
-      <RootNavigation />
-    </AppProviders>
+    <ErrorBoundary>
+      <AppProviders>
+        <RootNavigation />
+      </AppProviders>
+    </ErrorBoundary>
   );
 }

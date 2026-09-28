@@ -1,17 +1,18 @@
 /**
  * Nhật Ký Hệ Thống / Audit Logs (Admin Only)
  * T35: Danh sách, bộ lọc, chi tiết actor/action/target/result; chỉ đọc.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Modal,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,19 +45,6 @@ export default function ManagementAuditScreen() {
   const [selectedLog, setSelectedLog] = useState<AuditLogItem | null>(null);
 
   const { data: logs = [], isLoading, refetch } = useAuditLogs();
-
-  if (!isAdmin) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Nhật ký hệ thống" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Chỉ dành cho Quản trị viên"
-          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền xem nhật ký thao tác hệ thống.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -104,8 +92,54 @@ export default function ManagementAuditScreen() {
     return <Badge label={action} variant="confirmed" size="sm" />;
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderAuditItem = useCallback(
+    ({ item: log }: { item: AuditLogItem }) => (
+      <Card
+        variant="elevated"
+        padding="md"
+        style={styles.logCard}
+        onPress={() => setSelectedLog(log)}
+      >
+        <View style={styles.logHeader}>
+          <View style={styles.actorCol}>
+            <Text style={styles.actorName}>{log.actorName || 'Hệ thống'}</Text>
+            <Text style={styles.actorUser}>
+              {log.actorUsername ? `@${log.actorUsername}` : 'System'}
+            </Text>
+          </View>
+          {getActionBadge(log.logAction)}
+        </View>
+
+        <Text style={styles.logDetailText}>{log.logDetail || log.logAction}</Text>
+
+        <View style={styles.logFooter}>
+          <Text style={styles.logMetaText}>
+            Đối tượng: <Text style={styles.boldText}>{log.logTarget || 'N/A'}</Text>
+          </Text>
+          <Text style={styles.logTimeText}>
+            {log.createdAt ? log.createdAt.replace('T', ' ').substring(0, 19) : ''}
+          </Text>
+        </View>
+      </Card>
+    ),
+    []
+  );
+
+  if (!isAdmin) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Nhật ký hệ thống" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Chỉ dành cho Quản trị viên"
+          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền xem nhật ký thao tác hệ thống.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View style={styles.headerContainer}>
       <Header
         title="Nhật ký Hệ thống (Audit Logs)"
         subtitle="Theo dõi và tra cứu toàn bộ lịch sử thao tác"
@@ -157,133 +191,105 @@ export default function ManagementAuditScreen() {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Audit Log List */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {filteredLogs.length === 0 ? (
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      <FlatList
+        data={filteredLogs}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderAuditItem}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
           <EmptyState
             title="Không có nhật ký nào"
-            message="Không tìm thấy bản ghi nhật ký phù hợp với bộ lọc."
+            description="Không tìm thấy bản ghi nhật ký phù hợp với bộ lọc."
           />
-        ) : (
-          filteredLogs.map((log) => (
-            <Card
-              key={log.id}
-              variant="elevated"
-              padding="md"
-              style={styles.logCard}
-              onPress={() => setSelectedLog(log)}
-            >
-              <View style={styles.logHeader}>
-                <View style={styles.actorCol}>
-                  <Text style={styles.actorName}>{log.actorName || 'Hệ thống'}</Text>
-                  <Text style={styles.actorUser}>
-                    {log.actorUsername ? `@${log.actorUsername}` : 'System'}
-                  </Text>
-                </View>
-                {getActionBadge(log.logAction)}
-              </View>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing || isLoading}
+        onRefresh={handleRefresh}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
 
-              <Text style={styles.logDetailText}>{log.logDetail || log.logAction}</Text>
-
-              <View style={styles.logFooter}>
-                <Text style={styles.logMetaText}>
-                  Đối tượng: <Text style={styles.boldText}>{log.logTarget || 'N/A'}</Text>
-                </Text>
-                <Text style={styles.logTimeText}>{log.createdAt}</Text>
-              </View>
-            </Card>
-          ))
-        )}
-      </ScrollView>
-
-      {/* Modal Chi Tiết Nhật Ký Thao Tác */}
-      <Modal visible={selectedLog !== null} transparent animationType="slide">
+      {/* Modal Chi tiết Audit Log */}
+      <Modal visible={!!selectedLog} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chi tiết nhật ký thao tác</Text>
-              <TouchableOpacity onPress={() => setSelectedLog(null)} activeOpacity={0.7}>
-                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              <Text style={styles.modalTitle}>Chi tiết Nhật ký #{selectedLog?.id}</Text>
+              <TouchableOpacity onPress={() => setSelectedLog(null)}>
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            {selectedLog && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Thời gian:</Text>
-                  <Text style={styles.detailValue}>{selectedLog.createdAt}</Text>
-                </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Hành động</Text>
+                <Text style={styles.detailValue}>{selectedLog?.logAction}</Text>
+              </View>
 
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Người thực hiện:</Text>
-                  <Text style={styles.detailValue}>
-                    {selectedLog.actorName} (@{selectedLog.actorUsername || 'system'})
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Người thực hiện</Text>
+                <Text style={styles.detailValue}>
+                  {selectedLog?.actorName} (@{selectedLog?.actorUsername})
+                </Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Đối tượng tác động</Text>
+                <Text style={styles.detailValue}>{selectedLog?.logTarget || 'N/A'}</Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Thời gian</Text>
+                <Text style={styles.detailValue}>{selectedLog?.createdAt}</Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Địa chỉ IP</Text>
+                <Text style={styles.detailValue}>{selectedLog?.ipAddress || '127.0.0.1'}</Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Mô tả chi tiết</Text>
+                <Text style={styles.detailValue}>{selectedLog?.logDetail}</Text>
+              </View>
+
+              {selectedLog?.oldData ? (
+                <View style={styles.codeBlockWrapper}>
+                  <Text style={styles.codeBlockTitle}>Dữ liệu trước (Before):</Text>
+                  <Text style={styles.codeBlockText}>
+                    {typeof selectedLog.oldData === 'string'
+                      ? selectedLog.oldData
+                      : JSON.stringify(selectedLog.oldData, null, 2)}
                   </Text>
                 </View>
+              ) : null}
 
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Hành động:</Text>
-                  <Text style={styles.detailValue}>{selectedLog.logAction}</Text>
+              {selectedLog?.newData ? (
+                <View style={styles.codeBlockWrapper}>
+                  <Text style={styles.codeBlockTitle}>Dữ liệu sau (After):</Text>
+                  <Text style={styles.codeBlockText}>
+                    {typeof selectedLog.newData === 'string'
+                      ? selectedLog.newData
+                      : JSON.stringify(selectedLog.newData, null, 2)}
+                  </Text>
                 </View>
+              ) : null}
+            </ScrollView>
 
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Đối tượng tác động:</Text>
-                  <Text style={styles.detailValue}>{selectedLog.logTarget || 'N/A'}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Mô tả chi tiết:</Text>
-                  <Text style={styles.detailValue}>{selectedLog.logDetail || 'Không có'}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Địa chỉ IP:</Text>
-                  <Text style={styles.detailValue}>{selectedLog.ipAddress || '127.0.0.1'}</Text>
-                </View>
-
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Thiết bị (User-Agent):</Text>
-                  <Text style={styles.detailValue}>{selectedLog.userAgent || 'App Mobile'}</Text>
-                </View>
-
-                {selectedLog.oldData ? (
-                  <View style={styles.codeBlockWrapper}>
-                    <Text style={styles.codeBlockTitle}>Dữ liệu trước thay đổi (Old Data):</Text>
-                    <Text style={styles.codeBlockText}>
-                      {JSON.stringify(selectedLog.oldData, null, 2)}
-                    </Text>
-                  </View>
-                ) : null}
-
-                {selectedLog.newData ? (
-                  <View style={styles.codeBlockWrapper}>
-                    <Text style={styles.codeBlockTitle}>Dữ liệu sau thay đổi (New Data):</Text>
-                    <Text style={styles.codeBlockText}>
-                      {JSON.stringify(selectedLog.newData, null, 2)}
-                    </Text>
-                  </View>
-                ) : null}
-
-                <Button
-                  title="Đóng"
-                  variant="secondary"
-                  onPress={() => setSelectedLog(null)}
-                  style={styles.closeBtn}
-                />
-              </ScrollView>
-            )}
+            <Button
+              title="Đóng"
+              variant="secondary"
+              size="md"
+              onPress={() => setSelectedLog(null)}
+              style={styles.closeBtn}
+            />
           </View>
         </View>
       </Modal>
@@ -292,12 +298,12 @@ export default function ManagementAuditScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
+  headerContainer: {
+    marginBottom: spacing.xs,
   },
   scrollContent: {
-    padding: spacing.md,
     paddingBottom: spacing['3xl'],
+    paddingHorizontal: spacing.md,
   },
   searchBarWrapper: {
     position: 'relative',

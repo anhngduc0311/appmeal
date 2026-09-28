@@ -1,18 +1,18 @@
 /**
  * Quản lý Lịch Bếp & Ngày Nghỉ Lễ (Admin & Manager)
  * T29: Danh sách, tạo/sửa lịch ăn, chi tiết tổng suất, hủy/mở bếp (dialog cảnh báo tác động) và quản lý nghỉ lễ.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà & DatePickerInput chọn ngày trực quan.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
-  RefreshControl,
   Modal,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ import { Card } from '../../src/components/common/Card';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { Input } from '../../src/components/common/Input';
+import { DatePickerInput } from '../../src/components/common/DatePickerInput';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
 import { EmptyState } from '../../src/components/states/EmptyState';
@@ -42,7 +43,7 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
-import { Meal } from '../../src/types';
+import { Meal, HolidayEvent } from '../../src/types';
 
 export default function ManagementMealsScreen() {
   const router = useRouter();
@@ -82,20 +83,6 @@ export default function ManagementMealsScreen() {
   const restoreMealMutation = useRestoreMeal();
   const createHolidayMutation = useCreateHoliday();
   const restoreHolidayMutation = useRestoreHoliday();
-
-  if (!hasAccess) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Lịch Bếp & Nghỉ Lễ" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Không có quyền truy cập"
-          message={`Tài khoản (${user?.fullName} - ${role}) không được phân quyền quản lý lịch bếp.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await Promise.all([refetchMeals(), refetchHolidays()]);
@@ -157,8 +144,128 @@ export default function ManagementMealsScreen() {
     setHolidayReasonInput('');
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderMealItem = useCallback(({ item: meal }: { item: Meal }) => {
+    const isCancelled = Boolean(meal.isCancelled) || meal.status === 'cancelled';
+    return (
+      <Card key={meal.id} variant="elevated" padding="md" style={styles.mealCard}>
+        <View style={styles.mealHeader}>
+          <View style={styles.dateCol}>
+            <Text style={styles.mealDateText}>
+              {formatBusinessDateDisplay(meal.mealDate)}
+            </Text>
+            <Text style={styles.mealDateRaw}>{meal.mealDate}</Text>
+          </View>
+          <Badge
+            label={isCancelled ? 'Đã hủy bếp' : 'Hoạt động'}
+            variant={isCancelled ? 'cancelled' : 'confirmed'}
+            size="sm"
+          />
+        </View>
+
+        <Text style={styles.mealNote}>
+          {meal.note || 'Thực đơn chuẩn theo thực đơn tháng của nhà bếp.'}
+        </Text>
+
+        <View style={styles.mealFooter}>
+          {/* Xem Summary */}
+          <TouchableOpacity
+            style={styles.summaryBtn}
+            onPress={() => setSummaryMealId(meal.id)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pie-chart-outline" size={14} color={colors.primary} />
+            <Text style={styles.summaryBtnText}>Xem tổng suất</Text>
+          </TouchableOpacity>
+
+          {/* Actions */}
+          <View style={styles.mealActions}>
+            <TouchableOpacity
+              style={styles.actionIconBtn}
+              onPress={() => {
+                setSelectedMeal(meal);
+                setMealNoteInput(meal.note || '');
+                setIsEditMealOpen(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            {isCancelled ? (
+              <TouchableOpacity
+                style={[styles.actionIconBtn, { backgroundColor: '#DCFCE7' }]}
+                onPress={() => setRestoreTargetMeal(meal)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="refresh-outline" size={18} color="#15803D" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionIconBtn, { backgroundColor: '#FEE2E2' }]}
+                onPress={() => {
+                  setCancelTargetMeal(meal);
+                  setCancelReasonInput('');
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="ban-outline" size={18} color="#DC2626" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Card>
+    );
+  }, []);
+
+  const renderHolidayItem = useCallback(
+    ({ item: h }: { item: HolidayEvent }) => (
+      <Card key={h.id} variant="elevated" padding="md" style={styles.mealCard}>
+        <View style={styles.mealHeader}>
+          <View style={styles.dateCol}>
+            <Text style={styles.mealDateText}>{h.name}</Text>
+            <Text style={styles.mealDateRaw}>
+              Từ {formatBusinessDateDisplay(h.fromDate)} đến {formatBusinessDateDisplay(h.toDate)}
+            </Text>
+          </View>
+          <Badge
+            label={h.status === 'active' ? 'Đang áp dụng' : 'Đã hủy'}
+            variant={h.status === 'active' ? 'confirmed' : 'cancelled'}
+            size="sm"
+          />
+        </View>
+
+        {h.reason && <Text style={styles.mealNote}>Lý do: {h.reason}</Text>}
+
+        {h.status !== 'active' && (
+          <View style={styles.mealFooter}>
+            <Button
+              title="Mở lại sự kiện"
+              variant="outline"
+              size="sm"
+              onPress={() => restoreHolidayMutation.mutate(h.id)}
+            />
+          </View>
+        )}
+      </Card>
+    ),
+    [restoreHolidayMutation]
+  );
+
+  if (!hasAccess) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Lịch Bếp & Nghỉ Lễ" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Không có quyền truy cập"
+          message={`Tài khoản (${user?.fullName} - ${role}) không được phân quyền quản lý lịch bếp.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View>
       <Header
         title="Quản lý Lịch Bếp & Nghỉ Lễ"
         subtitle="Thiết lập thực đơn, hủy/mở bếp và ngày nghỉ"
@@ -225,137 +332,52 @@ export default function ManagementMealsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+    </View>
+  );
 
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoadingMeals || isLoadingHolidays}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {activeTab === 'meals' ? (
-          meals.length === 0 ? (
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      {activeTab === 'meals' ? (
+        <FlatList
+          data={meals}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderMealItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
             <EmptyState
               title="Chưa có ngày bếp nào"
-              message="Bấm nút dấu cộng góc trên bên phải để tạo ngày bếp mới."
+              description="Bấm nút dấu cộng góc trên bên phải để tạo ngày bếp mới."
             />
-          ) : (
-            meals.map((meal) => {
-              const isCancelled = Boolean(meal.isCancelled) || meal.status === 'cancelled';
-              return (
-                <Card key={meal.id} variant="elevated" padding="md" style={styles.mealCard}>
-                  <View style={styles.mealHeader}>
-                    <View style={styles.dateCol}>
-                      <Text style={styles.mealDateText}>
-                        {formatBusinessDateDisplay(meal.mealDate)}
-                      </Text>
-                      <Text style={styles.mealDateRaw}>{meal.mealDate}</Text>
-                    </View>
-                    <Badge
-                      label={isCancelled ? 'Đã hủy bếp' : 'Hoạt động'}
-                      variant={isCancelled ? 'cancelled' : 'confirmed'}
-                      size="sm"
-                    />
-                  </View>
-
-                  <Text style={styles.mealNote}>
-                    {meal.note || 'Thực đơn chuẩn theo thực đơn tháng của nhà bếp.'}
-                  </Text>
-
-                  <View style={styles.mealFooter}>
-                    {/* Xem Summary */}
-                    <TouchableOpacity
-                      style={styles.summaryBtn}
-                      onPress={() => setSummaryMealId(meal.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="pie-chart-outline" size={14} color={colors.primary} />
-                      <Text style={styles.summaryBtnText}>Xem tổng suất</Text>
-                    </TouchableOpacity>
-
-                    {/* Actions */}
-                    <View style={styles.mealActions}>
-                      <TouchableOpacity
-                        style={styles.actionIconBtn}
-                        onPress={() => {
-                          setSelectedMeal(meal);
-                          setMealNoteInput(meal.note || '');
-                          setIsEditMealOpen(true);
-                        }}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
-                      </TouchableOpacity>
-
-                      {isCancelled ? (
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, { backgroundColor: '#DCFCE7' }]}
-                          onPress={() => setRestoreTargetMeal(meal)}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="refresh-outline" size={18} color="#15803D" />
-                        </TouchableOpacity>
-                      ) : (
-                        <TouchableOpacity
-                          style={[styles.actionIconBtn, { backgroundColor: '#FEE2E2' }]}
-                          onPress={() => {
-                            setCancelTargetMeal(meal);
-                            setCancelReasonInput('');
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <Ionicons name="ban-outline" size={18} color="#DC2626" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                </Card>
-              );
-            })
-          )
-        ) : holidays.length === 0 ? (
-          <EmptyState
-            title="Chưa có ngày nghỉ lễ nào"
-            message="Bấm nút dấu cộng để thiết lập kỳ nghỉ lễ cho toàn cơ quan."
-          />
-        ) : (
-          holidays.map((h) => (
-            <Card key={h.id} variant="elevated" padding="md" style={styles.mealCard}>
-              <View style={styles.mealHeader}>
-                <View style={styles.dateCol}>
-                  <Text style={styles.mealDateText}>{h.name}</Text>
-                  <Text style={styles.mealDateRaw}>
-                    Từ {formatBusinessDateDisplay(h.fromDate)} đến {formatBusinessDateDisplay(h.toDate)}
-                  </Text>
-                </View>
-                <Badge
-                  label={h.status === 'active' ? 'Đang áp dụng' : 'Đã hủy'}
-                  variant={h.status === 'active' ? 'confirmed' : 'cancelled'}
-                  size="sm"
-                />
-              </View>
-
-              {h.reason && <Text style={styles.mealNote}>Lý do: {h.reason}</Text>}
-
-              {h.status !== 'active' && (
-                <View style={styles.mealFooter}>
-                  <Button
-                    title="Mở lại sự kiện"
-                    variant="outline"
-                    size="sm"
-                    onPress={() => restoreHolidayMutation.mutate(h.id)}
-                  />
-                </View>
-              )}
-            </Card>
-          ))
-        )}
-      </ScrollView>
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing || isLoadingMeals}
+          onRefresh={handleRefresh}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      ) : (
+        <FlatList
+          data={holidays}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderHolidayItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <EmptyState
+              title="Chưa có ngày nghỉ lễ nào"
+              description="Bấm nút dấu cộng để thiết lập kỳ nghỉ lễ cho toàn cơ quan."
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing || isLoadingHolidays}
+          onRefresh={handleRefresh}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      )}
 
       {/* Modal Xem Tổng Suất Ăn (Summary) */}
       <Modal visible={summaryMealId !== null} transparent animationType="fade">
@@ -411,7 +433,7 @@ export default function ManagementMealsScreen() {
         </View>
       </Modal>
 
-      {/* Modal Tạo Ngày Bếp Mới */}
+      {/* Modal Tạo Ngày Bếp Mới - Tích hợp DatePickerInput */}
       <Modal visible={isCreateMealOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
@@ -422,11 +444,11 @@ export default function ManagementMealsScreen() {
               </TouchableOpacity>
             </View>
 
-            <Input
-              label="Ngày bếp (YYYY-MM-DD)"
+            <DatePickerInput
+              label="Ngày bếp"
               value={mealDateInput}
-              onChangeText={setMealDateInput}
-              placeholder="VD: 2026-09-26"
+              onChangeDate={setMealDateInput}
+              placeholder="Chọn ngày nấu..."
             />
 
             <Input
@@ -555,7 +577,7 @@ export default function ManagementMealsScreen() {
         onCancel={() => setRestoreTargetMeal(null)}
       />
 
-      {/* Modal Thêm Ngày Nghỉ Lễ */}
+      {/* Modal Thêm Ngày Nghỉ Lễ - Tích hợp DatePickerInput */}
       <Modal visible={isCreateHolidayOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
@@ -575,19 +597,20 @@ export default function ManagementMealsScreen() {
 
             <View style={styles.modalRowInputs}>
               <View style={styles.inputHalf}>
-                <Input
-                  label="Từ ngày (YYYY-MM-DD)"
+                <DatePickerInput
+                  label="Từ ngày"
                   value={holidayFromInput}
-                  onChangeText={setHolidayFromInput}
-                  placeholder="2026-09-01"
+                  onChangeDate={setHolidayFromInput}
+                  placeholder="Chọn ngày..."
                 />
               </View>
               <View style={styles.inputHalf}>
-                <Input
-                  label="Đến ngày (YYYY-MM-DD)"
+                <DatePickerInput
+                  label="Đến ngày"
                   value={holidayToInput}
-                  onChangeText={setHolidayToInput}
-                  placeholder="2026-09-03"
+                  onChangeDate={setHolidayToInput}
+                  placeholder="Chọn ngày..."
+                  minDate={holidayFromInput}
                 />
               </View>
             </View>
@@ -622,9 +645,6 @@ export default function ManagementMealsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   scrollContent: {
     padding: spacing.md,
     paddingBottom: spacing['3xl'],

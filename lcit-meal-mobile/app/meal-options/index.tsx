@@ -1,18 +1,18 @@
 /**
  * Screen: Cắt suất theo yêu cầu & Lịch sử - T15, T22, T25
  * - Tạo yêu cầu cắt suất: Cắt hôm nay (cancel_today), Cắt theo khoảng (cancel_schedule), Cắt dài hạn (cancel_permanent)
- * - Cả 3 loại được hệ thống tự động duyệt (Approved) theo đúng API hiện tại
- * - Xem danh sách lịch sử các yêu cầu đã gửi
- * - Khóa nút khi mutation đang chạy
+ * - Tích hợp DatePickerModal tương tác lịch tháng
+ * - Tối ưu danh sách Lịch sử bằng FlatList mượt mà
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
@@ -21,14 +21,14 @@ import { Card } from '../../src/components/common/Card';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { Input } from '../../src/components/common/Input';
-import { DatePickerModal } from '../../src/components/meals/DatePickerModal';
+import { DatePickerModal } from '../../src/components/common/DatePickerModal';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { EmptyState } from '../../src/components/states/EmptyState';
 import {
   useMyMealOptions,
   useCreateMealOptionMutation,
 } from '../../src/hooks/useMealsData';
-import { MealOptionType } from '../../src/types';
+import { MealOption, MealOptionType } from '../../src/types';
 import {
   formatBusinessDate,
   formatDisplayDate,
@@ -106,13 +106,43 @@ export default function MealOptionsScreen() {
     setToDate(d);
   };
 
-  return (
-    <ScreenContainer
-      scrollable
-      refreshing={loadingOptions}
-      onRefresh={refetchOptions}
-      backgroundColor={colors.background}
-    >
+  const renderHistoryItem = useCallback(({ item }: { item: MealOption }) => {
+    const typeLabel =
+      item.type === 'cancel_today'
+        ? 'Cắt hôm nay'
+        : item.type === 'cancel_schedule'
+        ? 'Cắt theo khoảng'
+        : 'Cắt dài hạn';
+
+    return (
+      <Card variant="elevated" padding="lg" style={styles.historyCard}>
+        <View style={styles.historyHeader}>
+          <View>
+            <Text style={styles.historyType}>{typeLabel}</Text>
+            <Text style={styles.historyDates}>
+              {formatDisplayDate(item.fromDate)} → {formatDisplayDate(item.toDate)}
+            </Text>
+          </View>
+          <Badge type="mealOption" value={item.status} size="sm" />
+        </View>
+
+        {item.note && (
+          <Text style={styles.historyNote}>
+            Lý do: <Text style={styles.historyNoteContent}>{item.note}</Text>
+          </Text>
+        )}
+
+        {item.createdAt && (
+          <Text style={styles.historyTime}>
+            Tạo lúc: {item.createdAt}
+          </Text>
+        )}
+      </Card>
+    );
+  }, []);
+
+  const ListHeader = (
+    <>
       <Header
         title="Yêu cầu cắt suất"
         subtitle="Cắt suất hôm nay, theo khoảng ngày hoặc dài hạn"
@@ -159,200 +189,180 @@ export default function MealOptionsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+    </>
+  );
 
-      {/* 1. TAB TẠO YÊU CẦU MỚI */}
+  return (
+    <ScreenContainer
+      scrollable={false}
+      backgroundColor={colors.background}
+    >
       {activeTab === 'create' ? (
-        <View style={styles.formContainer}>
-          {/* Chọn loại cắt suất */}
-          <Card variant="elevated" padding="lg" style={styles.card}>
-            <Text style={styles.fieldLabel}>1. Chọn loại cắt suất:</Text>
+        <FlatList
+          data={[]}
+          renderItem={null}
+          ListHeaderComponent={
+            <>
+              {ListHeader}
+              <View style={styles.formContainer}>
+                {/* Chọn loại cắt suất */}
+                <Card variant="elevated" padding="lg" style={styles.card}>
+                  <Text style={styles.fieldLabel}>1. Chọn loại cắt suất:</Text>
 
-            <View style={styles.typeGrid}>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  setOptionType('cancel_today');
-                  setFromDate(todayStr);
-                  setToDate(todayStr);
-                }}
-                style={[
-                  styles.typeOption,
-                  optionType === 'cancel_today' && styles.typeOptionActive,
-                ]}
-              >
-                <Ionicons
-                  name="today-outline"
-                  size={22}
-                  color={optionType === 'cancel_today' ? colors.primaryDark : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.typeTitle,
-                    optionType === 'cancel_today' && styles.typeTitleActive,
-                  ]}
-                >
-                  Cắt hôm nay
-                </Text>
-                <Text style={styles.typeDesc}>Chỉ cắt bữa trưa hôm nay</Text>
-              </TouchableOpacity>
+                  <View style={styles.typeGrid}>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        setOptionType('cancel_today');
+                        setFromDate(todayStr);
+                        setToDate(todayStr);
+                      }}
+                      style={[
+                        styles.typeOption,
+                        optionType === 'cancel_today' && styles.typeOptionActive,
+                      ]}
+                    >
+                      <Ionicons
+                        name="today-outline"
+                        size={22}
+                        color={optionType === 'cancel_today' ? colors.primaryDark : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.typeTitle,
+                          optionType === 'cancel_today' && styles.typeTitleActive,
+                        ]}
+                      >
+                        Cắt hôm nay
+                      </Text>
+                      <Text style={styles.typeDesc}>Chỉ cắt bữa trưa hôm nay</Text>
+                    </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setOptionType('cancel_schedule')}
-                style={[
-                  styles.typeOption,
-                  optionType === 'cancel_schedule' && styles.typeOptionActive,
-                ]}
-              >
-                <Ionicons
-                  name="calendar-outline"
-                  size={22}
-                  color={optionType === 'cancel_schedule' ? colors.primaryDark : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.typeTitle,
-                    optionType === 'cancel_schedule' && styles.typeTitleActive,
-                  ]}
-                >
-                  Cắt theo khoảng
-                </Text>
-                <Text style={styles.typeDesc}>Từ ngày đến ngày</Text>
-              </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setOptionType('cancel_schedule')}
+                      style={[
+                        styles.typeOption,
+                        optionType === 'cancel_schedule' && styles.typeOptionActive,
+                      ]}
+                    >
+                      <Ionicons
+                        name="calendar-outline"
+                        size={22}
+                        color={optionType === 'cancel_schedule' ? colors.primaryDark : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.typeTitle,
+                          optionType === 'cancel_schedule' && styles.typeTitleActive,
+                        ]}
+                      >
+                        Cắt theo khoảng
+                      </Text>
+                      <Text style={styles.typeDesc}>Từ ngày đến ngày</Text>
+                    </TouchableOpacity>
 
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => setOptionType('cancel_permanent')}
-                style={[
-                  styles.typeOption,
-                  optionType === 'cancel_permanent' && styles.typeOptionActive,
-                ]}
-              >
-                <Ionicons
-                  name="time-outline"
-                  size={22}
-                  color={optionType === 'cancel_permanent' ? colors.primaryDark : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.typeTitle,
-                    optionType === 'cancel_permanent' && styles.typeTitleActive,
-                  ]}
-                >
-                  Cắt dài hạn
-                </Text>
-                <Text style={styles.typeDesc}>Nghỉ phép dài hạn</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => setOptionType('cancel_permanent')}
+                      style={[
+                        styles.typeOption,
+                        optionType === 'cancel_permanent' && styles.typeOptionActive,
+                      ]}
+                    >
+                      <Ionicons
+                        name="time-outline"
+                        size={22}
+                        color={optionType === 'cancel_permanent' ? colors.primaryDark : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.typeTitle,
+                          optionType === 'cancel_permanent' && styles.typeTitleActive,
+                        ]}
+                      >
+                        Cắt dài hạn
+                      </Text>
+                      <Text style={styles.typeDesc}>Nghỉ phép dài hạn</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Card>
 
-          {/* Chọn thời gian */}
-          <Card variant="elevated" padding="lg" style={styles.card}>
-            <Text style={styles.fieldLabel}>2. Thời gian hiệu lực:</Text>
+                {/* Chọn thời gian */}
+                <Card variant="elevated" padding="lg" style={styles.card}>
+                  <Text style={styles.fieldLabel}>2. Thời gian hiệu lực:</Text>
 
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => setDateModalVisible(true)}
-              style={styles.datePickerTrigger}
-            >
-              <View style={styles.dateTriggerRow}>
-                <Ionicons name="calendar" size={22} color={colors.primary} />
-                <View style={styles.dateTriggerTextCol}>
-                  <Text style={styles.dateTriggerSub}>Khoảng ngày đã chọn:</Text>
-                  <Text style={styles.dateTriggerMain}>
-                    {optionType === 'cancel_today'
-                      ? formatDisplayDate(todayStr)
-                      : optionType === 'cancel_permanent'
-                      ? `Bắt đầu từ ${formatDisplayDate(fromDate)} (dài hạn)`
-                      : `Từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate || fromDate)}`}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setDateModalVisible(true)}
+                    style={styles.datePickerTrigger}
+                  >
+                    <View style={styles.dateTriggerRow}>
+                      <Ionicons name="calendar" size={22} color={colors.primary} />
+                      <View style={styles.dateTriggerTextCol}>
+                        <Text style={styles.dateTriggerSub}>Khoảng ngày đã chọn:</Text>
+                        <Text style={styles.dateTriggerMain}>
+                          {optionType === 'cancel_today'
+                            ? formatDisplayDate(todayStr)
+                            : optionType === 'cancel_permanent'
+                            ? `Bắt đầu từ ${formatDisplayDate(fromDate)} (dài hạn)`
+                            : `Từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate || fromDate)}`}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.changeDateText}>Thay đổi</Text>
+                  </TouchableOpacity>
+                </Card>
+
+                {/* Nhập lý do */}
+                <Card variant="elevated" padding="lg" style={styles.card}>
+                  <Text style={styles.fieldLabel}>3. Lý do / Ghi chú (không bắt buộc):</Text>
+                  <Input
+                    placeholder="Ví dụ: Đi công tác tại cảng, Nghỉ phép..."
+                    value={note}
+                    onChangeText={setNote}
+                    leftIcon={
+                      <Ionicons
+                        name="create-outline"
+                        size={20}
+                        color={colors.textSecondary}
+                      />
+                    }
+                  />
+                </Card>
+
+                {/* Thông tin quy định duyệt */}
+                <View style={styles.policyNotice}>
+                  <Ionicons name="checkmark-circle" size={18} color={colors.status.confirmed.dot} />
+                  <Text style={styles.policyText}>
+                    Yêu cầu cắt suất sẽ được <Text style={styles.policyBold}>tự động duyệt ngay</Text> và đồng bộ hủy các suất ăn tương ứng trong khoảng ngày đã chọn.
                   </Text>
                 </View>
-              </View>
-              <Text style={styles.changeDateText}>Thay đổi</Text>
-            </TouchableOpacity>
-          </Card>
 
-          {/* Nhập lý do */}
-          <Card variant="elevated" padding="lg" style={styles.card}>
-            <Text style={styles.fieldLabel}>3. Lý do / Ghi chú (không bắt buộc):</Text>
-            <Input
-              placeholder="Ví dụ: Đi công tác tại cảng, Nghỉ phép..."
-              value={note}
-              onChangeText={setNote}
-              leftIcon={
-                <Ionicons
-                  name="create-outline"
-                  size={20}
-                  color={colors.textSecondary}
+                {/* Nút gửi yêu cầu */}
+                <Button
+                  title="Xác nhận gửi yêu cầu cắt suất"
+                  variant="primary"
+                  size="lg"
+                  loading={createMutation.isPending}
+                  disabled={createMutation.isPending}
+                  onPress={handleSubmit}
+                  fullWidth
+                  style={styles.submitBtn}
                 />
-              }
-            />
-          </Card>
-
-          {/* Thông tin quy định duyệt */}
-          <View style={styles.policyNotice}>
-            <Ionicons name="checkmark-circle" size={18} color={colors.status.confirmed.dot} />
-            <Text style={styles.policyText}>
-              Yêu cầu cắt suất sẽ được <Text style={styles.policyBold}>tự động duyệt ngay</Text> và đồng bộ hủy các suất ăn tương ứng trong khoảng ngày đã chọn.
-            </Text>
-          </View>
-
-          {/* Nút gửi yêu cầu */}
-          <Button
-            title="Xác nhận gửi yêu cầu cắt suất"
-            variant="primary"
-            size="lg"
-            loading={createMutation.isPending}
-            disabled={createMutation.isPending}
-            onPress={handleSubmit}
-            fullWidth
-            style={styles.submitBtn}
-          />
-        </View>
+              </View>
+            </>
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+        />
       ) : (
-        /* 2. TAB LỊCH SỬ YÊU CẦU */
-        <View style={styles.historyContainer}>
-          {options.length > 0 ? (
-            options.map((item) => {
-              const typeLabel =
-                item.type === 'cancel_today'
-                  ? 'Cắt hôm nay'
-                  : item.type === 'cancel_schedule'
-                  ? 'Cắt theo khoảng'
-                  : 'Cắt dài hạn';
-
-              return (
-                <Card
-                  key={item.id}
-                  variant="elevated"
-                  padding="lg"
-                  style={styles.historyCard}
-                >
-                  <View style={styles.historyHeader}>
-                    <View>
-                      <Text style={styles.historyType}>{typeLabel}</Text>
-                      <Text style={styles.historyDates}>
-                        {formatDisplayDate(item.fromDate)} → {formatDisplayDate(item.toDate)}
-                      </Text>
-                    </View>
-                    <Badge type="mealOption" value={item.status} size="sm" />
-                  </View>
-
-                  {item.note && (
-                    <Text style={styles.historyNote}>
-                      Lý do: <Text style={styles.historyNoteContent}>{item.note}</Text>
-                    </Text>
-                  )}
-
-                  {item.createdAt && (
-                    <Text style={styles.historyTime}>
-                      Tạo lúc: {item.createdAt}
-                    </Text>
-                  )}
-                </Card>
-              );
-            })
-          ) : (
+        <FlatList
+          data={options}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderHistoryItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
             <EmptyState
               iconName="document-text-outline"
               title="Chưa có yêu cầu cắt suất nào"
@@ -360,14 +370,25 @@ export default function MealOptionsScreen() {
               actionText="Tạo yêu cầu ngay"
               onAction={() => setActiveTab('create')}
             />
-          )}
-        </View>
+          }
+          refreshing={loadingOptions}
+          onRefresh={refetchOptions}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+        />
       )}
 
-      {/* DatePicker Modal */}
+      {/* Date Picker Modal */}
       <DatePickerModal
         visible={dateModalVisible}
         mode={optionType === 'cancel_schedule' ? 'range' : 'single'}
+        initialDate={fromDate}
+        initialFromDate={fromDate}
+        initialToDate={toDate}
+        minDate={todayStr}
         title={
           optionType === 'cancel_today'
             ? 'Chọn ngày cắt'
@@ -375,8 +396,14 @@ export default function MealOptionsScreen() {
             ? 'Chọn ngày bắt đầu cắt dài hạn'
             : 'Chọn khoảng ngày cắt suất'
         }
-        onSelectSingle={handleSelectSingleDate}
-        onSelectRange={handleSelectDateRange}
+        onSelectSingle={(d) => {
+          handleSelectSingleDate(d);
+          setDateModalVisible(false);
+        }}
+        onSelectRange={(f, t) => {
+          handleSelectDateRange(f, t);
+          setDateModalVisible(false);
+        }}
         onClose={() => setDateModalVisible(false)}
       />
     </ScreenContainer>
@@ -387,7 +414,7 @@ const styles = StyleSheet.create({
   tabSwitcher: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: 4,
     marginBottom: spacing.lg,
   },
@@ -395,18 +422,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: spacing.sm,
     alignItems: 'center',
-    borderRadius: radius.md,
+    justifyContent: 'center',
+    borderRadius: radius.lg,
   },
   tabBtnActive: {
     backgroundColor: colors.surface,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
   tabBtnText: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
   },
@@ -415,27 +443,28 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.bold,
   },
   formContainer: {
-    paddingBottom: spacing['3xl'],
+    gap: spacing.lg,
   },
   card: {
-    backgroundColor: colors.surface,
-    marginBottom: spacing.md,
+    gap: spacing.md,
   },
   fieldLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
-    marginBottom: spacing.sm,
   },
   typeGrid: {
     gap: spacing.sm,
   },
   typeOption: {
-    backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: spacing.md,
+    backgroundColor: colors.surfaceSubtle,
+    borderRadius: radius.xl,
     borderWidth: 1.5,
     borderColor: colors.border,
+    gap: spacing.md,
   },
   typeOptionActive: {
     backgroundColor: colors.primary50,
@@ -445,22 +474,21 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
-    marginTop: 4,
   },
   typeTitleActive: {
     color: colors.primaryDark,
   },
   typeDesc: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
-    marginTop: 2,
+    marginLeft: 'auto',
   },
   datePickerTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.surfaceSubtle,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     padding: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -488,30 +516,30 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.bold,
     color: colors.primary,
+    marginLeft: spacing.sm,
   },
   policyNotice: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.status.confirmed.bg,
+    alignItems: 'flex-start',
+    backgroundColor: colors.primary50,
     borderRadius: radius.lg,
     padding: spacing.md,
-    marginBottom: spacing.lg,
-    gap: spacing.xs,
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
   },
   policyText: {
-    fontSize: typography.sizes.xs,
-    color: colors.status.confirmed.text,
     flex: 1,
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   policyBold: {
     fontWeight: typography.weights.bold,
+    color: colors.primaryDark,
   },
   submitBtn: {
-    marginBottom: spacing.xl,
-  },
-  historyContainer: {
-    paddingBottom: spacing['3xl'],
+    marginTop: spacing.sm,
   },
   historyCard: {
     marginBottom: spacing.md,
@@ -536,15 +564,15 @@ const styles = StyleSheet.create({
   historyNote: {
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
-    marginVertical: 4,
+    marginTop: spacing.xs,
   },
   historyNoteContent: {
     color: colors.text,
-    fontStyle: 'italic',
+    fontWeight: typography.weights.medium,
   },
   historyTime: {
     fontSize: typography.sizes['2xs'],
     color: colors.textMuted,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 });

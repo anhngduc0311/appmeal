@@ -2,18 +2,19 @@
  * Quản lý Người Dùng & Vai Trò (Admin & Manager)
  * T32: Danh sách người dùng cho manager/admin; tạo/sửa/trạng thái/role chỉ cho admin;
  * hoàn thiện validation và kiểm tra trùng username.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Modal,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -121,19 +122,6 @@ export default function ManagementUsersScreen() {
     return () => clearTimeout(timer);
   }, [formUsername, isCreateOpen, isMockMode]);
 
-  if (!hasAccess) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Người Dùng & Vai Trò" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Không có quyền truy cập"
-          message={`Tài khoản (${currentUser?.fullName} - ${role}) không có quyền quản trị người dùng.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
@@ -239,8 +227,113 @@ export default function ManagementUsersScreen() {
     }
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderUserItem = useCallback(
+    ({ item: u }: { item: User }) => {
+      const userRole = extractUserRole(u);
+      const isActive = String(u.status) === 'active' || String(u.status) === '1';
+      return (
+        <Card key={u.id} variant="elevated" padding="md" style={styles.userCard}>
+          <View style={styles.userHeader}>
+            <View style={styles.avatarCircle}>
+              <Ionicons
+                name={
+                  userRole === 'admin'
+                    ? 'shield-checkmark'
+                    : userRole === 'manager'
+                    ? 'briefcase'
+                    : 'person'
+                }
+                size={18}
+                color={colors.primaryDark}
+              />
+            </View>
+
+            <View style={styles.userInfoCol}>
+              <Text style={styles.fullNameText}>{u.fullName}</Text>
+              <Text style={styles.usernameText}>@{u.username}</Text>
+            </View>
+
+            <View style={styles.badgesCol}>
+              <Badge
+                label={getRoleDisplayName(userRole)}
+                variant={getRoleBadgeVariant(userRole)}
+                size="sm"
+              />
+            </View>
+          </View>
+
+          {/* Contact info */}
+          <View style={styles.metaRow}>
+            {u.phone && (
+              <Text style={styles.metaText}>
+                <Ionicons name="call-outline" size={12} color={colors.textMuted} /> {u.phone}
+              </Text>
+            )}
+            {u.email && (
+              <Text style={styles.metaText}>
+                <Ionicons name="mail-outline" size={12} color={colors.textMuted} /> {u.email}
+              </Text>
+            )}
+            <Text style={[styles.metaText, { color: isActive ? '#15803D' : '#DC2626' }]}>
+              • {isActive ? 'Hoạt động' : 'Đã khóa'}
+            </Text>
+          </View>
+
+          {/* Admin Actions */}
+          {isAdmin && (
+            <View style={styles.userFooter}>
+              <TouchableOpacity
+                style={styles.actionBtnSmall}
+                onPress={() => {
+                  setSelectedUser(u);
+                  setFormFullName(u.fullName);
+                  setFormEmail(u.email || '');
+                  setFormPhone(u.phone || '');
+                  setFormStatus(String(u.status));
+                  const rId =
+                    userRole === 'admin' ? 1 : userRole === 'manager' ? 2 : userRole === 'kitchen' ? 4 : 3;
+                  setFormRoleId(rId);
+                  setFormPassword('');
+                  setIsEditOpen(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="create-outline" size={16} color={colors.primary} />
+                <Text style={styles.actionBtnText}>Sửa / Đổi vai trò</Text>
+              </TouchableOpacity>
+
+              {u.id !== currentUser?.id && (
+                <TouchableOpacity
+                  style={styles.deleteBtn}
+                  onPress={() => setDeleteTargetId(u.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#DC2626" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+        </Card>
+      );
+    },
+    [isAdmin, currentUser?.id]
+  );
+
+  if (!hasAccess) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Người Dùng & Vai Trò" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Không có quyền truy cập"
+          message={`Tài khoản (${currentUser?.fullName} - ${role}) không có quyền quản trị người dùng.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View>
       <Header
         title="Quản lý Người Dùng & Vai Trò"
         subtitle={isAdmin ? 'Tạo tài khoản, phân quyền Role và trạng thái' : 'Danh sách cán bộ cơ quan (Chỉ xem)'}
@@ -312,116 +405,30 @@ export default function ManagementUsersScreen() {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Users List */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoading}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {filteredUsers.length === 0 ? (
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      <FlatList
+        data={filteredUsers}
+        keyExtractor={(item) => String(item.id)}
+        renderItem={renderUserItem}
+        ListHeaderComponent={ListHeader}
+        ListEmptyComponent={
           <EmptyState
             title="Không tìm thấy người dùng nào"
-            message="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc vai trò."
+            description="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc vai trò."
           />
-        ) : (
-          filteredUsers.map((u) => {
-            const userRole = extractUserRole(u);
-            const isActive = String(u.status) === 'active' || String(u.status) === '1';
-            return (
-              <Card key={u.id} variant="elevated" padding="md" style={styles.userCard}>
-                <View style={styles.userHeader}>
-                  <View style={styles.avatarCircle}>
-                    <Ionicons
-                      name={
-                        userRole === 'admin'
-                          ? 'shield-checkmark'
-                          : userRole === 'manager'
-                          ? 'briefcase'
-                          : 'person'
-                      }
-                      size={18}
-                      color={colors.primaryDark}
-                    />
-                  </View>
-
-                  <View style={styles.userInfoCol}>
-                    <Text style={styles.fullNameText}>{u.fullName}</Text>
-                    <Text style={styles.usernameText}>@{u.username}</Text>
-                  </View>
-
-                  <View style={styles.badgesCol}>
-                    <Badge
-                      label={getRoleDisplayName(userRole)}
-                      variant={getRoleBadgeVariant(userRole)}
-                      size="sm"
-                    />
-                  </View>
-                </View>
-
-                {/* Contact info */}
-                <View style={styles.metaRow}>
-                  {u.phone && (
-                    <Text style={styles.metaText}>
-                      <Ionicons name="call-outline" size={12} color={colors.textMuted} /> {u.phone}
-                    </Text>
-                  )}
-                  {u.email && (
-                    <Text style={styles.metaText}>
-                      <Ionicons name="mail-outline" size={12} color={colors.textMuted} /> {u.email}
-                    </Text>
-                  )}
-                  <Text style={[styles.metaText, { color: isActive ? '#15803D' : '#DC2626' }]}>
-                    • {isActive ? 'Hoạt động' : 'Đã khóa'}
-                  </Text>
-                </View>
-
-                {/* Admin Actions */}
-                {isAdmin && (
-                  <View style={styles.userFooter}>
-                    <TouchableOpacity
-                      style={styles.actionBtnSmall}
-                      onPress={() => {
-                        setSelectedUser(u);
-                        setFormFullName(u.fullName);
-                        setFormEmail(u.email || '');
-                        setFormPhone(u.phone || '');
-                        setFormStatus(String(u.status));
-                        const rId =
-                          userRole === 'admin' ? 1 : userRole === 'manager' ? 2 : userRole === 'kitchen' ? 4 : 3;
-                        setFormRoleId(rId);
-                        setFormPassword('');
-                        setIsEditOpen(true);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <Ionicons name="create-outline" size={16} color={colors.primary} />
-                      <Text style={styles.actionBtnText}>Sửa / Đổi vai trò</Text>
-                    </TouchableOpacity>
-
-                    {u.id !== currentUser?.id && (
-                      <TouchableOpacity
-                        style={styles.deleteBtn}
-                        onPress={() => setDeleteTargetId(u.id)}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="trash-outline" size={16} color="#DC2626" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </Card>
-            );
-          })
-        )}
-      </ScrollView>
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        refreshing={refreshing || isLoading}
+        onRefresh={handleRefresh}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+      />
 
       {/* Modal Thêm Người Dùng Mới (Admin only) */}
       <Modal visible={isCreateOpen} transparent animationType="slide">
@@ -655,9 +662,6 @@ export default function ManagementUsersScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   scrollContent: {
     padding: spacing.md,
     paddingBottom: spacing['3xl'],
@@ -737,7 +741,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   usernameText: {
-    fontSize: 11,
+    fontSize: 10,
     color: colors.textSecondary,
     marginTop: 1,
   },

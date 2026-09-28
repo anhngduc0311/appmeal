@@ -2,19 +2,20 @@
  * Quản lý Đăng Ký Suất Ăn & Duyệt Cắt Suất (Admin & Manager)
  * T30, T36: Tìm/lọc/phân trang danh sách suất ăn, duyệt/từ chối pending (tách biệt registration và meal-option),
  * thao tác đăng ký/cắt hộ đúng quyền, xuất báo cáo Excel có xác thực và chia sẻ file.
+ * TỐI ƯU HÓA: FlatList virtualization mượt mà & DatePickerInput chọn ngày trực quan.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Modal,
   ActivityIndicator,
   Alert,
+  FlatList,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import { Card } from '../../src/components/common/Card';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { Input } from '../../src/components/common/Input';
+import { DatePickerInput } from '../../src/components/common/DatePickerInput';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
 import { EmptyState } from '../../src/components/states/EmptyState';
@@ -48,7 +50,7 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
-import { MealOptionType } from '../../src/types';
+import { MealOptionType, MealRegistration, MealOption } from '../../src/types';
 
 export default function ManagementRegistrationsScreen() {
   const router = useRouter();
@@ -107,19 +109,6 @@ export default function ManagementRegistrationsScreen() {
   const approveOptMutation = useApproveMealOption();
   const rejectOptMutation = useRejectMealOption();
   const createOptOnBehalfMutation = useCreateOptionOnBehalf();
-
-  if (!hasAccess) {
-    return (
-      <ScreenContainer scrollable={false}>
-        <Header title="Đăng Ký & Duyệt Cắt" showBack onBack={() => router.back()} />
-        <ForbiddenState
-          title="Không có quyền truy cập"
-          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền quản lý danh sách đăng ký suất ăn.`}
-          onGoBack={() => router.back()}
-        />
-      </ScreenContainer>
-    );
-  }
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -204,8 +193,183 @@ export default function ManagementRegistrationsScreen() {
     setOptionNote('');
   };
 
-  return (
-    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+  const renderRegistrationItem = useCallback(
+    ({ item: reg }: { item: MealRegistration }) => {
+      const isPending = reg.status === 'pending';
+      return (
+        <Card key={reg.id} variant="elevated" padding="md" style={styles.itemCard}>
+          <View style={styles.itemHeader}>
+            <View style={styles.avatarBox}>
+              <Ionicons name="person" size={16} color={colors.primaryDark} />
+            </View>
+            <View style={styles.itemInfo}>
+              <Text style={styles.userName}>{reg.user?.fullName || 'Cán bộ'}</Text>
+              <Text style={styles.userUsername}>@{reg.user?.username || 'user'}</Text>
+            </View>
+            <Badge
+              label={
+                reg.status === 'confirmed'
+                  ? 'Đã xác nhận'
+                  : reg.status === 'pending'
+                  ? 'Chờ duyệt cắt'
+                  : reg.status === 'cancelled'
+                  ? 'Đã hủy'
+                  : 'Hoàn thành'
+              }
+              variant={
+                reg.status === 'confirmed'
+                  ? 'confirmed'
+                  : reg.status === 'pending'
+                  ? 'pending'
+                  : reg.status === 'cancelled'
+                  ? 'cancelled'
+                  : 'completed'
+              }
+              size="sm"
+            />
+          </View>
+
+          <View style={styles.itemMetaRow}>
+            <Text style={styles.itemMetaText}>
+              Ngày ăn:{' '}
+              <Text style={styles.boldText}>
+                {formatBusinessDateDisplay(reg.mealDate || '')}
+              </Text>
+            </Text>
+            <Text style={styles.itemMetaText}>
+              Khách:{' '}
+              <Text
+                style={[
+                  styles.boldText,
+                  reg.guestCount > 0 && { color: colors.warning },
+                ]}
+              >
+                {reg.guestCount}
+              </Text>
+            </Text>
+          </View>
+
+          {/* Actions */}
+          <View style={styles.itemActionsRow}>
+            {isPending && (
+              <>
+                <Button
+                  title="Từ chối"
+                  variant="outline"
+                  size="sm"
+                  style={styles.actionBtnSmall}
+                  onPress={() => setConfirmRejectRegId(reg.id)}
+                />
+                <Button
+                  title="Duyệt cắt"
+                  variant="danger"
+                  size="sm"
+                  style={styles.actionBtnSmall}
+                  onPress={() => setConfirmApproveRegId(reg.id)}
+                />
+              </>
+            )}
+
+            {reg.status === 'cancelled' && (
+              <Button
+                title="Xác nhận lại"
+                variant="primary"
+                size="sm"
+                style={styles.actionBtnSmall}
+                onPress={() => confirmRegMutation.mutate(reg.id)}
+              />
+            )}
+          </View>
+        </Card>
+      );
+    },
+    [confirmRegMutation]
+  );
+
+  const renderOptionItem = useCallback(({ item: opt }: { item: MealOption }) => {
+    const isPending = opt.status === 'pending';
+    const typeLabel =
+      opt.type === 'cancel_today'
+        ? 'Cắt hôm nay'
+        : opt.type === 'cancel_schedule'
+        ? 'Cắt theo khoảng'
+        : 'Cắt dài hạn';
+
+    return (
+      <Card key={opt.id} variant="elevated" padding="md" style={styles.itemCard}>
+        <View style={styles.itemHeader}>
+          <View style={[styles.avatarBox, { backgroundColor: '#FEF3C7' }]}>
+            <Ionicons name="document-text" size={16} color="#B45309" />
+          </View>
+          <View style={styles.itemInfo}>
+            <Text style={styles.userName}>{opt.user?.fullName || 'Cán bộ'}</Text>
+            <Text style={styles.userUsername}>{typeLabel}</Text>
+          </View>
+          <Badge
+            label={
+              opt.status === 'approved'
+                ? 'Đã duyệt'
+                : opt.status === 'pending'
+                ? 'Chờ duyệt'
+                : 'Từ chối'
+            }
+            variant={
+              opt.status === 'approved'
+                ? 'confirmed'
+                : opt.status === 'pending'
+                ? 'pending'
+                : 'cancelled'
+            }
+            size="sm"
+          />
+        </View>
+
+        <View style={styles.itemMetaRow}>
+          <Text style={styles.itemMetaText}>
+            Từ: {formatBusinessDateDisplay(opt.fromDate)} - Đến:{' '}
+            {formatBusinessDateDisplay(opt.toDate)}
+          </Text>
+        </View>
+
+        {opt.note && <Text style={styles.optNoteText}>Lý do: {opt.note}</Text>}
+
+        {isPending && (
+          <View style={styles.itemActionsRow}>
+            <Button
+              title="Từ chối"
+              variant="outline"
+              size="sm"
+              style={styles.actionBtnSmall}
+              onPress={() => setConfirmRejectOptId(opt.id)}
+            />
+            <Button
+              title="Duyệt yêu cầu"
+              variant="primary"
+              size="sm"
+              style={styles.actionBtnSmall}
+              onPress={() => setConfirmApproveOptId(opt.id)}
+            />
+          </View>
+        )}
+      </Card>
+    );
+  }, []);
+
+  if (!hasAccess) {
+    return (
+      <ScreenContainer scrollable={false}>
+        <Header title="Đăng Ký & Duyệt Cắt" showBack onBack={() => router.back()} />
+        <ForbiddenState
+          title="Không có quyền truy cập"
+          message={`Tài khoản (${user?.fullName} - ${role}) không có quyền quản lý danh sách đăng ký suất ăn.`}
+          onGoBack={() => router.back()}
+        />
+      </ScreenContainer>
+    );
+  }
+
+  const ListHeader = (
+    <View>
       <Header
         title="Quản lý Đăng Ký & Duyệt Cắt"
         subtitle="Tổng hợp suất ăn, duyệt cắt và thao tác hộ"
@@ -341,193 +505,52 @@ export default function ManagementRegistrationsScreen() {
           })}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* List Container */}
-      <ScrollView
-        style={styles.content}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing || isLoadingRegs || isLoadingOptions}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-          />
-        }
-      >
-        {activeTab === 'registrations' ? (
-          filteredRegs.length === 0 ? (
+  return (
+    <ScreenContainer scrollable={false} backgroundColor={colors.background}>
+      {activeTab === 'registrations' ? (
+        <FlatList
+          data={filteredRegs}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderRegistrationItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
             <EmptyState
               title="Không tìm thấy đăng ký nào"
-              message="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái."
+              description="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái."
             />
-          ) : (
-            filteredRegs.map((reg) => {
-              const isPending = reg.status === 'pending';
-              return (
-                <Card key={reg.id} variant="elevated" padding="md" style={styles.itemCard}>
-                  <View style={styles.itemHeader}>
-                    <View style={styles.avatarBox}>
-                      <Ionicons name="person" size={16} color={colors.primaryDark} />
-                    </View>
-                    <View style={styles.itemInfo}>
-                      <Text style={styles.userName}>{reg.user?.fullName || 'Cán bộ'}</Text>
-                      <Text style={styles.userUsername}>@{reg.user?.username || 'user'}</Text>
-                    </View>
-                    <Badge
-                      label={
-                        reg.status === 'confirmed'
-                          ? 'Đã xác nhận'
-                          : reg.status === 'pending'
-                          ? 'Chờ duyệt cắt'
-                          : reg.status === 'cancelled'
-                          ? 'Đã hủy'
-                          : 'Hoàn thành'
-                      }
-                      variant={
-                        reg.status === 'confirmed'
-                          ? 'confirmed'
-                          : reg.status === 'pending'
-                          ? 'pending'
-                          : reg.status === 'cancelled'
-                          ? 'cancelled'
-                          : 'completed'
-                      }
-                      size="sm"
-                    />
-                  </View>
-
-                  <View style={styles.itemMetaRow}>
-                    <Text style={styles.itemMetaText}>
-                      Ngày ăn:{' '}
-                      <Text style={styles.boldText}>
-                        {formatBusinessDateDisplay(reg.mealDate || '')}
-                      </Text>
-                    </Text>
-                    <Text style={styles.itemMetaText}>
-                      Khách:{' '}
-                      <Text
-                        style={[
-                          styles.boldText,
-                          reg.guestCount > 0 && { color: colors.warning },
-                        ]}
-                      >
-                        {reg.guestCount}
-                      </Text>
-                    </Text>
-                  </View>
-
-                  {/* Actions */}
-                  <View style={styles.itemActionsRow}>
-                    {isPending && (
-                      <>
-                        <Button
-                          title="Từ chối"
-                          variant="outline"
-                          size="sm"
-                          style={styles.actionBtnSmall}
-                          onPress={() => setConfirmRejectRegId(reg.id)}
-                        />
-                        <Button
-                          title="Duyệt cắt"
-                          variant="danger"
-                          size="sm"
-                          style={styles.actionBtnSmall}
-                          onPress={() => setConfirmApproveRegId(reg.id)}
-                        />
-                      </>
-                    )}
-
-                    {reg.status === 'cancelled' && (
-                      <Button
-                        title="Xác nhận lại"
-                        variant="primary"
-                        size="sm"
-                        style={styles.actionBtnSmall}
-                        onPress={() => confirmRegMutation.mutate(reg.id)}
-                      />
-                    )}
-                  </View>
-                </Card>
-              );
-            })
-          )
-        ) : filteredOptions.length === 0 ? (
-          <EmptyState
-            title="Không tìm thấy yêu cầu cắt suất nào"
-            message="Thử thay đổi từ khóa hoặc bộ lọc."
-          />
-        ) : (
-          filteredOptions.map((opt) => {
-            const isPending = opt.status === 'pending';
-            const typeLabel =
-              opt.type === 'cancel_today'
-                ? 'Cắt hôm nay'
-                : opt.type === 'cancel_schedule'
-                ? 'Cắt theo khoảng'
-                : 'Cắt dài hạn';
-
-            return (
-              <Card key={opt.id} variant="elevated" padding="md" style={styles.itemCard}>
-                <View style={styles.itemHeader}>
-                  <View style={[styles.avatarBox, { backgroundColor: '#FEF3C7' }]}>
-                    <Ionicons name="document-text" size={16} color="#B45309" />
-                  </View>
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.userName}>{opt.user?.fullName || 'Cán bộ'}</Text>
-                    <Text style={styles.userUsername}>{typeLabel}</Text>
-                  </View>
-                  <Badge
-                    label={
-                      opt.status === 'approved'
-                        ? 'Đã duyệt'
-                        : opt.status === 'pending'
-                        ? 'Chờ duyệt'
-                        : 'Từ chối'
-                    }
-                    variant={
-                      opt.status === 'approved'
-                        ? 'confirmed'
-                        : opt.status === 'pending'
-                        ? 'pending'
-                        : 'cancelled'
-                    }
-                    size="sm"
-                  />
-                </View>
-
-                <View style={styles.itemMetaRow}>
-                  <Text style={styles.itemMetaText}>
-                    Từ: {formatBusinessDateDisplay(opt.fromDate)} - Đến:{' '}
-                    {formatBusinessDateDisplay(opt.toDate)}
-                  </Text>
-                </View>
-
-                {opt.note && <Text style={styles.optNoteText}>Lý do: {opt.note}</Text>}
-
-                {isPending && (
-                  <View style={styles.itemActionsRow}>
-                    <Button
-                      title="Từ chối"
-                      variant="outline"
-                      size="sm"
-                      style={styles.actionBtnSmall}
-                      onPress={() => setConfirmRejectOptId(opt.id)}
-                    />
-                    <Button
-                      title="Duyệt yêu cầu"
-                      variant="primary"
-                      size="sm"
-                      style={styles.actionBtnSmall}
-                      onPress={() => setConfirmApproveOptId(opt.id)}
-                    />
-                  </View>
-                )}
-              </Card>
-            );
-          })
-        )}
-      </ScrollView>
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing || isLoadingRegs}
+          onRefresh={handleRefresh}
+          initialNumToRender={12}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      ) : (
+        <FlatList
+          data={filteredOptions}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderOptionItem}
+          ListHeaderComponent={ListHeader}
+          ListEmptyComponent={
+            <EmptyState
+              title="Không tìm thấy yêu cầu cắt suất nào"
+              description="Thử thay đổi từ khóa hoặc bộ lọc."
+            />
+          }
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          refreshing={refreshing || isLoadingOptions}
+          onRefresh={handleRefresh}
+          initialNumToRender={12}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+        />
+      )}
 
       {/* Modal Đăng Ký Hộ Cán Bộ */}
       <Modal visible={isRegisterOnBehalfOpen} transparent animationType="slide">
@@ -615,7 +638,7 @@ export default function ManagementRegistrationsScreen() {
         </View>
       </Modal>
 
-      {/* Modal Cắt Suất Hộ Cán Bộ */}
+      {/* Modal Cắt Suất Hộ Cán Bộ - Tích hợp DatePickerInput */}
       <Modal visible={isOptionOnBehalfOpen} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
@@ -678,21 +701,23 @@ export default function ManagementRegistrationsScreen() {
               ))}
             </View>
 
+            {/* DatePickerInputs for accurate calendar picking */}
             <View style={styles.modalRowInputs}>
               <View style={styles.inputHalf}>
-                <Input
-                  label="Từ ngày (YYYY-MM-DD)"
+                <DatePickerInput
+                  label="Từ ngày"
                   value={optionFromDate}
-                  onChangeText={setOptionFromDate}
-                  placeholder="2026-09-25"
+                  onChangeDate={setOptionFromDate}
+                  placeholder="Chọn ngày..."
                 />
               </View>
               <View style={styles.inputHalf}>
-                <Input
-                  label="Đến ngày (YYYY-MM-DD)"
+                <DatePickerInput
+                  label="Đến ngày"
                   value={optionToDate}
-                  onChangeText={setOptionToDate}
-                  placeholder="2026-09-30"
+                  onChangeDate={setOptionToDate}
+                  placeholder="Chọn ngày..."
+                  minDate={optionFromDate}
                 />
               </View>
             </View>
@@ -792,9 +817,6 @@ export default function ManagementRegistrationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-  },
   scrollContent: {
     padding: spacing.md,
     paddingBottom: spacing['3xl'],
