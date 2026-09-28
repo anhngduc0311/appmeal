@@ -41,6 +41,8 @@ export const Input: React.FC<InputProps> = ({
   required,
   onFocus,
   onBlur,
+  multiline,
+  style,
   ...props
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -57,19 +59,28 @@ export const Input: React.FC<InputProps> = ({
       <View
         style={[
           styles.inputContainer,
+          multiline && styles.inputContainerMultiline,
           isFocused && styles.inputFocused,
           error ? styles.inputError : null,
         ]}
       >
-        {leftIcon && <View style={styles.leftIconWrapper}>{leftIcon}</View>}
+        {leftIcon && (
+          <View style={[styles.leftIconWrapper, multiline && styles.leftIconMultiline]}>
+            {leftIcon}
+          </View>
+        )}
 
         <TextInput
           accessibilityLabel={label}
+          multiline={multiline}
+          textAlignVertical={multiline ? 'top' : 'center'}
           style={[
             styles.input,
+            multiline && styles.inputMultiline,
             leftIcon ? { paddingLeft: spacing.xs } : null,
             rightIcon ? { paddingRight: spacing.xs } : null,
             inputStyle,
+            style,
           ]}
           placeholderTextColor={colors.textMuted}
           onFocus={(e) => {
@@ -83,7 +94,11 @@ export const Input: React.FC<InputProps> = ({
           {...props}
         />
 
-        {rightIcon && <View style={styles.rightIconWrapper}>{rightIcon}</View>}
+        {rightIcon && (
+          <View style={[styles.rightIconWrapper, multiline && styles.rightIconMultiline]}>
+            {rightIcon}
+          </View>
+        )}
       </View>
 
       {error ? (
@@ -97,17 +112,17 @@ export const Input: React.FC<InputProps> = ({
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     width: '100%',
   },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 6,
   },
   label: {
     fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
+    fontWeight: typography.weights.semibold,
     color: colors.text,
   },
   requiredMark: {
@@ -118,13 +133,19 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 52,
+    height: 50,
     minHeight: spacing.minTouchTarget,
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
+  },
+  inputContainerMultiline: {
+    height: undefined,
+    minHeight: 100,
+    alignItems: 'flex-start',
+    paddingVertical: spacing.sm,
   },
   inputFocused: {
     borderColor: colors.borderFocus,
@@ -138,12 +159,26 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: typography.sizes.base,
     color: colors.text,
+    paddingVertical: 0,
+  },
+  inputMultiline: {
+    height: undefined,
+    minHeight: 84,
+    paddingTop: 4,
+    paddingBottom: 4,
+    textAlignVertical: 'top',
   },
   leftIconWrapper: {
     marginRight: spacing.sm,
   },
+  leftIconMultiline: {
+    marginTop: 4,
+  },
   rightIconWrapper: {
     marginLeft: spacing.sm,
+  },
+  rightIconMultiline: {
+    marginTop: 4,
   },
   errorText: {
     marginTop: spacing.xs,

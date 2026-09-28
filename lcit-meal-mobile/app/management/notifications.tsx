@@ -223,33 +223,38 @@ export default function ManagementNotificationsScreen() {
             <>
               {ListHeader}
               <View style={styles.composeForm}>
-                <Card variant="elevated" padding="md" style={styles.formCard}>
-                  <Text style={styles.formTitle}>Thông tin bản tin thông báo</Text>
+                <Card variant="elevated" padding="lg" style={styles.formCard}>
+                  <View style={styles.cardHeaderRow}>
+                    <Ionicons name="newspaper-outline" size={18} color={colors.primary} />
+                    <Text style={styles.formTitle}>Thông tin bản tin thông báo</Text>
+                  </View>
 
                   <Input
-                    label="Tiêu đề thông báo (bắt buộc)"
+                    label="Tiêu đề thông báo"
+                    required
                     value={title}
                     onChangeText={setTitle}
                     placeholder="VD: Nhắc nhở nộp tiền ăn kỳ tháng 09/2026"
                   />
 
                   <Input
-                    label="Nội dung chi tiết (bắt buộc)"
+                    label="Nội dung chi tiết"
+                    required
                     value={content}
                     onChangeText={setContent}
                     placeholder="Nhập nội dung thông báo đầy đủ..."
                     multiline
-                    style={{ height: 90 }}
+                    numberOfLines={4}
                   />
 
                   {/* Loại thông báo */}
-                  <Text style={styles.fieldLabel}>Phân loại thông báo:</Text>
+                  <Text style={styles.fieldLabel}>Phân loại thông báo</Text>
                   <View style={styles.chipsRow}>
                     {[
-                      { id: 'SYSTEM', label: 'Hệ thống' },
-                      { id: 'PAYMENT_DUE', label: 'Thanh toán' },
-                      { id: 'LATE_REGISTRATION', label: 'Bếp ăn' },
-                      { id: 'APPROVAL', label: 'Duyệt cắt' },
+                      { id: 'SYSTEM', label: 'Hệ thống', icon: 'settings-outline' },
+                      { id: 'PAYMENT_DUE', label: 'Thanh toán', icon: 'card-outline' },
+                      { id: 'LATE_REGISTRATION', label: 'Bếp ăn', icon: 'restaurant-outline' },
+                      { id: 'APPROVAL', label: 'Duyệt cắt', icon: 'checkmark-circle-outline' },
                     ].map((t) => (
                       <TouchableOpacity
                         key={t.id}
@@ -257,6 +262,11 @@ export default function ManagementNotificationsScreen() {
                         onPress={() => setNotifType(t.id)}
                         activeOpacity={0.7}
                       >
+                        <Ionicons
+                          name={t.icon as any}
+                          size={13}
+                          color={notifType === t.id ? colors.primaryDark : colors.textSecondary}
+                        />
                         <Text style={[styles.chipText, notifType === t.id && styles.chipTextActive]}>
                           {t.label}
                         </Text>
@@ -269,12 +279,16 @@ export default function ManagementNotificationsScreen() {
                     value={url}
                     onChangeText={setUrl}
                     placeholder="VD: /(tabs)/payments hoặc /(tabs)/schedule"
+                    leftIcon={<Ionicons name="link-outline" size={16} color={colors.textMuted} />}
                   />
                 </Card>
 
                 {/* Phạm vi đối tượng */}
-                <Card variant="elevated" padding="md" style={styles.formCard}>
-                  <Text style={styles.formTitle}>Đối tượng tiếp nhận</Text>
+                <Card variant="elevated" padding="lg" style={styles.formCard}>
+                  <View style={styles.cardHeaderRow}>
+                    <Ionicons name="people-outline" size={18} color={colors.primary} />
+                    <Text style={styles.formTitle}>Đối tượng tiếp nhận</Text>
+                  </View>
 
                   <View style={styles.scopeRow}>
                     <TouchableOpacity
@@ -303,7 +317,7 @@ export default function ManagementNotificationsScreen() {
                       activeOpacity={0.7}
                     >
                       <Ionicons
-                        name="people-outline"
+                        name="person-outline"
                         size={18}
                         color={targetScope === 'custom' ? colors.primaryDark : colors.textMuted}
                       />
@@ -356,6 +370,7 @@ export default function ManagementNotificationsScreen() {
                   title="Xem trước & Phát thông báo"
                   variant="primary"
                   size="lg"
+                  leftIcon={<Ionicons name="send" size={16} color={colors.textInverse} />}
                   onPress={handleOpenPreview}
                   style={styles.submitBtn}
                 />
@@ -500,37 +515,52 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: spacing.xs,
   },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
   formTitle: {
-    fontSize: typography.sizes.xs,
+    fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
-    marginBottom: spacing.xs,
   },
   fieldLabel: {
-    fontSize: 11,
-    fontWeight: typography.weights.bold,
+    fontSize: typography.sizes.xs + 1,
+    fontWeight: typography.weights.semibold,
     color: colors.text,
-    marginTop: spacing.xs,
-    marginBottom: 4,
+    marginTop: 2,
+    marginBottom: spacing.xs,
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.xs,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   chip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: radius.full,
     backgroundColor: colors.backgroundDark,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   chipActive: {
     backgroundColor: colors.primaryLight,
+    borderColor: colors.primary,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
   },
   chipTextActive: {
     color: colors.primaryDark,
@@ -538,8 +568,8 @@ const styles = StyleSheet.create({
   },
   scopeRow: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
+    gap: spacing.sm,
+    marginTop: 2,
   },
   scopeBtn: {
     flex: 1,
@@ -547,17 +577,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.lg,
     backgroundColor: colors.backgroundDark,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
   },
   scopeBtnActive: {
     backgroundColor: colors.primaryLight,
-    borderWidth: 1,
     borderColor: colors.primary,
   },
   scopeBtnText: {
-    fontSize: 10,
+    fontSize: typography.sizes.xs,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
   },
