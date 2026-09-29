@@ -11,7 +11,7 @@ export const auditService = {
   /**
    * Lấy danh sách nhật ký: GET /api/audit-logs
    */
-  async list(useMock = true): Promise<AuditLogItem[]> {
+  async list(useMock = false): Promise<AuditLogItem[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAuditLogs();
@@ -23,7 +23,7 @@ export const auditService = {
   /**
    * Lọc nhật ký hệ thống: GET /api/audit-logs/filter
    */
-  async filter(params: AuditLogFilterParams, useMock = true): Promise<AuditLogItem[]> {
+  async filter(params: AuditLogFilterParams, useMock = false): Promise<AuditLogItem[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let logs = mockStore.getAuditLogs();
@@ -60,7 +60,7 @@ export const auditService = {
   /**
    * Xem chi tiết một nhật ký: GET /api/audit-logs/:id
    */
-  async get(id: number, useMock = true): Promise<AuditLogItem> {
+  async get(id: number, useMock = false): Promise<AuditLogItem> {
     if (useMock) {
       const item = mockStore.getAuditLogs().find((l) => l.id === id);
       if (!item) throw new Error('Không tìm thấy nhật ký thao tác');

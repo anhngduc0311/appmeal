@@ -29,7 +29,7 @@ export const mealService = {
   /**
    * Lấy danh sách lịch bếp: GET /api/meals
    */
-  async getMeals(useMock = true): Promise<Meal[]> {
+  async getMeals(useMock = false): Promise<Meal[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMeals();
@@ -43,7 +43,7 @@ export const mealService = {
    */
   async filterMeals(
     params: { from?: string; to?: string; status?: string; isCancelled?: boolean | number },
-    useMock = true
+    useMock = false
   ): Promise<Meal[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
@@ -71,7 +71,7 @@ export const mealService = {
   /**
    * Xem chi tiết 1 ngày bếp: GET /api/meals/:id
    */
-  async getMealById(id: number, useMock = true): Promise<Meal> {
+  async getMealById(id: number, useMock = false): Promise<Meal> {
     if (useMock) {
       const meal = mockStore.getMealById(id);
       if (!meal) throw new Error('Không tìm thấy ngày bếp');
@@ -83,7 +83,7 @@ export const mealService = {
   /**
    * Lấy tổng hợp số suất ăn cần chuẩn bị (Admin/Manager): GET /api/meals/:id/summary
    */
-  async getMealSummary(mealId: number, useMock = true): Promise<MealSummaryResponse> {
+  async getMealSummary(mealId: number, useMock = false): Promise<MealSummaryResponse> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMealSummary(mealId);
@@ -94,7 +94,7 @@ export const mealService = {
   /**
    * Tạo ngày bếp mới: POST /api/meals (Admin/Manager)
    */
-  async createMeal(data: CreateMealRequest, useMock = true): Promise<Meal> {
+  async createMeal(data: CreateMealRequest, useMock = false): Promise<Meal> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.createMeal(data.mealDate, data.note, data.status);
@@ -108,7 +108,7 @@ export const mealService = {
   /**
    * Cập nhật thực đơn/ghi chú ngày bếp: PUT /api/meals/:id (Admin/Manager)
    */
-  async updateMeal(id: number, data: UpdateMealRequest, useMock = true): Promise<Meal> {
+  async updateMeal(id: number, data: UpdateMealRequest, useMock = false): Promise<Meal> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const updated = mockStore.updateMeal(id, data);
@@ -124,7 +124,7 @@ export const mealService = {
   /**
    * Hủy bếp ăn (tự động thông báo cán bộ): PATCH /api/meals/:id/cancel (Admin/Manager)
    */
-  async cancelMeal(id: number, reason?: string, useMock = true): Promise<Meal> {
+  async cancelMeal(id: number, reason?: string, useMock = false): Promise<Meal> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const cancelled = mockStore.cancelMeal(id, reason);
@@ -140,7 +140,7 @@ export const mealService = {
   /**
    * Mở lại bếp ăn đã hủy nhầm: PATCH /api/meals/:id/restore (Admin/Manager)
    */
-  async restoreMeal(id: number, useMock = true): Promise<Meal> {
+  async restoreMeal(id: number, useMock = false): Promise<Meal> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const restored = mockStore.restoreMeal(id);
@@ -155,7 +155,7 @@ export const mealService = {
   /**
    * Xóa ngày bếp: DELETE /api/meals/:id (Admin only)
    */
-  async deleteMeal(id: number, useMock = true): Promise<void> {
+  async deleteMeal(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deleteMeal(id);
@@ -169,7 +169,7 @@ export const mealService = {
   /**
    * Lấy danh sách suất ăn cá nhân: GET /api/meal-registrations/me
    */
-  async getMyRegistrations(useMock = true): Promise<MealRegistration[]> {
+  async getMyRegistrations(useMock = false): Promise<MealRegistration[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMyRegistrations();
@@ -181,7 +181,7 @@ export const mealService = {
   /**
    * Lấy toàn bộ danh sách đăng ký suất ăn (Admin/Manager): GET /api/meal-registrations
    */
-  async getAllRegistrations(useMock = true): Promise<MealRegistration[]> {
+  async getAllRegistrations(useMock = false): Promise<MealRegistration[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAllRegistrations();
@@ -193,7 +193,7 @@ export const mealService = {
   /**
    * Lọc và tìm kiếm danh sách đăng ký (Admin/Manager): GET /api/meal-registrations/filter
    */
-  async filterRegistrations(params: MealRegistrationFilterParams, useMock = true): Promise<MealRegistration[]> {
+  async filterRegistrations(params: MealRegistrationFilterParams, useMock = false): Promise<MealRegistration[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let list = mockStore.getAllRegistrations();
@@ -223,7 +223,7 @@ export const mealService = {
   /**
    * Lấy danh sách đăng ký theo ngày bếp cụ thể: GET /api/meal-registrations/meal/:mealId
    */
-  async getRegistrationsByMeal(mealId: number, useMock = true): Promise<MealRegistration[]> {
+  async getRegistrationsByMeal(mealId: number, useMock = false): Promise<MealRegistration[]> {
     if (useMock) {
       return mockStore.getAllRegistrations().filter((r) => r.mealId === mealId);
     }
@@ -236,7 +236,7 @@ export const mealService = {
   /**
    * Đăng ký / Đăng ký lại suất ăn (hoặc đăng ký hộ cho cán bộ khác): POST /api/meal-registrations
    */
-  async registerMeal(data: RegisterMealRequest, useMock = true): Promise<MealRegistration> {
+  async registerMeal(data: RegisterMealRequest, useMock = false): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.registerMeal(data.mealId, data.guestCount || 0, data.userId);
@@ -258,7 +258,7 @@ export const mealService = {
     mealId: number,
     guestCount: number,
     registrationId?: number,
-    useMock = true
+    useMock = false
   ): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
@@ -284,7 +284,7 @@ export const mealService = {
   async cancelRegistration(
     registrationId: number,
     reason?: string,
-    useMock = true
+    useMock = false
   ): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
@@ -301,7 +301,7 @@ export const mealService = {
   /**
    * Duyệt yêu cầu cắt trực tiếp (PENDING -> CANCELLED): PATCH /api/meal-registrations/:id/approve-cancel (Admin/Manager)
    */
-  async approveCancelRegistration(id: number, useMock = true): Promise<MealRegistration> {
+  async approveCancelRegistration(id: number, useMock = false): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.approveCancelRegistration(id);
@@ -316,7 +316,7 @@ export const mealService = {
   /**
    * Từ chối yêu cầu cắt trực tiếp (PENDING -> CONFIRMED): PATCH /api/meal-registrations/:id/reject-cancel (Admin/Manager)
    */
-  async rejectCancelRegistration(id: number, useMock = true): Promise<MealRegistration> {
+  async rejectCancelRegistration(id: number, useMock = false): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.rejectCancelRegistration(id);
@@ -331,7 +331,7 @@ export const mealService = {
   /**
    * Xác nhận đăng ký: PATCH /api/meal-registrations/:id/confirm (Admin/Manager)
    */
-  async confirmRegistration(id: number, useMock = true): Promise<MealRegistration> {
+  async confirmRegistration(id: number, useMock = false): Promise<MealRegistration> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.confirmRegistration(id);
@@ -346,7 +346,7 @@ export const mealService = {
   /**
    * Xóa đăng ký: DELETE /api/meal-registrations/:id (Admin/Manager)
    */
-  async deleteRegistration(id: number, useMock = true): Promise<void> {
+  async deleteRegistration(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deleteRegistration(id);
@@ -360,7 +360,7 @@ export const mealService = {
   /**
    * Lấy danh sách yêu cầu cắt suất cá nhân: GET /api/meal-options/me
    */
-  async getMyMealOptions(useMock = true): Promise<MealOption[]> {
+  async getMyMealOptions(useMock = false): Promise<MealOption[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMyMealOptions();
@@ -372,7 +372,7 @@ export const mealService = {
   /**
    * Lấy toàn bộ danh sách yêu cầu cắt suất (Admin/Manager): GET /api/meal-options
    */
-  async getAllMealOptions(useMock = true): Promise<MealOption[]> {
+  async getAllMealOptions(useMock = false): Promise<MealOption[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAllMealOptions();
@@ -384,7 +384,7 @@ export const mealService = {
   /**
    * Lọc yêu cầu cắt suất (Admin/Manager): GET /api/meal-options/filter
    */
-  async filterMealOptions(params: MealOptionFilterParams, useMock = true): Promise<MealOption[]> {
+  async filterMealOptions(params: MealOptionFilterParams, useMock = false): Promise<MealOption[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let list = mockStore.getAllMealOptions();
@@ -410,7 +410,7 @@ export const mealService = {
   /**
    * Tạo yêu cầu cắt suất: POST /api/meal-options
    */
-  async createMealOption(data: CreateMealOptionRequest, useMock = true): Promise<MealOption> {
+  async createMealOption(data: CreateMealOptionRequest, useMock = false): Promise<MealOption> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.createMealOption(data.type, data.fromDate, data.toDate, data.note, data.userId);
@@ -430,7 +430,7 @@ export const mealService = {
   /**
    * Duyệt yêu cầu cắt suất (Admin/Manager): PATCH /api/meal-options/:id/approve
    */
-  async approveMealOption(id: number, useMock = true): Promise<MealOption> {
+  async approveMealOption(id: number, useMock = false): Promise<MealOption> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.approveMealOption(id);
@@ -445,7 +445,7 @@ export const mealService = {
   /**
    * Từ chối yêu cầu cắt suất (Admin/Manager): PATCH /api/meal-options/:id/reject
    */
-  async rejectMealOption(id: number, useMock = true): Promise<MealOption> {
+  async rejectMealOption(id: number, useMock = false): Promise<MealOption> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.rejectMealOption(id);
@@ -460,7 +460,7 @@ export const mealService = {
   /**
    * Hủy yêu cầu cắt suất: DELETE /api/meal-options/:id
    */
-  async deleteMealOption(id: number, useMock = true): Promise<void> {
+  async deleteMealOption(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deleteMealOption(id);
@@ -474,7 +474,7 @@ export const mealService = {
   /**
    * Lấy danh sách ngày lễ: GET /api/holiday-events
    */
-  async getHolidays(useMock = true): Promise<HolidayEvent[]> {
+  async getHolidays(useMock = false): Promise<HolidayEvent[]> {
     if (useMock) {
       return mockStore.getHolidays();
     }
@@ -485,7 +485,7 @@ export const mealService = {
   /**
    * Tạo sự kiện nghỉ lễ/Tết (Admin/Manager): POST /api/holiday-events
    */
-  async createHoliday(data: CreateHolidayEventRequest, useMock = true): Promise<HolidayEvent> {
+  async createHoliday(data: CreateHolidayEventRequest, useMock = false): Promise<HolidayEvent> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.createHoliday(data);
@@ -499,7 +499,7 @@ export const mealService = {
   /**
    * Mở lại sự kiện nghỉ đã xóa/hủy: PATCH /api/holiday-events/:id/restore (Admin/Manager)
    */
-  async restoreHoliday(id: number, useMock = true): Promise<HolidayEvent> {
+  async restoreHoliday(id: number, useMock = false): Promise<HolidayEvent> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const res = mockStore.restoreHoliday(id);
@@ -514,7 +514,7 @@ export const mealService = {
   /**
    * Lấy cấu hình lịch ăn: GET /api/system-settings/meal-schedule-config
    */
-  async getScheduleConfig(useMock = true): Promise<MealScheduleConfig> {
+  async getScheduleConfig(useMock = false): Promise<MealScheduleConfig> {
     return await systemSettingService.getAggregatedConfig(useMock);
   },
 };

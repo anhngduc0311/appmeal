@@ -20,7 +20,7 @@ export const paymentService = {
   /**
    * Lấy danh sách thanh toán của tôi: GET /api/payments/me
    */
-  async getMyPayments(useMock = true): Promise<Payment[]> {
+  async getMyPayments(useMock = false): Promise<Payment[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMyPayments();
@@ -32,7 +32,7 @@ export const paymentService = {
   /**
    * Tính toán tóm tắt thanh toán cá nhân từ /payments/me
    */
-  async getMyPaymentSummary(useMock = true): Promise<PaymentSummary> {
+  async getMyPaymentSummary(useMock = false): Promise<PaymentSummary> {
     const payments = await this.getMyPayments(useMock);
 
     let totalUnpaidAmount = 0;
@@ -65,7 +65,7 @@ export const paymentService = {
   /**
    * Lấy toàn bộ danh sách thanh toán (Admin/Manager): GET /api/payments
    */
-  async getAllPayments(useMock = true): Promise<Payment[]> {
+  async getAllPayments(useMock = false): Promise<Payment[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAllPayments();
@@ -77,7 +77,7 @@ export const paymentService = {
   /**
    * Lọc và tìm kiếm danh sách thanh toán (Admin/Manager): GET /api/payments/filter
    */
-  async filterPayments(params: PaymentFilterParams, useMock = true): Promise<Payment[]> {
+  async filterPayments(params: PaymentFilterParams, useMock = false): Promise<Payment[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let list = mockStore.getAllPayments();
@@ -105,7 +105,7 @@ export const paymentService = {
   /**
    * Xem chi tiết một khoản thanh toán: GET /api/payments/:id (Admin/Manager)
    */
-  async getPayment(id: number, useMock = true): Promise<Payment> {
+  async getPayment(id: number, useMock = false): Promise<Payment> {
     if (useMock) {
       const p = mockStore.getAllPayments().find((x) => x.id === id);
       if (!p) throw new Error('Không tìm thấy khoản thanh toán');
@@ -117,7 +117,7 @@ export const paymentService = {
   /**
    * Tạo khoản thanh toán thủ công (Admin/Manager): POST /api/payments
    */
-  async createPayment(data: CreatePaymentRequest, useMock = true): Promise<Payment> {
+  async createPayment(data: CreatePaymentRequest, useMock = false): Promise<Payment> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.createPayment(data);
@@ -131,7 +131,7 @@ export const paymentService = {
   /**
    * Cập nhật khoản thanh toán (Admin/Manager): PUT /api/payments/:id
    */
-  async updatePayment(id: number, data: UpdatePaymentRequest, useMock = true): Promise<Payment> {
+  async updatePayment(id: number, data: UpdatePaymentRequest, useMock = false): Promise<Payment> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const updated = mockStore.updatePayment(id, data);
@@ -148,7 +148,7 @@ export const paymentService = {
    * Đánh dấu đã thanh toán (Admin/Manager): PATCH /api/payments/:id/mark-paid
    * Chỉ gửi paidAmount và billImg dạng chuỗi URL/mã tham chiếu theo API thực tế
    */
-  async markPaid(id: number, data: MarkPaidRequest = {}, useMock = true): Promise<Payment> {
+  async markPaid(id: number, data: MarkPaidRequest = {}, useMock = false): Promise<Payment> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const marked = mockStore.markPaymentPaid(id, data.paidAmount, data.billImg);
@@ -164,7 +164,7 @@ export const paymentService = {
   /**
    * Xóa khoản thanh toán (Admin only): DELETE /api/payments/:id
    */
-  async deletePayment(id: number, useMock = true): Promise<void> {
+  async deletePayment(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deletePayment(id);

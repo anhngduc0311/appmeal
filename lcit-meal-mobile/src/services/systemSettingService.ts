@@ -16,7 +16,7 @@ export const systemSettingService = {
   /**
    * Lấy cấu hình theo key: GET /api/system-settings/key/:key
    */
-  async getByKey(key: string, useMock = true): Promise<SystemSettingItem | null> {
+  async getByKey(key: string, useMock = false): Promise<SystemSettingItem | null> {
     if (useMock) {
       return null;
     }
@@ -30,7 +30,7 @@ export const systemSettingService = {
   /**
    * Cập nhật cấu hình theo key (Admin only): PUT /api/system-settings/key/:key
    */
-  async updateByKey(key: string, value: string, useMock = true): Promise<SystemSettingItem> {
+  async updateByKey(key: string, value: string, useMock = false): Promise<SystemSettingItem> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.updateSettingKey(key, value);
@@ -44,7 +44,7 @@ export const systemSettingService = {
   /**
    * Lấy danh sách cấu hình hệ thống: GET /api/system-settings
    */
-  async getAllSettings(useMock = true): Promise<SystemSettingItem[]> {
+  async getAllSettings(useMock = false): Promise<SystemSettingItem[]> {
     if (useMock) {
       return mockStore.getRawSystemSettings();
     }
@@ -61,7 +61,7 @@ export const systemSettingService = {
    */
   async bulkUpdate(
     settings: { settingKey: string; settingValue: string }[],
-    useMock = true
+    useMock = false
   ): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
@@ -79,7 +79,7 @@ export const systemSettingService = {
   /**
    * Lấy cấu hình ngày ăn trong tuần: GET /api/system-settings/meal-schedule-config
    */
-  async getMealScheduleConfig(useMock = true): Promise<MealScheduleConfigResponse | null> {
+  async getMealScheduleConfig(useMock = false): Promise<MealScheduleConfigResponse | null> {
     if (useMock) {
       return mockStore.getMealScheduleConfigDays();
     }
@@ -95,7 +95,7 @@ export const systemSettingService = {
    */
   async updateMealScheduleConfig(
     days: MealScheduleDayConfig[],
-    useMock = true
+    useMock = false
   ): Promise<MealScheduleConfigResponse> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
@@ -113,7 +113,7 @@ export const systemSettingService = {
   async uploadPaymentQr(
     fileUri: string,
     mimeType = 'image/png',
-    useMock = true
+    useMock = false
   ): Promise<{ url: string }> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 500));
@@ -141,7 +141,7 @@ export const systemSettingService = {
   /**
    * Tổng hợp cấu hình hệ thống cho nghiệp vụ mobile
    */
-  async getAggregatedConfig(useMock = true): Promise<MealScheduleConfig> {
+  async getAggregatedConfig(useMock = false): Promise<MealScheduleConfig> {
     if (useMock) {
       return mockStore.getScheduleConfig();
     }

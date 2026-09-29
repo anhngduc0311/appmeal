@@ -19,7 +19,7 @@ export const userService = {
   /**
    * Lấy danh sách toàn bộ người dùng: GET /api/users
    */
-  async list(useMock = true): Promise<User[]> {
+  async list(useMock = false): Promise<User[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAllUsers();
@@ -31,7 +31,7 @@ export const userService = {
   /**
    * Lọc và tìm kiếm người dùng: GET /api/users/filter
    */
-  async filter(params: UserFilterParams, useMock = true): Promise<User[]> {
+  async filter(params: UserFilterParams, useMock = false): Promise<User[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let users = mockStore.getAllUsers();
@@ -70,7 +70,7 @@ export const userService = {
   /**
    * Lấy chi tiết người dùng: GET /api/users/:id
    */
-  async get(id: number, useMock = true): Promise<User> {
+  async get(id: number, useMock = false): Promise<User> {
     if (useMock) {
       const user = mockStore.getAllUsers().find((u) => u.id === id);
       if (!user) throw new Error('Không tìm thấy người dùng');
@@ -85,7 +85,7 @@ export const userService = {
   async checkAvailability(
     username: string,
     excludeId?: number,
-    useMock = true
+    useMock = false
   ): Promise<UserAvailabilityResponse> {
     if (useMock) {
       const exists = mockStore
@@ -103,7 +103,7 @@ export const userService = {
   /**
    * Tạo người dùng mới: POST /api/users (Admin only)
    */
-  async create(data: CreateUserRequest, useMock = true): Promise<User> {
+  async create(data: CreateUserRequest, useMock = false): Promise<User> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.createUser(data);
@@ -117,7 +117,7 @@ export const userService = {
   /**
    * Cập nhật thông tin/vai trò người dùng: PUT /api/users/:id (Admin only)
    */
-  async update(id: number, data: UpdateUserRequest, useMock = true): Promise<User> {
+  async update(id: number, data: UpdateUserRequest, useMock = false): Promise<User> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const updated = mockStore.updateUser(id, data);
@@ -133,7 +133,7 @@ export const userService = {
   /**
    * Xóa người dùng: DELETE /api/users/:id (Admin only)
    */
-  async delete(id: number, useMock = true): Promise<void> {
+  async delete(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deleteUser(id);
@@ -145,7 +145,7 @@ export const userService = {
   /**
    * Lấy danh sách các vai trò hệ thống: GET /api/roles
    */
-  async getRoles(useMock = true): Promise<RoleObject[]> {
+  async getRoles(useMock = false): Promise<RoleObject[]> {
     if (useMock) {
       return [
         { id: 1, code: 'admin', displayName: 'Quản trị viên', description: 'Toàn quyền cấu hình và quản trị hệ thống' },

@@ -7,7 +7,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
 } from 'react-native';
@@ -20,19 +19,17 @@ import { Button } from '../../src/components/common/Button';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { Card } from '../../src/components/common/Card';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { mockUsers } from '../../src/mocks/fixtures';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
-import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, useMockData } = useAuth();
+  const { login } = useAuth();
   const wide = useWindowDimensions().width >= 850;
 
-  const [username, setUsername] = useState(useMockData ? 'nv_an' : '');
-  const [password, setPassword] = useState(useMockData ? '123456' : '');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -59,12 +56,6 @@ export default function LoginScreen() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelectMockAccount = (mockU: (typeof mockUsers)[0]) => {
-    setUsername(mockU.username);
-    setPassword('123456');
-    setErrorMessage(null);
   };
 
   return (
@@ -146,49 +137,6 @@ export default function LoginScreen() {
           />
         </Card>
 
-        {/* Chọn nhanh tài khoản Demo trong giai đoạn phát triển */}
-        {useMockData && <Card variant="outlined" padding="lg" style={styles.demoCard}>
-          <View style={styles.demoHeader}>
-            <Ionicons name="flash-outline" size={18} color={colors.primaryDark} />
-            <Text style={styles.demoTitle}>Tài khoản thử nghiệm nhanh (Demo)</Text>
-          </View>
-          <Text style={styles.demoDesc}>
-            Chạm vào tài khoản bên dưới để tự động điền:
-          </Text>
-
-          <View style={styles.mockUsersGrid}>
-            {mockUsers.map((u) => (
-              <TouchableOpacity
-                key={u.id}
-                activeOpacity={0.7}
-                onPress={() => handleSelectMockAccount(u)}
-                style={[
-                  styles.mockUserButton,
-                  username === u.username && styles.mockUserButtonActive,
-                ]}
-                accessibilityRole="button"
-              >
-                <Text
-                  style={[
-                    styles.mockUserRole,
-                    username === u.username && styles.mockUserRoleActive,
-                  ]}
-                >
-                  {{admin: 'QUẢN TRỊ', manager: 'QUẢN LÝ', employee: 'NHÂN VIÊN', kitchen: 'NHÀ BẾP'}[u.role || 'employee']}
-                </Text>
-                <Text
-                  style={[
-                    styles.mockUserName,
-                    username === u.username && styles.mockUserNameActive,
-                  ]}
-                >
-                  {u.fullName}
-                </Text>
-                <Text style={styles.mockUserUsername}>({u.username})</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Card>}
         <Text style={styles.footer}>LCIT MEAL · Quản lý suất ăn cơ quan</Text>
         </View>
       </View>
@@ -260,70 +208,5 @@ const styles = StyleSheet.create({
   },
   loginBtn: {
     marginTop: spacing.md,
-  },
-  demoCard: {
-    width: '100%',
-    backgroundColor: colors.primary50,
-    borderColor: colors.primary300,
-    borderRadius: radius.xl,
-  },
-  demoHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: 4,
-  },
-  demoTitle: {
-    fontSize: typography.sizes.sm,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  demoDesc: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  mockUsersGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  mockUserButton: {
-    width: '48%',
-    backgroundColor: colors.surface,
-    padding: spacing.sm,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minHeight: 62,
-    justifyContent: 'center',
-  },
-  mockUserButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1.5,
-  },
-  mockUserRole: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: colors.textSecondary,
-    marginBottom: 2,
-    letterSpacing: 0.5,
-  },
-  mockUserRoleActive: {
-    color: colors.primaryDark,
-  },
-  mockUserName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  mockUserNameActive: {
-    color: colors.primaryDark,
-  },
-  mockUserUsername: {
-    fontSize: 10,
-    color: colors.textMuted,
-    marginTop: 1,
   },
 });

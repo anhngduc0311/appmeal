@@ -20,7 +20,7 @@ export const authService = {
   /**
    * Đăng nhập
    */
-  async login(credentials: LoginRequest, useMock = true): Promise<{ user: User; token: string }> {
+  async login(credentials: LoginRequest, useMock = false): Promise<{ user: User; token: string }> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const users = mockStore.getAllUsers();
@@ -73,7 +73,7 @@ export const authService = {
   /**
    * Đăng xuất
    */
-  async logout(useMock = true): Promise<void> {
+  async logout(useMock = false): Promise<void> {
     if (!useMock) {
       try {
         await apiClient('/auth/logout', { method: 'POST' });
@@ -100,7 +100,7 @@ export const authService = {
   /**
    * Cập nhật thông tin cá nhân: PATCH /api/users/me
    */
-  async updateProfile(data: UpdateProfileRequest, useMock = true): Promise<User> {
+  async updateProfile(data: UpdateProfileRequest, useMock = false): Promise<User> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       const currentUser = mockStore.getCurrentUser();

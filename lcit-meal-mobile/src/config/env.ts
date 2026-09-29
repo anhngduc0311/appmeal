@@ -21,8 +21,8 @@ export const env = {
   appName: 'LCIT Meal',
   appVersion: '1.0.0',
   apiBaseUrl: getDefaultApiUrl(),
-  // Mặc định bật chế độ mock cho giai đoạn 1 & 2
-  defaultUseMock: process.env.EXPO_PUBLIC_USE_MOCK !== 'false',
+  // Mặc định kết nối API thật, tắt chế độ mock
+  defaultUseMock: process.env.EXPO_PUBLIC_USE_MOCK === 'true',
   // Timeout cho HTTP request (ms)
   requestTimeoutMs: 15000,
   // Cutoff time mặc định nếu chưa lấy được từ server

@@ -18,7 +18,7 @@ export const notificationService = {
   /**
    * Lấy danh sách thông báo của tôi: GET /api/notifications/me
    */
-  async getMyNotifications(useMock = true): Promise<NotificationItem[]> {
+  async getMyNotifications(useMock = false): Promise<NotificationItem[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getMyNotifications();
@@ -30,7 +30,7 @@ export const notificationService = {
   /**
    * Lấy toàn bộ danh sách thông báo hệ thống (Admin/Manager): GET /api/notifications
    */
-  async getAllNotifications(useMock = true): Promise<NotificationItem[]> {
+  async getAllNotifications(useMock = false): Promise<NotificationItem[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getAllNotifications();
@@ -42,7 +42,7 @@ export const notificationService = {
   /**
    * Lọc thông báo (Admin/Manager): GET /api/notifications/filter
    */
-  async filterNotifications(query?: string, status?: string, useMock = true): Promise<NotificationItem[]> {
+  async filterNotifications(query?: string, status?: string, useMock = false): Promise<NotificationItem[]> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       let list = mockStore.getAllNotifications();
@@ -69,7 +69,7 @@ export const notificationService = {
   /**
    * Soạn & phát thông báo tới danh sách userIds hoặc Broadcast toàn bộ (Admin/Manager): POST /api/notifications/send
    */
-  async sendNotification(data: SendNotificationRequest, useMock = true): Promise<NotificationItem> {
+  async sendNotification(data: SendNotificationRequest, useMock = false): Promise<NotificationItem> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 400));
       return mockStore.sendNotification(data);
@@ -83,7 +83,7 @@ export const notificationService = {
   /**
    * Tạo thông báo: POST /api/notifications (Admin/Manager)
    */
-  async createNotification(data: CreateNotificationRequest, useMock = true): Promise<NotificationItem> {
+  async createNotification(data: CreateNotificationRequest, useMock = false): Promise<NotificationItem> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       return mockStore.sendNotification(data);
@@ -100,7 +100,7 @@ export const notificationService = {
   async updateNotification(
     id: number,
     data: UpdateNotificationRequest,
-    useMock = true
+    useMock = false
   ): Promise<NotificationItem> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
@@ -117,7 +117,7 @@ export const notificationService = {
   /**
    * Xóa thông báo: DELETE /api/notifications/:id (Admin/Manager)
    */
-  async deleteNotification(id: number, useMock = true): Promise<void> {
+  async deleteNotification(id: number, useMock = false): Promise<void> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
       mockStore.deleteNotification(id);
@@ -129,7 +129,7 @@ export const notificationService = {
   /**
    * Lấy số lượng thông báo chưa đọc: GET /api/notifications/me/unseen-count
    */
-  async getUnseenCount(useMock = true): Promise<number> {
+  async getUnseenCount(useMock = false): Promise<number> {
     if (useMock) {
       return mockStore.getUnseenNotificationCount();
     }
@@ -150,7 +150,7 @@ export const notificationService = {
   /**
    * Đánh dấu 1 thông báo đã đọc: PATCH /api/notifications/:id/seen
    */
-  async markAsSeen(notificationId: number, useMock = true): Promise<void> {
+  async markAsSeen(notificationId: number, useMock = false): Promise<void> {
     if (useMock) {
       mockStore.markNotificationAsSeen(notificationId);
       return;
@@ -165,7 +165,7 @@ export const notificationService = {
   /**
    * Đánh dấu tất cả thông báo đã đọc: PATCH /api/notifications/me/seen-all
    */
-  async markAllAsSeen(useMock = true): Promise<void> {
+  async markAllAsSeen(useMock = false): Promise<void> {
     if (useMock) {
       mockStore.markAllNotificationsAsSeen();
       return;

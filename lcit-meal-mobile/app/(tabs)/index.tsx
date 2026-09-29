@@ -21,7 +21,6 @@ import { Card } from '../../src/components/common/Card';
 import { Button } from '../../src/components/common/Button';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { MealCard } from '../../src/components/meals/MealCard';
-import { MockModeBanner } from '../../src/components/meals/MockModeBanner';
 import { useAuth } from '../../src/providers/AuthProvider';
 import {
   useMeals,
@@ -160,7 +159,6 @@ function PersonalHomeScreen() {
           {(role === 'admin' || role === 'manager') && <Card onPress={() => router.push('/management')} padding="xl" style={styles.managementCard}><Ionicons name="grid-outline" size={24} color={colors.primary} /><Text style={styles.actionTitle}>Trung tâm quản lý</Text><Text style={styles.body}>Suất ăn, lịch bếp và thu tiền toàn đơn vị →</Text></Card>}
         </View>
       </View>
-      <View style={{marginTop: 28}}><MockModeBanner /></View>
       {/* Modal xác nhận Cắt suất */}
       <ConfirmDialog
         visible={cancelModalVisible}

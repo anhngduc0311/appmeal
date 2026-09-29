@@ -11,7 +11,7 @@ export const dashboardService = {
   /**
    * Lấy dữ liệu tổng quan trang chủ quản lý: GET /api/dashboard/home
    */
-  async getHome(useMock = true, date?: string): Promise<DashboardHomeData> {
+  async getHome(useMock = false, date?: string): Promise<DashboardHomeData> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
       return mockStore.getDashboardHome(date);
@@ -25,7 +25,7 @@ export const dashboardService = {
   async getChart(
     period: 'week' | 'month' | 'year' = 'week',
     date?: string,
-    useMock = true
+    useMock = false
   ): Promise<DashboardChartResponse> {
     if (useMock) {
       await new Promise((res) => setTimeout(res, 200));
