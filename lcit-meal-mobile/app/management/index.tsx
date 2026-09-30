@@ -117,17 +117,28 @@ export default function ManagementDashboardScreen() {
       <Header
         title="Tổng quan quản lý"
         subtitle={`Theo dõi hoạt động bữa ăn · ${user?.fullName || ''}`}
-        showBack
-        onBack={() => router.back()}
+        showBack={router.canGoBack()}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/account'))}
         userRole={role || undefined}
         rightAction={
-          <TouchableOpacity
-            style={styles.refreshHeaderBtn}
-            onPress={handleRefresh}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="refresh" size={20} color={colors.primaryDark} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity
+              style={styles.refreshHeaderBtn}
+              onPress={handleRefresh}
+              activeOpacity={0.7}
+              accessibilityLabel="Làm mới dữ liệu"
+            >
+              <Ionicons name="refresh" size={20} color={colors.primaryDark} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.refreshHeaderBtn}
+              onPress={() => router.push('/(tabs)/account')}
+              activeOpacity={0.7}
+              accessibilityLabel="Tài khoản cá nhân"
+            >
+              <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+            </TouchableOpacity>
+          </View>
         }
       />
 

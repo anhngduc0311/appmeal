@@ -93,6 +93,14 @@ export function extractUserRole(user: User | null | undefined): UserRole {
   if (user.role) return user.role;
 
   if (Array.isArray(user.roles) && user.roles.length > 0) {
+    const roleCodes = user.roles.map((r) =>
+      typeof r === 'string' ? r : typeof r === 'object' && r !== null && 'code' in r ? r.code : ''
+    );
+    if (roleCodes.includes('admin')) return 'admin';
+    if (roleCodes.includes('manager')) return 'manager';
+    if (roleCodes.includes('kitchen')) return 'kitchen';
+    if (roleCodes.includes('employee')) return 'employee';
+
     const firstRole = user.roles[0];
     if (typeof firstRole === 'string') {
       return firstRole as UserRole;

@@ -40,7 +40,19 @@ import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { role } = useAuth();
+
+  React.useEffect(() => {
+    if (role === 'admin') {
+      router.replace('/management');
+    }
+  }, [role, router]);
+
+  if (role === 'admin') {
+    return null;
+  }
+
   return role === 'kitchen' ? <KitchenHome /> : <PersonalHomeScreen />;
 }
 

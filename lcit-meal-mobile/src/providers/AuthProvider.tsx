@@ -24,7 +24,7 @@ interface AuthContextType {
   isLoading: boolean;
   useMockData: boolean;
   isMockMode: boolean;
-  login: (credentials: LoginRequest) => Promise<void>;
+  login: (credentials: LoginRequest) => Promise<{ user: User; token: string }>;
   logout: () => Promise<void>;
   switchMockUser: (userId: number) => Promise<void>;
   setUseMockData: (enabled: boolean) => Promise<void>;
@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       queryClient.clear();
       setUser(res.user);
       setToken(res.token);
+      return res;
     },
     [useMockData]
   );
