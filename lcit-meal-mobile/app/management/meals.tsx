@@ -264,6 +264,23 @@ export default function ManagementMealsScreen() {
     );
   }
 
+  const handleOpenCreate = () => {
+    if (activeTab === 'meals') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setMealDateInput(formatBusinessDate(tomorrow));
+      setMealNoteInput('');
+      setIsCreateMealOpen(true);
+    } else {
+      const today = formatBusinessDate(new Date());
+      setHolidayFromInput(today);
+      setHolidayToInput(today);
+      setHolidayNameInput('');
+      setHolidayReasonInput('');
+      setIsCreateHolidayOpen(true);
+    }
+  };
+
   const ListHeader = (
     <View>
       <Header
@@ -272,30 +289,6 @@ export default function ManagementMealsScreen() {
         showBack
         onBack={() => router.back()}
         userRole={role || undefined}
-        rightAction={
-          <TouchableOpacity
-            style={styles.addHeaderBtn}
-            onPress={() => {
-              if (activeTab === 'meals') {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                setMealDateInput(formatBusinessDate(tomorrow));
-                setMealNoteInput('');
-                setIsCreateMealOpen(true);
-              } else {
-                const today = formatBusinessDate(new Date());
-                setHolidayFromInput(today);
-                setHolidayToInput(today);
-                setHolidayNameInput('');
-                setHolidayReasonInput('');
-                setIsCreateHolidayOpen(true);
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="add-circle" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        }
       />
 
       {/* Tabs Segment */}
@@ -346,7 +339,7 @@ export default function ManagementMealsScreen() {
           ListEmptyComponent={
             <EmptyState
               title="Chưa có ngày bếp nào"
-              description="Bấm nút dấu cộng góc trên bên phải để tạo ngày bếp mới."
+              description="Bấm nút dấu cộng ở góc dưới bên phải để tạo ngày bếp mới."
             />
           }
           showsVerticalScrollIndicator={false}
@@ -366,7 +359,7 @@ export default function ManagementMealsScreen() {
           ListEmptyComponent={
             <EmptyState
               title="Chưa có ngày nghỉ lễ nào"
-              description="Bấm nút dấu cộng để thiết lập kỳ nghỉ lễ cho toàn cơ quan."
+              description="Bấm nút dấu cộng ở góc dưới bên phải để thiết lập kỳ nghỉ lễ cho toàn cơ quan."
             />
           }
           showsVerticalScrollIndicator={false}
@@ -378,6 +371,17 @@ export default function ManagementMealsScreen() {
           windowSize={5}
         />
       )}
+
+      {/* Nút Thêm Ngày Bếp / Nghỉ Lễ ở góc dưới bên phải (Floating Action Button) */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleOpenCreate}
+        activeOpacity={0.85}
+        accessibilityLabel={activeTab === 'meals' ? 'Thêm ngày nấu ăn mới' : 'Thiết lập kỳ nghỉ lễ mới'}
+        accessibilityRole="button"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </TouchableOpacity>
 
       {/* Modal Xem Tổng Suất Ăn (Summary) */}
       <Modal visible={summaryMealId !== null} transparent animationType="fade">
@@ -647,10 +651,24 @@ export default function ManagementMealsScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: spacing['3xl'],
+    paddingBottom: 88,
   },
-  addHeaderBtn: {
-    padding: spacing.xs,
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 99,
   },
   tabBarWrapper: {
     paddingHorizontal: spacing.md,

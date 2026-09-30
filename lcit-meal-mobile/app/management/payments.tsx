@@ -286,6 +286,16 @@ export default function ManagementPaymentsScreen() {
     );
   }
 
+  const handleOpenCreateModal = () => {
+    if (users.length > 0) setFormUserId(users[0].id);
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    setFormPaymentDate(`${currentMonth}-25`);
+    setFormAmount('660000');
+    setFormStatus('unpaid');
+    setIsCreateOpen(true);
+  };
+
   const ListHeader = (
     <View>
       <Header
@@ -295,36 +305,19 @@ export default function ManagementPaymentsScreen() {
         onBack={() => router.back()}
         userRole={role || undefined}
         rightAction={
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={handleExport}
-              disabled={isExporting}
-              activeOpacity={0.7}
-            >
-              {isExporting ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Ionicons name="download-outline" size={20} color={colors.primary} />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.headerBtn}
-              onPress={() => {
-                if (users.length > 0) setFormUserId(users[0].id);
-                const now = new Date();
-                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                setFormPaymentDate(`${currentMonth}-25`);
-                setFormAmount('660000');
-                setFormStatus('unpaid');
-                setIsCreateOpen(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="add-circle" size={22} color={colors.primary} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.headerBtn}
+            onPress={handleExport}
+            disabled={isExporting}
+            activeOpacity={0.7}
+            accessibilityLabel="Xuất báo cáo Excel"
+          >
+            {isExporting ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons name="download-outline" size={20} color={colors.primary} />
+            )}
+          </TouchableOpacity>
         }
       />
 
@@ -396,7 +389,7 @@ export default function ManagementPaymentsScreen() {
         ListEmptyComponent={
           <EmptyState
             title="Không có khoản thanh toán nào"
-            description="Thử thay đổi bộ lọc hoặc bấm nút tạo khoản thu mới."
+            description="Thử thay đổi bộ lọc hoặc bấm nút tạo khoản thu mới ở góc dưới bên phải."
           />
         }
         showsVerticalScrollIndicator={false}
@@ -407,6 +400,17 @@ export default function ManagementPaymentsScreen() {
         maxToRenderPerBatch={10}
         windowSize={5}
       />
+
+      {/* Nút Tạo Khoản Thu ở góc dưới bên phải (Floating Action Button) */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleOpenCreateModal}
+        activeOpacity={0.85}
+        accessibilityLabel="Tạo khoản thanh toán mới"
+        accessibilityRole="button"
+      >
+        <Ionicons name="add" size={28} color={colors.textInverse} />
+      </TouchableOpacity>
 
       {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput */}
       <Modal visible={isCreateOpen} transparent animationType="slide">
@@ -610,7 +614,24 @@ export default function ManagementPaymentsScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: spacing['3xl'],
+    paddingBottom: 88,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 99,
   },
   headerActions: {
     flexDirection: 'row',

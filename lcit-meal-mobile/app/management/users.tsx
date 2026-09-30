@@ -332,6 +332,18 @@ export default function ManagementUsersScreen() {
     );
   }
 
+  const handleOpenCreateModal = () => {
+    setFormFullName('');
+    setFormUsername('');
+    setFormPassword('123456');
+    setFormEmail('');
+    setFormPhone('');
+    setFormRoleId(3);
+    setFormStatus('active');
+    setUsernameError('');
+    setIsCreateOpen(true);
+  };
+
   const ListHeader = (
     <View>
       <Header
@@ -340,27 +352,6 @@ export default function ManagementUsersScreen() {
         showBack
         onBack={() => router.back()}
         userRole={role || undefined}
-        rightAction={
-          isAdmin ? (
-            <TouchableOpacity
-              style={styles.addHeaderBtn}
-              onPress={() => {
-                setFormFullName('');
-                setFormUsername('');
-                setFormPassword('123456');
-                setFormEmail('');
-                setFormPhone('');
-                setFormRoleId(3);
-                setFormStatus('active');
-                setUsernameError('');
-                setIsCreateOpen(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="person-add" size={22} color={colors.primary} />
-            </TouchableOpacity>
-          ) : undefined
-        }
       />
 
       {/* Search Input */}
@@ -429,6 +420,19 @@ export default function ManagementUsersScreen() {
         maxToRenderPerBatch={10}
         windowSize={5}
       />
+
+      {/* Nút Thêm Người Dùng ở góc dưới bên phải (Floating Action Button) */}
+      {isAdmin && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={handleOpenCreateModal}
+          activeOpacity={0.85}
+          accessibilityLabel="Thêm người dùng mới"
+          accessibilityRole="button"
+        >
+          <Ionicons name="person-add" size={24} color={colors.textInverse} />
+        </TouchableOpacity>
+      )}
 
       {/* Modal Thêm Người Dùng Mới (Admin only) */}
       <Modal visible={isCreateOpen} transparent animationType="slide">
@@ -664,10 +668,24 @@ export default function ManagementUsersScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: spacing.md,
-    paddingBottom: spacing['3xl'],
+    paddingBottom: 88,
   },
-  addHeaderBtn: {
-    padding: spacing.xs,
+  fab: {
+    position: 'absolute',
+    bottom: 24,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 8,
+    shadowColor: colors.primaryDark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    zIndex: 99,
   },
   searchBarWrapper: {
     position: 'relative',
