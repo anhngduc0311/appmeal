@@ -134,11 +134,59 @@ export default function ManagementRegistrationsScreen() {
       account: record.user?.username || person?.username,
     };
   }, [users]);
-  const normalizeSearch = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
+  const normalizeSearch = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd')
+      .toLowerCase()
+      .trim();
+
   const matchesSearch = (record: MealRegistration | MealOption) => {
+    if (!searchQuery.trim()) return true;
+
+    const rawQuery = searchQuery.trim();
+    const q = normalizeSearch(rawQuery);
+    if (!q) return true;
+
+    // Handle @username or #id or cb123
+    const cleanQ = q.replace(/^[@#]/, '').replace(/^cb/, '').trim();
+
     const person = getPerson(record);
-    return normalizeSearch(`${person.name} ${person.account || ''} ${record.userId}`).includes(normalizeSearch(searchQuery));
+    const personName = normalizeSearch(person.name || '');
+    const personAccount = normalizeSearch(person.account || '');
+
+    const u = users.find((user) => user.id === record.userId);
+    const email = u?.email ? normalizeSearch(u.email) : '';
+    const phone = u?.phone ? u.phone.trim() : '';
+
+    // 1. Direct match on Name, Account (@username), Email, Phone
+    if (personName.includes(q) || (cleanQ && personName.includes(cleanQ))) return true;
+    if (personAccount && (personAccount.includes(q) || (cleanQ && personAccount.includes(cleanQ)))) return true;
+    if (email && cleanQ && email.includes(cleanQ)) return true;
+    if (phone && phone.includes(rawQuery)) return true;
+
+    // 2. Multi-word search for names (e.g. "Phan Dung" matches "Phan Tien Dung")
+    const words = cleanQ.split(/\s+/).filter(Boolean);
+    if (words.length > 1) {
+      const allWordsInName = words.every((w) => personName.includes(w) || personAccount.includes(w));
+      if (allWordsInName) return true;
+    }
+
+    // 3. Numeric / ID search (Mã cán bộ hoặc Mã phiếu)
+    // Only match exact ID or clean numeric code, NEVER match arbitrary substring of userId
+    if (/^\d+$/.test(cleanQ)) {
+      const numQ = Number(cleanQ);
+      if (record.userId === numQ || record.id === numQ) return true;
+    }
+
+    // 4. Note search (for meal options or registration note)
+    const note = (record as any).note ? normalizeSearch((record as any).note) : '';
+    if (note && note.includes(q)) return true;
+
+    return false;
   };
+
   const datedRegs = allRegistrations.filter((r) => !selectedDate || formatBusinessDate(r.mealDate || r.meal?.mealDate) === selectedDate);
   const searchedRegs = datedRegs.filter(matchesSearch);
   const searchedOptions = allOptions.filter(matchesSearch);
@@ -156,7 +204,19 @@ export default function ManagementRegistrationsScreen() {
   const scope = activeTab === 'registrations' ? searchedRegs : searchedOptions;
   const pendingCount = scope.filter((item) => item.status === 'pending').length;
   const availableMeals = meals.filter((m) => !m.isCancelled && m.mealDate >= today).sort((a, b) => a.mealDate.localeCompare(b.mealDate));
-  const selectableUsers = users.filter((u) => normalizeSearch(`${u.fullName} ${u.username}`).includes(normalizeSearch(userSearch)));
+  const selectableUsers = users.filter((u) => {
+    if (!userSearch.trim()) return true;
+    const q = normalizeSearch(userSearch);
+    const cleanQ = q.replace(/^[@#]/, '').replace(/^cb/, '').trim();
+    const fullName = normalizeSearch(u.fullName || '');
+    const username = normalizeSearch(u.username || '');
+    if (fullName.includes(q) || fullName.includes(cleanQ)) return true;
+    if (username.includes(q) || username.includes(cleanQ)) return true;
+    const words = cleanQ.split(/\s+/).filter(Boolean);
+    if (words.length > 1 && words.every((w) => fullName.includes(w) || username.includes(w))) return true;
+    if (/^\d+$/.test(cleanQ) && u.id === Number(cleanQ)) return true;
+    return false;
+  });
   const changeDate = (offset: number) => {
     const [year, month, day] = (selectedDate || today).split('-').map(Number);
     setSelectedDate(formatBusinessDate(new Date(year, month - 1, day + offset)));
