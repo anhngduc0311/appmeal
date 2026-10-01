@@ -4,6 +4,8 @@
  * TUÂN THỦ T24: Tuyệt đối không dùng chuyển đổi UTC gây lệch ngày ăn (YYYY-MM-DD).
  */
 
+import { env } from '../config/env';
+
 const DAYS_OF_WEEK_VI = [
   'Chủ Nhật',
   'Thứ Hai',
@@ -183,3 +185,26 @@ export function compareBusinessDates(d1: string, d2: string): number {
 export function getTodayBusinessDate(): string {
   return formatBusinessDate(new Date());
 }
+
+/**
+ * Lấy URL đầy đủ cho hình ảnh (xử lý cả URL tuyệt đối, file cục bộ và đường dẫn tĩnh tương đối /uploads/...)
+ */
+export function getMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('file://') ||
+    trimmed.startsWith('ph://') ||
+    trimmed.startsWith('content://')
+  ) {
+    return trimmed;
+  }
+  const baseUrl = env.apiBaseUrl.replace(/\/api\/?$/, '');
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${baseUrl}${cleanPath}`;
+}
+

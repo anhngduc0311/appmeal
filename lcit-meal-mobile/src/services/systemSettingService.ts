@@ -129,13 +129,19 @@ export const systemSettingService = {
       type: mimeType,
     } as unknown as Blob);
 
-    return await apiClient<{ url: string }>('/system-settings/payment-qr', {
+    const res = await apiClient<any>('/system-settings/payment-qr', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
       body: formData,
     });
+
+    const uploadedUrl =
+      res?.url ||
+      res?.settingValue ||
+      res?.payload?.url ||
+      res?.payload?.settingValue ||
+      '';
+
+    return { url: uploadedUrl };
   },
 
   /**

@@ -37,6 +37,7 @@ import {
   formatCurrency,
   formatDisplayDate,
   formatDateTime,
+  getMediaUrl,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
@@ -87,7 +88,7 @@ export default function PaymentsScreen() {
     setIsSharingQr(true);
 
     const qrUrl =
-      scheduleConfig?.paymentQrImage ||
+      getMediaUrl(scheduleConfig?.paymentQrImage) ||
       `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=LCITMEAL_PAYMENT_${selectedPayment.id}`;
 
     const transferContent = `TIEN AN ${user?.username?.toUpperCase() || 'CAN BO'} P${selectedPayment.id}`;
@@ -337,7 +338,7 @@ export default function PaymentsScreen() {
                       <Image
                         source={{
                           uri:
-                            scheduleConfig?.paymentQrImage ||
+                            getMediaUrl(scheduleConfig?.paymentQrImage) ||
                             `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=LCITMEAL_PAYMENT_${selectedPayment.id}`,
                         }}
                         style={styles.qrImage}

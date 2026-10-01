@@ -14,8 +14,11 @@ import {
   Switch,
   Alert,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
@@ -28,7 +31,9 @@ import {
   useMealScheduleDays,
   useBulkUpdateSettings,
   useUpdateScheduleDays,
+  useUploadPaymentQr,
 } from '../../src/hooks/useManagementSettings';
+import { getMediaUrl } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
@@ -75,6 +80,7 @@ export default function ManagementSettingsScreen() {
 
   const bulkUpdateMutation = useBulkUpdateSettings();
   const updateDaysMutation = useUpdateScheduleDays();
+  const uploadQrMutation = useUploadPaymentQr();
 
   // Populate data when query loads
   useEffect(() => {
@@ -157,6 +163,80 @@ export default function ManagementSettingsScreen() {
       const error = err as Error;
       Alert.alert('Lỗi lưu cấu hình', error.message || 'Thao tác thất bại');
     }
+  };
+
+  const handleUploadAsset = async (asset: ImagePicker.ImagePickerAsset) => {
+    try {
+      const res = await uploadQrMutation.mutateAsync({
+        fileUri: asset.uri,
+        mimeType: asset.mimeType || 'image/png',
+      });
+      const newUrl = res?.url || asset.uri;
+      setPaymentQrUrl(newUrl);
+      Alert.alert('Thành công', 'Đã tải ảnh mã QR lên hệ thống thành công.');
+    } catch (err: unknown) {
+      const error = err as Error;
+      Alert.alert('Lỗi tải ảnh', error.message || 'Không thể tải ảnh QR lên máy chủ.');
+    }
+  };
+
+  const handlePickImage = async (useCamera = false) => {
+    try {
+      if (useCamera) {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Quyền máy ảnh', 'Vui lòng cấp quyền truy cập máy ảnh để chụp mã QR.');
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          await handleUploadAsset(result.assets[0]);
+        }
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Quyền truy cập ảnh', 'Vui lòng cấp quyền truy cập thư viện ảnh để chọn mã QR.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          await handleUploadAsset(result.assets[0]);
+        }
+      }
+    } catch (err: unknown) {
+      const error = err as Error;
+      Alert.alert('Lỗi thao tác', error.message || 'Không thể chọn ảnh từ thiết bị.');
+    }
+  };
+
+  const handleChooseUploadOption = () => {
+    Alert.alert(
+      'Tải ảnh mã QR',
+      'Chọn phương thức tải ảnh từ điện thoại của bạn:',
+      [
+        {
+          text: 'Chọn từ thư viện ảnh',
+          onPress: () => handlePickImage(false),
+        },
+        {
+          text: 'Chụp ảnh mới',
+          onPress: () => handlePickImage(true),
+        },
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+      ]
+    );
   };
 
   return (
@@ -289,6 +369,19 @@ export default function ManagementSettingsScreen() {
             Hiển thị cho cán bộ quét chuyển khoản khi xem khoản thanh toán
           </Text>
 
+          {/* Button tải ảnh QR từ điện thoại */}
+          <View style={styles.qrActionSection}>
+            <Button
+              title="Tải ảnh QR từ điện thoại"
+              variant="primary"
+              size="md"
+              leftIcon={<Ionicons name="cloud-upload-outline" size={18} color={colors.textInverse} />}
+              loading={uploadQrMutation.isPending}
+              onPress={handleChooseUploadOption}
+              style={styles.uploadQrBtn}
+            />
+          </View>
+
           <Input
             label="URL hình ảnh mã QR ngân hàng"
             value={paymentQrUrl}
@@ -298,14 +391,27 @@ export default function ManagementSettingsScreen() {
 
           {paymentQrUrl ? (
             <View style={styles.qrPreviewBox}>
-              <Text style={styles.qrPreviewLabel}>Xem trước mã QR:</Text>
+              <View style={styles.qrPreviewHeader}>
+                <Text style={styles.qrPreviewLabel}>Xem trước mã QR:</Text>
+                <TouchableOpacity
+                  onPress={() => setPaymentQrUrl('')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Text style={styles.removeQrText}>Xóa ảnh</Text>
+                </TouchableOpacity>
+              </View>
               <Image
-                source={{ uri: paymentQrUrl }}
+                source={{ uri: getMediaUrl(paymentQrUrl) }}
                 style={styles.qrImage}
                 resizeMode="contain"
               />
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.emptyQrBox}>
+              <Ionicons name="qr-code-outline" size={36} color={colors.textSecondary} />
+              <Text style={styles.emptyQrText}>Chưa có ảnh mã QR ngân hàng</Text>
+            </View>
+          )}
 
           <Button
             title="Cập nhật mã QR"
@@ -387,6 +493,12 @@ const styles = StyleSheet.create({
   halfCol: {
     flex: 1,
   },
+  qrActionSection: {
+    marginVertical: spacing.sm,
+  },
+  uploadQrBtn: {
+    width: '100%',
+  },
   qrPreviewBox: {
     alignItems: 'center',
     marginVertical: spacing.sm,
@@ -394,15 +506,45 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundDark,
     borderRadius: radius.lg,
   },
+  qrPreviewHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
   qrPreviewLabel: {
     fontSize: 10,
+    fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
-    marginBottom: spacing.xs,
+  },
+  removeQrText: {
+    fontSize: 10,
+    color: colors.danger,
+    fontWeight: typography.weights.medium,
+  },
+  emptyQrBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    marginVertical: spacing.sm,
+    backgroundColor: colors.backgroundDark,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    gap: spacing.xs,
+  },
+  emptyQrText: {
+    fontSize: typography.sizes.xs,
+    color: colors.textSecondary,
   },
   qrImage: {
-    width: 140,
-    height: 140,
+    width: 150,
+    height: 150,
     borderRadius: radius.md,
+    backgroundColor: colors.surface,
   },
   saveQrBtn: {
     marginTop: spacing.xs,

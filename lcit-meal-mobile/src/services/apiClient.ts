@@ -58,6 +58,11 @@ export async function apiClient<T>(
     ...(customConfig.headers as Record<string, string>),
   };
 
+  // FormData cần để engine tự sinh header Content-Type kèm boundary
+  if (customConfig.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
+
   if (!skipAuth) {
     const token = await storage.getItem(STORAGE_KEYS.AUTH_TOKEN);
     if (token) {
