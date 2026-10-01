@@ -68,6 +68,8 @@ export default function ManagementPaymentsScreen() {
   const [formPaymentDate, setFormPaymentDate] = useState('');
   const [formAmount, setFormAmount] = useState('');
   const [formStatus, setFormStatus] = useState<PaymentStatus>('unpaid');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
   // Mark-paid form
   const [markPaidAmount, setMarkPaidAmount] = useState('');
@@ -89,15 +91,47 @@ export default function ManagementPaymentsScreen() {
     setRefreshing(false);
   };
 
+  const normalizeSearch = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/gi, 'd')
+      .toLowerCase()
+      .trim();
+
   const filteredPayments = payments.filter((p) => {
     const matchStatus = statusFilter === 'all' || p.status === statusFilter;
-    const q = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return matchStatus;
+
+    const rawQuery = searchQuery.trim();
+    const q = normalizeSearch(rawQuery);
+    const cleanQ = q.replace(/^[@#]/, '').replace(/^cb/, '').trim();
+
+    const fullName = normalizeSearch(p.user?.fullName || p.userName || '');
+    const username = normalizeSearch(p.user?.username || '');
+    const date = p.paymentDate || '';
+
     const matchQuery =
-      !searchQuery ||
-      (p.user?.fullName && p.user.fullName.toLowerCase().includes(q)) ||
-      (p.userName && p.userName.toLowerCase().includes(q)) ||
-      (p.paymentDate && p.paymentDate.includes(q));
+      fullName.includes(q) ||
+      fullName.includes(cleanQ) ||
+      (username && (username.includes(q) || username.includes(cleanQ))) ||
+      date.includes(rawQuery);
+
     return matchStatus && matchQuery;
+  });
+
+  const selectableUsers = users.filter((u) => {
+    if (!userSearchQuery.trim()) return true;
+    const q = normalizeSearch(userSearchQuery);
+    const cleanQ = q.replace(/^[@#]/, '').replace(/^cb/, '').trim();
+    const fullName = normalizeSearch(u.fullName || '');
+    const username = normalizeSearch(u.username || '');
+    if (fullName.includes(q) || fullName.includes(cleanQ)) return true;
+    if (username.includes(q) || username.includes(cleanQ)) return true;
+    const words = cleanQ.split(/\s+/).filter(Boolean);
+    if (words.length > 1 && words.every((w) => fullName.includes(w) || username.includes(w))) return true;
+    if (/^\d+$/.test(cleanQ) && u.id === Number(cleanQ)) return true;
+    return false;
   });
 
   // Calculate totals
@@ -286,6 +320,8 @@ export default function ManagementPaymentsScreen() {
     );
   }
 
+  const selectedFormUser = users.find((u) => u.id === formUserId);
+
   const handleOpenCreateModal = () => {
     if (users.length > 0) setFormUserId(users[0].id);
     const now = new Date();
@@ -293,6 +329,8 @@ export default function ManagementPaymentsScreen() {
     setFormPaymentDate(`${currentMonth}-25`);
     setFormAmount('660000');
     setFormStatus('unpaid');
+    setUserSearchQuery('');
+    setIsUserDropdownOpen(false);
     setIsCreateOpen(true);
   };
 
@@ -412,66 +450,178 @@ export default function ManagementPaymentsScreen() {
         <Ionicons name="add" size={28} color={colors.textInverse} />
       </TouchableOpacity>
 
-      {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput */}
+      {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput & Searchable Dropdown */}
       <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo khoản thanh toán mới</Text>
-              <TouchableOpacity onPress={() => setIsCreateOpen(false)} activeOpacity={0.7}>
+              <TouchableOpacity
+                onPress={() => {
+                  setIsCreateOpen(false);
+                  setIsUserDropdownOpen(false);
+                }}
+                activeOpacity={0.7}
+              >
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.formSectionLabel}>1. Chọn Cán bộ:</Text>
-            <ScrollView horizontal style={styles.selectorScroll} showsHorizontalScrollIndicator={false}>
-              {users.map((u) => {
-                const isSelected = formUserId === u.id;
-                return (
-                  <TouchableOpacity
-                    key={u.id}
-                    style={[styles.userChip, isSelected && styles.userChipActive]}
-                    onPress={() => setFormUserId(u.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.userChipText, isSelected && styles.userChipTextActive]}>
-                      {u.fullName}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+            >
+              <Text style={styles.formSectionLabel}>1. Chọn Cán bộ:</Text>
+              <View style={styles.dropdownContainer}>
+                <TouchableOpacity
+                  style={[styles.dropdownTrigger, isUserDropdownOpen && styles.dropdownTriggerActive]}
+                  onPress={() => setIsUserDropdownOpen((prev) => !prev)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Chọn cán bộ"
+                >
+                  <View style={styles.dropdownTriggerContent}>
+                    <View style={styles.dropdownAvatar}>
+                      <Ionicons name="person" size={16} color={colors.primary} />
+                    </View>
+                    <View style={styles.dropdownTextCol}>
+                      {selectedFormUser ? (
+                        <>
+                          <Text style={styles.dropdownSelectedName} numberOfLines={1}>
+                            {selectedFormUser.fullName}
+                          </Text>
+                          <Text style={styles.dropdownSelectedSub} numberOfLines={1}>
+                            @{selectedFormUser.username}
+                          </Text>
+                        </>
+                      ) : (
+                        <Text style={styles.dropdownPlaceholder}>
+                          -- Chọn cán bộ cần tạo khoản thu --
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <Ionicons
+                    name={isUserDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+
+                {isUserDropdownOpen && (
+                  <View style={styles.dropdownListWrapper}>
+                    <Input
+                      value={userSearchQuery}
+                      onChangeText={setUserSearchQuery}
+                      placeholder="Tìm theo tên hoặc tài khoản..."
+                      autoFocus
+                      containerStyle={styles.dropdownSearchInput}
+                      leftIcon={<Ionicons name="search" size={16} color={colors.textMuted} />}
+                      rightIcon={
+                        userSearchQuery ? (
+                          <TouchableOpacity onPress={() => setUserSearchQuery('')}>
+                            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                          </TouchableOpacity>
+                        ) : undefined
+                      }
+                    />
+
+                    <ScrollView
+                      style={styles.dropdownListScroll}
+                      nestedScrollEnabled
+                      keyboardShouldPersistTaps="handled"
+                    >
+                      {selectableUsers.length === 0 ? (
+                        <Text style={styles.dropdownEmptyText}>
+                          Không tìm thấy cán bộ nào
+                        </Text>
+                      ) : (
+                        selectableUsers.map((u) => {
+                          const isSelected = formUserId === u.id;
+                          return (
+                            <TouchableOpacity
+                              key={u.id}
+                              style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}
+                              onPress={() => {
+                                setFormUserId(u.id);
+                                setIsUserDropdownOpen(false);
+                                setUserSearchQuery('');
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <View
+                                style={[
+                                  styles.dropdownItemAvatar,
+                                  isSelected && styles.dropdownItemAvatarSelected,
+                                ]}
+                              >
+                                <Ionicons
+                                  name="person"
+                                  size={14}
+                                  color={isSelected ? colors.surface : colors.textSecondary}
+                                />
+                              </View>
+                              <View style={styles.dropdownItemInfo}>
+                                <Text
+                                  style={[
+                                    styles.dropdownItemName,
+                                    isSelected && styles.dropdownItemNameSelected,
+                                  ]}
+                                  numberOfLines={1}
+                                >
+                                  {u.fullName}
+                                </Text>
+                                <Text style={styles.dropdownItemSub} numberOfLines={1}>
+                                  @{u.username}
+                                </Text>
+                              </View>
+                              {isSelected && (
+                                <Ionicons name="checkmark-circle" size={18} color={colors.primary} />
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              <DatePickerInput
+                label="Kỳ thanh toán"
+                value={formPaymentDate}
+                onChangeDate={setFormPaymentDate}
+                placeholder="Chọn ngày thanh toán..."
+              />
+
+              <Input
+                label="Số tiền (VND)"
+                value={formAmount}
+                onChangeText={setFormAmount}
+                placeholder="VD: 660000"
+                keyboardType="numeric"
+              />
+
+              <View style={styles.modalActionRow}>
+                <Button
+                  title="Hủy"
+                  variant="secondary"
+                  onPress={() => {
+                    setIsCreateOpen(false);
+                    setIsUserDropdownOpen(false);
+                  }}
+                  style={styles.modalBtnHalf}
+                />
+                <Button
+                  title="Tạo khoản thu"
+                  variant="primary"
+                  onPress={handleCreatePayment}
+                  loading={createMutation.isPending}
+                  style={styles.modalBtnHalf}
+                />
+              </View>
             </ScrollView>
-
-            <DatePickerInput
-              label="Kỳ thanh toán"
-              value={formPaymentDate}
-              onChangeDate={setFormPaymentDate}
-              placeholder="Chọn ngày thanh toán..."
-            />
-
-            <Input
-              label="Số tiền (VND)"
-              value={formAmount}
-              onChangeText={setFormAmount}
-              placeholder="VD: 660000"
-              keyboardType="numeric"
-            />
-
-            <View style={styles.modalActionRow}>
-              <Button
-                title="Hủy"
-                variant="secondary"
-                onPress={() => setIsCreateOpen(false)}
-                style={styles.modalBtnHalf}
-              />
-              <Button
-                title="Tạo khoản thu"
-                variant="primary"
-                onPress={handleCreatePayment}
-                loading={createMutation.isPending}
-                style={styles.modalBtnHalf}
-              />
-            </View>
           </View>
         </View>
       </Modal>
@@ -823,28 +973,120 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: typography.weights.bold,
     color: colors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
-  selectorScroll: {
-    marginBottom: spacing.sm,
+  dropdownContainer: {
+    marginBottom: spacing.md,
   },
-  userChip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
-    backgroundColor: colors.backgroundDark,
-    marginRight: spacing.xs,
+    minHeight: 48,
   },
-  userChipActive: {
+  dropdownTriggerActive: {
+    borderColor: colors.primary,
+  },
+  dropdownTriggerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  dropdownAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  dropdownTextCol: {
+    flex: 1,
+  },
+  dropdownSelectedName: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.bold,
+    color: colors.text,
+  },
+  dropdownSelectedSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  dropdownPlaceholder: {
+    fontSize: typography.sizes.sm,
+    color: colors.textMuted,
+  },
+  dropdownListWrapper: {
+    marginTop: spacing.xs,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownSearchInput: {
+    marginBottom: spacing.xs,
+  },
+  dropdownListScroll: {
+    maxHeight: 180,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.sm,
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#F0FDF4',
+  },
+  dropdownItemAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
+    backgroundColor: colors.backgroundDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  dropdownItemAvatarSelected: {
     backgroundColor: colors.primary,
   },
-  userChipText: {
+  dropdownItemInfo: {
+    flex: 1,
+  },
+  dropdownItemName: {
+    fontSize: typography.sizes.sm,
+    color: colors.text,
+    fontWeight: typography.weights.medium,
+  },
+  dropdownItemNameSelected: {
+    color: colors.primaryDark,
+    fontWeight: typography.weights.bold,
+  },
+  dropdownItemSub: {
     fontSize: 11,
     color: colors.textSecondary,
   },
-  userChipTextActive: {
-    color: colors.surface,
-    fontWeight: typography.weights.bold,
+  dropdownEmptyText: {
+    fontSize: typography.sizes.xs,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
   },
   statusSelectRow: {
     flexDirection: 'row',
