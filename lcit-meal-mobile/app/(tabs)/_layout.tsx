@@ -5,8 +5,10 @@
  */
 
 import React from 'react';
+import { Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnseenNotificationCount } from '../../src/hooks/useNotificationsData';
 import { colors } from '../../src/theme/colors';
 import { typography } from '../../src/theme/typography';
@@ -15,6 +17,10 @@ import { useAuth } from '../../src/providers/AuthProvider';
 export default function TabLayout() {
   const { role } = useAuth();
   const { data: unreadCount = 0 } = useUnseenNotificationCount();
+  const insets = useSafeAreaInsets();
+
+  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 6 : 8);
+  const tabHeight = 58 + bottomInset;
 
   return (
     <Tabs
@@ -25,16 +31,16 @@ export default function TabLayout() {
         tabBarActiveBackgroundColor: colors.primary50,
         tabBarItemStyle: {
           borderRadius: 12,
-          marginHorizontal: 4,
+          marginHorizontal: 3,
           marginVertical: 4,
-          paddingVertical: 4,
+          paddingVertical: 3,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.borderLight,
           borderTopWidth: 1,
-          height: 68,
-          paddingBottom: 6,
+          height: tabHeight,
+          paddingBottom: bottomInset,
           paddingTop: 4,
           elevation: 8,
           shadowColor: colors.primaryDark,
@@ -47,6 +53,7 @@ export default function TabLayout() {
           lineHeight: 14,
           fontWeight: typography.weights.semibold,
           marginTop: 2,
+          includeFontPadding: false,
         },
       }}
     >

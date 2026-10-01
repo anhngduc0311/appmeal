@@ -413,7 +413,7 @@ export default function ManagementPaymentsScreen() {
       </TouchableOpacity>
 
       {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput */}
-      <Modal visible={isCreateOpen} transparent animationType="slide">
+      <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -477,7 +477,7 @@ export default function ManagementPaymentsScreen() {
       </Modal>
 
       {/* Modal Sửa Khoản Thu - Tích hợp DatePickerInput */}
-      <Modal visible={isEditOpen} transparent animationType="slide">
+      <Modal visible={isEditOpen} transparent animationType="slide" onRequestClose={() => setIsEditOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -541,7 +541,7 @@ export default function ManagementPaymentsScreen() {
       </Modal>
 
       {/* Modal Mark Paid */}
-      <Modal visible={isMarkPaidOpen} transparent animationType="slide">
+      <Modal visible={isMarkPaidOpen} transparent animationType="slide" onRequestClose={() => setIsMarkPaidOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>

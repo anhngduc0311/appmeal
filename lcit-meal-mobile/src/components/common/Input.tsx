@@ -4,7 +4,7 @@
  * viền focus xanh lá và chiều cao tối thiểu 48px.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   TextInputProps,
   ViewStyle,
   TextStyle,
+  Platform,
+  Pressable,
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -30,7 +32,7 @@ export interface InputProps extends TextInputProps {
   required?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input = React.forwardRef<TextInput, InputProps>(({
   label,
   error,
   helperText,
@@ -43,25 +45,43 @@ export const Input: React.FC<InputProps> = ({
   onBlur,
   multiline,
   style,
+  autoCorrect = false,
+  spellCheck = false,
   ...props
-}) => {
+}, ref) => {
   const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<TextInput | null>(null);
+
+  const handleRef = (node: TextInput | null) => {
+    inputRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      (ref as React.MutableRefObject<TextInput | null>).current = node;
+    }
+  };
+
+  const focusInput = () => {
+    inputRef.current?.focus();
+  };
 
   return (
     <View style={[styles.wrapper, containerStyle]}>
       {label && (
         <View style={styles.labelRow}>
-          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.label} onPress={focusInput}>{label}</Text>
           {required && <Text style={styles.requiredMark}> *</Text>}
         </View>
       )}
 
-      <View
+      <Pressable
+        onPress={focusInput}
         style={[
           styles.inputContainer,
           multiline && styles.inputContainerMultiline,
           isFocused && styles.inputFocused,
           error ? styles.inputError : null,
+          Platform.OS === 'web' && ({ cursor: 'text' } as any),
         ]}
       >
         {leftIcon && (
@@ -71,14 +91,18 @@ export const Input: React.FC<InputProps> = ({
         )}
 
         <TextInput
+          ref={handleRef}
           accessibilityLabel={label}
           multiline={multiline}
           textAlignVertical={multiline ? 'top' : 'center'}
+          autoCorrect={autoCorrect}
+          spellCheck={spellCheck}
           style={[
             styles.input,
             multiline && styles.inputMultiline,
             leftIcon ? { paddingLeft: spacing.xs } : null,
             rightIcon ? { paddingRight: spacing.xs } : null,
+            Platform.OS === 'web' && ({ outlineStyle: 'none' } as any),
             inputStyle,
             style,
           ]}
@@ -99,7 +123,7 @@ export const Input: React.FC<InputProps> = ({
             {rightIcon}
           </View>
         )}
-      </View>
+      </Pressable>
 
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
@@ -108,7 +132,9 @@ export const Input: React.FC<InputProps> = ({
       ) : null}
     </View>
   );
-};
+});
+
+Input.displayName = 'Input';
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -160,13 +186,15 @@ const styles = StyleSheet.create({
     fontSize: typography.sizes.base,
     color: colors.text,
     paddingVertical: 0,
+    includeFontPadding: false,
   },
   inputMultiline: {
     height: undefined,
     minHeight: 84,
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingTop: 8,
+    paddingBottom: 8,
     textAlignVertical: 'top',
+    includeFontPadding: false,
   },
   leftIconWrapper: {
     marginRight: spacing.sm,

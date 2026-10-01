@@ -3,12 +3,17 @@
  * Giao diện đăng nhập với tài khoản/mật khẩu, hỗ trợ chọn nhanh tài khoản thử nghiệm
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   useWindowDimensions,
+  Keyboard,
+  Platform,
+  TouchableWithoutFeedback,
+  ScrollView,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,8 +38,41 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToInput = (offset: number) => {
+    if (!wide && Platform.OS !== 'web') {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: offset, animated: true });
+      }, 100);
+    }
+  };
 
   const handleLogin = async () => {
+    if (Platform.OS !== 'web') {
+      Keyboard.dismiss();
+    }
     if (!username.trim()) {
       setErrorMessage('Vui lòng nhập tên đăng nhập.');
       return;
@@ -64,23 +102,50 @@ export default function LoginScreen() {
     }
   };
 
-  return (
-    <ScreenContainer scrollable backgroundColor={colors.background}>
-      <View style={[styles.container, wide && styles.desktop]}>
-        {/* Brand Logo & Title */}
-        <View style={[styles.brandHeader, wide && styles.brandDesktop]}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="restaurant" size={30} color="#DCEAA0" />
+  const formBody = (
+    <View style={[styles.container, wide && styles.desktop]}>
+      {/* Brand Logo & Title */}
+      <View
+        style={[
+          styles.brandHeader,
+          wide && styles.brandDesktop,
+          !wide && isKeyboardVisible && styles.brandHeaderCompact,
+        ]}
+      >
+        {!wide && isKeyboardVisible ? (
+          <View style={styles.brandRowCompact}>
+            <View style={styles.logoCircleSmall}>
+              <Ionicons name="restaurant" size={18} color="#DCEAA0" />
+            </View>
+            <View>
+              <Text style={styles.appNameSmall}>LCIT MEAL</Text>
+              <Text style={styles.appTaglineSmall}>BỮA TRƯA TẠI CƠ QUAN</Text>
+            </View>
           </View>
-          <Text style={styles.appName}>LCIT MEAL</Text>
-          <Text style={styles.appTagline}>
-            BỮA TRƯA TẠI CƠ QUAN
-          </Text>
-          <Text style={[styles.brandHeadline, wide && {fontSize: 42, lineHeight: 54}]}>Một bữa ăn tốt.{'\n'}Một ngày hiệu quả.</Text>
-          <Text style={styles.brandDescription}>Đăng ký bữa trưa, theo dõi lịch ăn và thanh toán trong cùng một nơi.</Text>
-          {wide && <View style={styles.brandArtwork}><Ionicons name="leaf-outline" size={80} color="#DCEAA0" /><Text style={styles.artworkCaption}>CHĂM CHÚT TỪNG BỮA ĂN</Text></View>}
-        </View>
-        <View style={styles.formColumn}>
+        ) : (
+          <>
+            <View style={styles.logoCircle}>
+              <Ionicons name="restaurant" size={30} color="#DCEAA0" />
+            </View>
+            <Text style={styles.appName}>LCIT MEAL</Text>
+            <Text style={styles.appTagline}>BỮA TRƯA TẠI CƠ QUAN</Text>
+            <Text style={[styles.brandHeadline, wide && { fontSize: 42, lineHeight: 54 }]}>
+              Một bữa ăn tốt.{'\n'}Một ngày hiệu quả.
+            </Text>
+            <Text style={styles.brandDescription}>
+              Đăng ký bữa trưa, theo dõi lịch ăn và thanh toán trong cùng một nơi.
+            </Text>
+            {wide && (
+              <View style={styles.brandArtwork}>
+                <Ionicons name="leaf-outline" size={80} color="#DCEAA0" />
+                <Text style={styles.artworkCaption}>CHĂM CHÚT TỪNG BỮA ĂN</Text>
+              </View>
+            )}
+          </>
+        )}
+      </View>
+
+      <View style={styles.formColumn}>
         {/* Form Đăng nhập */}
         <Card variant="elevated" padding="2xl" style={styles.formCard}>
           <Text style={styles.formEyebrow}>CHÀO MỪNG TRỞ LẠI</Text>
@@ -106,6 +171,12 @@ export default function LoginScreen() {
               if (errorMessage) setErrorMessage(null);
             }}
             autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+            returnKeyType="next"
+            onSubmitEditing={() => passwordInputRef.current?.focus()}
+            blurOnSubmit={false}
+            onFocus={() => scrollToInput(30)}
             leftIcon={
               <Ionicons
                 name="person-outline"
@@ -116,6 +187,7 @@ export default function LoginScreen() {
           />
 
           <PasswordInput
+            ref={passwordInputRef}
             label="Mật khẩu"
             placeholder="Nhập mật khẩu"
             value={password}
@@ -123,6 +195,11 @@ export default function LoginScreen() {
               setPassword(txt);
               if (errorMessage) setErrorMessage(null);
             }}
+            autoCorrect={false}
+            spellCheck={false}
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
+            onFocus={() => scrollToInput(110)}
             leftIcon={
               <Ionicons
                 name="lock-closed-outline"
@@ -144,8 +221,25 @@ export default function LoginScreen() {
         </Card>
 
         <Text style={styles.footer}>LCIT MEAL · Quản lý suất ăn cơ quan</Text>
-        </View>
       </View>
+    </View>
+  );
+
+  return (
+    <ScreenContainer
+      scrollable
+      scrollRef={scrollRef}
+      backgroundColor={colors.background}
+      contentContainerStyle={!wide && isKeyboardVisible ? styles.scrollContentKeyboard : undefined}
+      keyboardShouldPersistTaps="handled"
+    >
+      {Platform.OS === 'web' ? (
+        formBody
+      ) : (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          {formBody}
+        </TouchableWithoutFeedback>
+      )}
     </ScreenContainer>
   );
 }
@@ -168,6 +262,43 @@ const styles = StyleSheet.create({
     padding: 24,
     backgroundColor: colors.primaryDark,
     borderRadius: radius['2xl'],
+  },
+  brandHeaderCompact: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: radius.xl,
+    marginBottom: 0,
+  },
+  brandRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoCircleSmall: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: '#164839',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2F6B58',
+  },
+  appNameSmall: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: 1.5,
+  },
+  appTaglineSmall: {
+    fontSize: 8,
+    letterSpacing: 1.2,
+    fontWeight: '700',
+    color: '#B2D8C6',
+    marginTop: 2,
+  },
+  scrollContentKeyboard: {
+    paddingBottom: Platform.OS === 'android' ? 140 : 80,
   },
   logoCircle: {
     width: 52,

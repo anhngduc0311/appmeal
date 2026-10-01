@@ -30,8 +30,14 @@ export const typography = {
 
   // Line heights
   lineHeights: {
-    tight: 1.2,
-    normal: 1.4,
-    relaxed: 1.6,
+    tight: 1.25,
+    normal: 1.45,
+    relaxed: 1.65,
   },
+
+  // Android typography optimization helper
+  androidText: {
+    includeFontPadding: false,
+  } as TextStyle,
 };
+

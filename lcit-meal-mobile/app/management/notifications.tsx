@@ -402,7 +402,7 @@ export default function ManagementNotificationsScreen() {
       )}
 
       {/* Modal Xem Trước Trước Khi Gửi (Review & Preview Modal) */}
-      <Modal visible={isPreviewOpen} transparent animationType="slide">
+      <Modal visible={isPreviewOpen} transparent animationType="slide" onRequestClose={() => setIsPreviewOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>

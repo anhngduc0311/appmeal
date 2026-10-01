@@ -384,7 +384,7 @@ export default function ManagementMealsScreen() {
       </TouchableOpacity>
 
       {/* Modal Xem Tổng Suất Ăn (Summary) */}
-      <Modal visible={summaryMealId !== null} transparent animationType="fade">
+      <Modal visible={summaryMealId !== null} transparent animationType="fade" onRequestClose={() => setSummaryMealId(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -438,7 +438,7 @@ export default function ManagementMealsScreen() {
       </Modal>
 
       {/* Modal Tạo Ngày Bếp Mới - Tích hợp DatePickerInput */}
-      <Modal visible={isCreateMealOpen} transparent animationType="slide">
+      <Modal visible={isCreateMealOpen} transparent animationType="slide" onRequestClose={() => setIsCreateMealOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -483,7 +483,7 @@ export default function ManagementMealsScreen() {
       </Modal>
 
       {/* Modal Sửa Thực Đơn */}
-      <Modal visible={isEditMealOpen} transparent animationType="slide">
+      <Modal visible={isEditMealOpen} transparent animationType="slide" onRequestClose={() => setIsEditMealOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -525,7 +525,7 @@ export default function ManagementMealsScreen() {
       </Modal>
 
       {/* Modal Hủy Bếp (Dialog cảnh báo tác động) */}
-      <Modal visible={cancelTargetMeal !== null} transparent animationType="fade">
+      <Modal visible={cancelTargetMeal !== null} transparent animationType="fade" onRequestClose={() => setCancelTargetMeal(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.impactWarningBox}>
@@ -582,7 +582,7 @@ export default function ManagementMealsScreen() {
       />
 
       {/* Modal Thêm Ngày Nghỉ Lễ - Tích hợp DatePickerInput */}
-      <Modal visible={isCreateHolidayOpen} transparent animationType="slide">
+      <Modal visible={isCreateHolidayOpen} transparent animationType="slide" onRequestClose={() => setIsCreateHolidayOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>

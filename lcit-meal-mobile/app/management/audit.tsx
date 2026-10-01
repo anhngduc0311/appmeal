@@ -235,7 +235,7 @@ export default function ManagementAuditScreen() {
       />
 
       {/* Modal Chi tiết Audit Log */}
-      <Modal visible={!!selectedLog} transparent animationType="fade">
+      <Modal visible={!!selectedLog} transparent animationType="fade" onRequestClose={() => setSelectedLog(null)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>

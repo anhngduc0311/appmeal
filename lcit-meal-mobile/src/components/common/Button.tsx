@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radius.lg,
     paddingVertical: spacing.xs,
+    overflow: 'hidden',
   },
   fullWidth: {
     width: '100%',
@@ -223,6 +224,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
     textAlign: 'center',
     letterSpacing: -0.2,
+    includeFontPadding: false,
   },
   disabledContainer: {
     opacity: 0.5,

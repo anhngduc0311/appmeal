@@ -33,6 +33,12 @@ export interface ScreenContainerProps {
   disableTopPadding?: boolean;
   disableBottomPadding?: boolean;
   backgroundColor?: string;
+  translucent?: boolean;
+  keyboardAvoidingBehavior?: 'padding' | 'height' | 'position';
+  keyboardVerticalOffset?: number;
+  scrollRef?: React.Ref<ScrollView>;
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled';
+  keyboardDismissMode?: 'none' | 'on-drag' | 'interactive';
 }
 
 export const ScreenContainer: React.FC<ScreenContainerProps> = ({
@@ -45,6 +51,12 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   disableTopPadding = false,
   disableBottomPadding = false,
   backgroundColor = colors.background,
+  translucent = false,
+  keyboardAvoidingBehavior,
+  keyboardVerticalOffset,
+  scrollRef,
+  keyboardShouldPersistTaps = 'handled',
+  keyboardDismissMode = 'on-drag',
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -56,30 +68,35 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
     backgroundColor,
   };
 
-  const keyboardBehavior = Platform.OS === 'ios' ? 'padding' : undefined;
+  const keyboardBehavior = keyboardAvoidingBehavior !== undefined
+    ? keyboardAvoidingBehavior
+    : Platform.OS === 'ios' ? 'padding' : undefined;
 
   return (
     <View style={[styles.root, containerPadding, style]}>
       <StatusBar
         barStyle="dark-content"
-        backgroundColor={colors.background}
-        translucent={Platform.OS === 'android'}
+        backgroundColor={backgroundColor}
+        translucent={translucent}
       />
 
       <KeyboardAvoidingView
         behavior={keyboardBehavior}
         style={styles.keyboardAvoid}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={keyboardVerticalOffset ?? 0}
       >
         {scrollable ? (
           <ScrollView
+            ref={scrollRef}
             style={styles.scrollView}
             contentContainerStyle={[
               styles.scrollContent,
               contentContainerStyle,
             ]}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+            keyboardDismissMode={keyboardDismissMode}
             showsVerticalScrollIndicator={false}
+            overScrollMode="never"
             refreshControl={
               onRefresh ? (
                 <RefreshControl
@@ -87,6 +104,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
                   onRefresh={onRefresh}
                   tintColor={colors.primary}
                   colors={[colors.primary]}
+                  progressBackgroundColor={colors.surface}
                 />
               ) : undefined
             }

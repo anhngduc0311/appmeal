@@ -435,7 +435,7 @@ export default function ManagementUsersScreen() {
       )}
 
       {/* Modal Thêm Người Dùng Mới (Admin only) */}
-      <Modal visible={isCreateOpen} transparent animationType="slide">
+      <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
@@ -537,7 +537,7 @@ export default function ManagementUsersScreen() {
       </Modal>
 
       {/* Modal Sửa Người Dùng (Admin only) */}
-      <Modal visible={isEditOpen} transparent animationType="slide">
+      <Modal visible={isEditOpen} transparent animationType="slide" onRequestClose={() => setIsEditOpen(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>

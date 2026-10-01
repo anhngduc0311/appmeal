@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Input, InputProps } from './Input';
 import { colors } from '../../theme/colors';
@@ -14,10 +14,10 @@ export interface PasswordInputProps extends Omit<InputProps, 'rightIcon' | 'secu
   showToggle?: boolean;
 }
 
-export const PasswordInput: React.FC<PasswordInputProps> = ({
+export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(({
   showToggle = true,
   ...props
-}) => {
+}, ref) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   const toggleVisibility = () => {
@@ -42,6 +42,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
 
   return (
     <Input
+      ref={ref}
       secureTextEntry={!isPasswordVisible}
       rightIcon={eyeIcon}
       autoCapitalize="none"
@@ -49,7 +50,9 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
       {...props}
     />
   );
-};
+});
+
+PasswordInput.displayName = 'PasswordInput';
 
 const styles = StyleSheet.create({
   toggleButton: {
