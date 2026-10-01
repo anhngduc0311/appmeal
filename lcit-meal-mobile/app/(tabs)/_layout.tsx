@@ -19,21 +19,28 @@ export default function TabLayout() {
   const { data: unreadCount = 0 } = useUnseenNotificationCount();
   const insets = useSafeAreaInsets();
 
-  const bottomInset = insets.bottom > 0 ? insets.bottom : (Platform.OS === 'android' ? 6 : 8);
-  const tabHeight = 58 + bottomInset;
+  // Đảm bảo không bị phím điều hướng Android (3 nút hoặc thanh cử chỉ) che mất:
+  // - Nếu insets.bottom có giá trị (Android 3 nút ~48dp, cử chỉ ~16-24dp, iOS ~34dp) -> dùng insets.bottom
+  // - Nếu insets.bottom = 0 (trên một số dòng Android hoặc ROM tùy biến), đặt đệm an toàn tối thiểu 16dp
+  const bottomInset = Math.max(
+    insets.bottom,
+    Platform.OS === 'android' ? 16 : 8
+  );
+  const tabHeight = 60 + bottomInset;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarActiveBackgroundColor: colors.primary50,
         tabBarItemStyle: {
           borderRadius: 12,
           marginHorizontal: 3,
-          marginVertical: 4,
-          paddingVertical: 3,
+          marginVertical: 2,
+          paddingVertical: 2,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -41,7 +48,7 @@ export default function TabLayout() {
           borderTopWidth: 1,
           height: tabHeight,
           paddingBottom: bottomInset,
-          paddingTop: 4,
+          paddingTop: 6,
           elevation: 8,
           shadowColor: colors.primaryDark,
           shadowOffset: { width: 0, height: -2 },
@@ -49,7 +56,7 @@ export default function TabLayout() {
           shadowRadius: 6,
         },
         tabBarLabelStyle: {
-          fontSize: typography.sizes['2xs'] + 0.5,
+          fontSize: 11,
           lineHeight: 14,
           fontWeight: typography.weights.semibold,
           marginTop: 2,

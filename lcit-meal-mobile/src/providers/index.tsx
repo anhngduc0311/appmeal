@@ -4,13 +4,13 @@
  */
 
 import React from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { QueryProvider } from './QueryProvider';
 import { AuthProvider } from './AuthProvider';
 
 export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <QueryProvider>
         <AuthProvider>{children}</AuthProvider>
       </QueryProvider>

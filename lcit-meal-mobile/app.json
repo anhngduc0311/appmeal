@@ -25,7 +25,7 @@
         "translucent": false
       },
       "androidNavigationBar": {
-        "backgroundColor": "#F8FAFC",
+        "backgroundColor": "#FFFFFF",
         "barStyle": "dark-content"
       },
       "predictiveBackGestureEnabled": false
