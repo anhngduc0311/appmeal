@@ -70,7 +70,11 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
 
   const keyboardBehavior = keyboardAvoidingBehavior !== undefined
     ? keyboardAvoidingBehavior
-    : Platform.OS === 'ios' ? 'padding' : undefined;
+    : Platform.OS === 'ios'
+    ? 'padding'
+    : Platform.OS === 'android'
+    ? 'height'
+    : undefined;
 
   return (
     <View style={[styles.root, containerPadding, style]}>

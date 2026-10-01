@@ -39,9 +39,12 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const [focusedField, setFocusedField] = useState<'username' | 'password' | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
   const passwordInputRef = useRef<TextInput>(null);
+
+  const isKeyboardActive = isKeyboardVisible || focusedField !== null;
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -52,7 +55,10 @@ export default function LoginScreen() {
     );
     const hideSub = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setIsKeyboardVisible(false)
+      () => {
+        setIsKeyboardVisible(false);
+        setFocusedField(null);
+      }
     );
 
     return () => {
@@ -61,18 +67,28 @@ export default function LoginScreen() {
     };
   }, []);
 
-  const scrollToInput = (offset: number) => {
+  const handleFocus = (field: 'username' | 'password') => {
+    setFocusedField(field);
+    setIsKeyboardVisible(true);
     if (!wide && Platform.OS !== 'web') {
       setTimeout(() => {
+        const offset = field === 'username' ? 40 : 120;
         scrollRef.current?.scrollTo({ y: offset, animated: true });
-      }, 100);
+      }, 80);
     }
+  };
+
+  const handleBlur = (field: 'username' | 'password') => {
+    setFocusedField((prev) => (prev === field ? null : prev));
   };
 
   const handleLogin = async () => {
     if (Platform.OS !== 'web') {
       Keyboard.dismiss();
     }
+    setFocusedField(null);
+    setIsKeyboardVisible(false);
+
     if (!username.trim()) {
       setErrorMessage('Vui lòng nhập tên đăng nhập.');
       return;
@@ -109,10 +125,10 @@ export default function LoginScreen() {
         style={[
           styles.brandHeader,
           wide && styles.brandDesktop,
-          !wide && isKeyboardVisible && styles.brandHeaderCompact,
+          !wide && isKeyboardActive && styles.brandHeaderCompact,
         ]}
       >
-        {!wide && isKeyboardVisible ? (
+        {!wide && isKeyboardActive ? (
           <View style={styles.brandRowCompact}>
             <View style={styles.logoCircleSmall}>
               <Ionicons name="restaurant" size={18} color="#DCEAA0" />
@@ -125,7 +141,7 @@ export default function LoginScreen() {
         ) : (
           <>
             <View style={styles.logoCircle}>
-              <Ionicons name="restaurant" size={30} color="#DCEAA0" />
+              <Ionicons name="restaurant" size={wide ? 30 : 26} color="#DCEAA0" />
             </View>
             <Text style={styles.appName}>LCIT MEAL</Text>
             <Text style={styles.appTagline}>BỮA TRƯA TẠI CƠ QUAN</Text>
@@ -147,12 +163,20 @@ export default function LoginScreen() {
 
       <View style={styles.formColumn}>
         {/* Form Đăng nhập */}
-        <Card variant="elevated" padding="2xl" style={styles.formCard}>
+        <Card
+          variant="elevated"
+          padding={!wide && isKeyboardActive ? 'lg' : '2xl'}
+          style={styles.formCard}
+        >
           <Text style={styles.formEyebrow}>CHÀO MỪNG TRỞ LẠI</Text>
-          <Text style={styles.formTitle}>Đăng nhập</Text>
-          <Text style={styles.formSubtitle}>
-            Sử dụng tài khoản được cơ quan cấp để tiếp tục
+          <Text style={[styles.formTitle, !wide && isKeyboardActive && styles.formTitleCompact]}>
+            Đăng nhập
           </Text>
+          {(!isKeyboardActive || wide) && (
+            <Text style={styles.formSubtitle}>
+              Sử dụng tài khoản được cơ quan cấp để tiếp tục
+            </Text>
+          )}
 
           {errorMessage && (
             <ResultBanner
@@ -176,7 +200,8 @@ export default function LoginScreen() {
             returnKeyType="next"
             onSubmitEditing={() => passwordInputRef.current?.focus()}
             blurOnSubmit={false}
-            onFocus={() => scrollToInput(30)}
+            onFocus={() => handleFocus('username')}
+            onBlur={() => handleBlur('username')}
             leftIcon={
               <Ionicons
                 name="person-outline"
@@ -199,7 +224,8 @@ export default function LoginScreen() {
             spellCheck={false}
             returnKeyType="done"
             onSubmitEditing={handleLogin}
-            onFocus={() => scrollToInput(110)}
+            onFocus={() => handleFocus('password')}
+            onBlur={() => handleBlur('password')}
             leftIcon={
               <Ionicons
                 name="lock-closed-outline"
@@ -230,7 +256,7 @@ export default function LoginScreen() {
       scrollable
       scrollRef={scrollRef}
       backgroundColor={colors.background}
-      contentContainerStyle={!wide && isKeyboardVisible ? styles.scrollContentKeyboard : undefined}
+      contentContainerStyle={!wide && isKeyboardActive ? styles.scrollContentKeyboard : undefined}
       keyboardShouldPersistTaps="handled"
     >
       {Platform.OS === 'web' ? (
@@ -248,8 +274,8 @@ const styles = StyleSheet.create({
   desktop: { flexDirection: 'row', alignItems: 'stretch', paddingVertical: 40 },
   brandDesktop: { flex: 1, padding: 36 },
   formColumn: { flex: 1, minWidth: 0 },
-  brandHeadline: { fontSize: 26, lineHeight: 36, color: '#FFFFFF', fontWeight: '800', marginTop: 24, letterSpacing: -0.8 },
-  brandDescription: { fontSize: 13, lineHeight: 22, color: '#D5E4D8', marginTop: 14, maxWidth: 320 },
+  brandHeadline: { fontSize: 22, lineHeight: 30, color: '#FFFFFF', fontWeight: '800', marginTop: 14, letterSpacing: -0.6 },
+  brandDescription: { fontSize: 13, lineHeight: 20, color: '#D5E4D8', marginTop: 8, maxWidth: 320 },
   brandArtwork: { flex: 1, minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 16, marginTop: 32, borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.1)' },
   artworkCaption: { fontSize: 10, letterSpacing: 2, fontWeight: '700', color: '#DCEAA0' },
   formEyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.6, color: colors.primary, marginBottom: 8 },
@@ -259,7 +285,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   brandHeader: {
-    padding: 24,
+    padding: 20,
     backgroundColor: colors.primaryDark,
     borderRadius: radius['2xl'],
   },
@@ -298,21 +324,21 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scrollContentKeyboard: {
-    paddingBottom: Platform.OS === 'android' ? 140 : 80,
+    paddingBottom: Platform.OS === 'android' ? 240 : 160,
   },
   logoCircle: {
-    width: 52,
-    height: 52,
+    width: 48,
+    height: 48,
     borderRadius: radius.xl,
     backgroundColor: '#164839',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     borderWidth: 1,
     borderColor: '#2F6B58',
   },
   appName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 2,
@@ -336,6 +362,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     letterSpacing: -0.6,
     marginBottom: 4,
+  },
+  formTitleCompact: {
+    fontSize: 22,
+    marginBottom: 8,
   },
   formSubtitle: {
     fontSize: 13,
