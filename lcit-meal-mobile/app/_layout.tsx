@@ -47,28 +47,31 @@ function RootNavigation() {
           }}
         />
         </Stack.Protected>
+        <Stack.Protected guard={isAuthenticated && role !== 'kitchen' && role !== 'admin'}>
+          <Stack.Screen
+            name="meal/[id]"
+            options={{
+              headerShown: false,
+              title: 'Chi tiết suất ăn',
+            }}
+          />
+          <Stack.Screen
+            name="meal-options/index"
+            options={{
+              headerShown: false,
+              title: 'Yêu cầu cắt suất',
+            }}
+          />
+        </Stack.Protected>
+
         <Stack.Protected guard={isAuthenticated && role !== 'kitchen'}>
-        <Stack.Screen
-          name="meal/[id]"
-          options={{
-            headerShown: false,
-            title: 'Chi tiết suất ăn',
-          }}
-        />
-        <Stack.Screen
-          name="meal-options/index"
-          options={{
-            headerShown: false,
-            title: 'Yêu cầu cắt suất',
-          }}
-        />
-        <Stack.Screen
-          name="management/index"
-          options={{
-            headerShown: false,
-            title: 'Bảng điều khiển Quản lý',
-          }}
-        />
+          <Stack.Screen
+            name="management/index"
+            options={{
+              headerShown: false,
+              title: 'Bảng điều khiển Quản lý',
+            }}
+          />
         <Stack.Screen
           name="management/meals"
           options={{

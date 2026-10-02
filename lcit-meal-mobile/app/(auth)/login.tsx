@@ -24,7 +24,6 @@ import { Button } from '../../src/components/common/Button';
 import { ResultBanner } from '../../src/components/common/ResultBanner';
 import { Card } from '../../src/components/common/Card';
 import { useAuth } from '../../src/providers/AuthProvider';
-import { extractUserRole } from '../../src/types';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { radius } from '../../src/theme/radius';
@@ -102,13 +101,8 @@ export default function LoginScreen() {
     setErrorMessage(null);
 
     try {
-      const res = await login({ username: username.trim(), password });
-      const userRole = res?.user?.role || (res?.user ? extractUserRole(res.user) : null);
-      if (userRole === 'admin') {
-        router.replace('/management');
-      } else {
-        router.replace('/(tabs)');
-      }
+      await login({ username: username.trim(), password });
+      router.replace('/(tabs)');
     } catch (err: any) {
       setErrorMessage(
         err?.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.'

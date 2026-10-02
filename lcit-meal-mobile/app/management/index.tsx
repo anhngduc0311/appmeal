@@ -37,7 +37,7 @@ import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 
-export default function ManagementDashboardScreen() {
+export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
   const wide = useWindowDimensions().width >= 850;
   const { user, role } = useAuth();
@@ -117,8 +117,8 @@ export default function ManagementDashboardScreen() {
       <Header
         title="Tổng quan quản lý"
         subtitle={`Theo dõi hoạt động bữa ăn · ${user?.fullName || ''}`}
-        showBack={router.canGoBack()}
-        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/account'))}
+        showBack={isTab ? false : router.canGoBack()}
+        onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
         userRole={role || undefined}
         rightAction={
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -130,21 +130,23 @@ export default function ManagementDashboardScreen() {
             >
               <Ionicons name="refresh" size={20} color={colors.primaryDark} />
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.refreshHeaderBtn}
-              onPress={() => router.push('/(tabs)/account')}
-              activeOpacity={0.7}
-              accessibilityLabel="Tài khoản cá nhân"
-            >
-              <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
-            </TouchableOpacity>
+            {!isTab && (
+              <TouchableOpacity
+                style={styles.refreshHeaderBtn}
+                onPress={() => router.push('/(tabs)/account')}
+                activeOpacity={0.7}
+                accessibilityLabel="Tài khoản cá nhân"
+              >
+                <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+              </TouchableOpacity>
+            )}
           </View>
         }
       />
 
       <ScrollView
         style={styles.content}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, isTab && { paddingBottom: 80 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

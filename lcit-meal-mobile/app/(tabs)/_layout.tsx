@@ -78,55 +78,56 @@ export default function TabLayout() {
         }}
       />
 
+      <Tabs.Protected guard={role !== 'kitchen' && role !== 'admin'}>
+        <Tabs.Screen
+          name="schedule"
+          options={{
+            title: 'Lịch ăn',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'calendar' : 'calendar-outline'}
+                size={22}
+                color={color}
+              />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="payments"
+          options={{
+            title: 'Thanh toán',
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'wallet' : 'wallet-outline'}
+                size={22}
+                color={color}
+              />
+            ),
+          }}
+        />
+      </Tabs.Protected>
+
       <Tabs.Protected guard={role !== 'kitchen'}>
-      <Tabs.Screen
-        name="schedule"
-        options={{
-          title: 'Lịch ăn',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'calendar' : 'calendar-outline'}
-              size={22}
-              color={color}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="payments"
-        options={{
-          title: 'Thanh toán',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'wallet' : 'wallet-outline'}
-              size={22}
-              color={color}
-            />
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="notifications"
-        options={{
-          title: 'Thông báo',
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: colors.status.cancelled.dot,
-            fontSize: 10,
-            fontWeight: 'bold',
-          },
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'notifications' : 'notifications-outline'}
-              size={22}
-              color={color}
-            />
-          ),
-        }}
-      />
-
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            title: 'Thông báo',
+            tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: colors.status.cancelled.dot,
+              fontSize: 10,
+              fontWeight: 'bold',
+            },
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? 'notifications' : 'notifications-outline'}
+                size={22}
+                color={color}
+              />
+            ),
+          }}
+        />
       </Tabs.Protected>
       <Tabs.Screen
         name="account"

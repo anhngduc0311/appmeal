@@ -85,7 +85,7 @@ export default function AccountScreen() {
       </Card>
 
       {/* Menu Nghiệp vụ Suất ăn */}
-      {role !== 'kitchen' && (
+      {role !== 'kitchen' && role !== 'admin' && (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Nghiệp vụ suất ăn</Text>
         <Card
@@ -116,7 +116,7 @@ export default function AccountScreen() {
           <Card
             variant="elevated"
             padding="lg"
-            onPress={() => router.push('/management')}
+            onPress={() => router.push(role === 'admin' ? '/(tabs)' : '/management')}
             style={styles.adminEntryCard}
           >
             <View style={styles.menuItemRow}>
