@@ -47,7 +47,8 @@ export async function apiClient<T>(
 
   // Lấy API URL (hỗ trợ cấu hình tùy biến khi chạy máy thật)
   const overriddenUrl = await storage.getItem(STORAGE_KEYS.API_URL_OVERRIDE);
-  const baseUrl = overriddenUrl || env.apiBaseUrl;
+  const rawBaseUrl = (overriddenUrl || env.apiBaseUrl).trim().replace(/\/+$/, '');
+  const baseUrl = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl}/api`;
 
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const fullUrl = `${baseUrl}${cleanEndpoint}`;
@@ -122,7 +123,7 @@ export async function apiClient<T>(
     // Lỗi kết nối mạng (mất mạng, URL sai...)
     throw new ApiError(
       0,
-      'Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền mạng hoặc cấu hình API URL.'
+      `Không thể kết nối đến máy chủ (${baseUrl}). Vui lòng kiểm tra kết nối mạng (WiFi/4G) hoặc cấu hình API URL.`
     );
   }
 }

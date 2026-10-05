@@ -13,22 +13,16 @@
     "android": {
       "package": "com.lcit.meal",
       "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#F0FDF4",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "androidStatusBar": {
-        "backgroundColor": "#F8FAFC",
-        "barStyle": "dark-content",
-        "translucent": false
-      },
-      "androidNavigationBar": {
-        "backgroundColor": "#FFFFFF",
-        "barStyle": "dark-content"
-      },
-      "predictiveBackGestureEnabled": false
+      }
     },
     "web": {
       "output": "static",
@@ -45,11 +39,24 @@
         }
       ],
       "expo-secure-store",
-      "expo-sharing"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 23
+          }
+        }
+      ],
+      "./plugins/withNetworkSecurityConfig"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2037e8f3-82da-4ce2-8abd-74cfc82e7de1"
+      }
     }
   }
 }

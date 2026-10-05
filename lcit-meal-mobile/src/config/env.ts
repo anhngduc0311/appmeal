@@ -3,18 +3,16 @@
  * Quản lý biến môi trường và thiết lập chế độ Dữ liệu Mẫu (Mock) / Kết nối API thật
  */
 
-import { Platform } from 'react-native';
+// URL mặc định máy chủ backend
+const DEFAULT_API_URL = 'https://com365.lcit.vn:4002/api';
 
 // URL mặc định theo môi trường chạy
 const getDefaultApiUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+    const raw = process.env.EXPO_PUBLIC_API_URL.trim().replace(/\/+$/, '');
+    return raw.endsWith('/api') ? raw : `${raw}/api`;
   }
-  // Android Emulator truy cập localhost máy tính chủ qua 10.0.2.2
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:3000/api';
-  }
-  return 'http://localhost:3000/api';
+  return DEFAULT_API_URL;
 };
 
 export const env = {

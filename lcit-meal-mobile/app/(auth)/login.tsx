@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
+  TouchableOpacity,
   StyleSheet,
   useWindowDimensions,
   Keyboard,
@@ -80,6 +81,7 @@ export default function LoginScreen() {
   const handleBlur = (field: 'username' | 'password') => {
     setFocusedField((prev) => (prev === field ? null : prev));
   };
+
 
   const handleLogin = async () => {
     if (Platform.OS !== 'web') {
@@ -182,7 +184,7 @@ export default function LoginScreen() {
 
           <Input
             label="Tên đăng nhập"
-            placeholder="Ví dụ: nv_an"
+            placeholder="Nhập tên đăng nhập"
             value={username}
             onChangeText={(txt) => {
               setUsername(txt);
@@ -238,6 +240,7 @@ export default function LoginScreen() {
             fullWidth
             style={styles.loginBtn}
           />
+
         </Card>
 
         <Text style={styles.footer}>LCIT MEAL · Quản lý suất ăn cơ quan</Text>

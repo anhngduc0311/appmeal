@@ -74,18 +74,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (isMock) {
             mockStore.setCurrentUser(session.user.id);
           }
-        } else if (isMock) {
-          // Mặc định đăng nhập user An (employee) trong mock mode
-          const defaultUser = mockStore.getCurrentUser();
-          const mockToken = `mock_token_${defaultUser.id}`;
-          const normalized: User = {
-            ...defaultUser,
-            role: extractUserRole(defaultUser),
-          };
-          setUser(normalized);
-          setToken(mockToken);
-          await storage.setItem(STORAGE_KEYS.AUTH_TOKEN, mockToken);
-          await storage.setObject(STORAGE_KEYS.USER_DATA, normalized);
+        } else {
+          setUser(null);
+          setToken(null);
         }
       } catch (err) {
         console.error('Error initializing auth:', err);
@@ -110,14 +101,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const logout = useCallback(async () => {
-    setIsLoading(true);
     try {
       await authService.logout(useMockData);
       queryClient.clear(); // Xóa toàn bộ cache cá nhân để không bị lộ cho người sau
       setUser(null);
       setToken(null);
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      console.error('Error during logout:', err);
     }
   }, [useMockData]);
 

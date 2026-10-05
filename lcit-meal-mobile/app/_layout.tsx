@@ -3,8 +3,8 @@
  * Bọc toàn bộ ứng dụng trong AppProviders và cấu hình Stack Navigation
  */
 
-import React from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppProviders, useAuth } from '../src/providers';
 import { LoadingState } from '../src/components/states';
@@ -12,7 +12,23 @@ import { ErrorBoundary, OfflineBanner } from '../src/components/common';
 import { colors } from '../src/theme/colors';
 
 function RootNavigation() {
-  const { isLoading, isAuthenticated, role } = useAuth();
+  const { user, isLoading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (!user && !inAuthGroup) {
+      // Nếu chưa đăng nhập và không ở trang auth -> Điều hướng đến màn hình login
+      router.replace('/(auth)/login');
+    } else if (user && inAuthGroup) {
+      // Nếu đã đăng nhập mà đang ở trang auth -> Điều hướng vào tabs chính
+      router.replace('/(tabs)');
+    }
+  }, [user, isLoading, segments]);
 
   if (isLoading) {
     return (
@@ -34,11 +50,8 @@ function RootNavigation() {
           animation: 'fade_from_bottom',
         }}
       >
-        <Stack.Protected guard={isAuthenticated}>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="profile/edit" options={{ title: 'Chỉnh sửa hồ sơ' }} />
-        </Stack.Protected>
-        <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/edit" options={{ title: 'Chỉnh sửa hồ sơ' }} />
         <Stack.Screen
           name="(auth)/login"
           options={{
@@ -46,32 +59,27 @@ function RootNavigation() {
             presentation: 'modal',
           }}
         />
-        </Stack.Protected>
-        <Stack.Protected guard={isAuthenticated && role !== 'kitchen' && role !== 'admin'}>
-          <Stack.Screen
-            name="meal/[id]"
-            options={{
-              headerShown: false,
-              title: 'Chi tiết suất ăn',
-            }}
-          />
-          <Stack.Screen
-            name="meal-options/index"
-            options={{
-              headerShown: false,
-              title: 'Yêu cầu cắt suất',
-            }}
-          />
-        </Stack.Protected>
-
-        <Stack.Protected guard={isAuthenticated && role !== 'kitchen'}>
-          <Stack.Screen
-            name="management/index"
-            options={{
-              headerShown: false,
-              title: 'Bảng điều khiển Quản lý',
-            }}
-          />
+        <Stack.Screen
+          name="meal/[id]"
+          options={{
+            headerShown: false,
+            title: 'Chi tiết suất ăn',
+          }}
+        />
+        <Stack.Screen
+          name="meal-options/index"
+          options={{
+            headerShown: false,
+            title: 'Yêu cầu cắt suất',
+          }}
+        />
+        <Stack.Screen
+          name="management/index"
+          options={{
+            headerShown: false,
+            title: 'Bảng điều khiển Quản lý',
+          }}
+        />
         <Stack.Screen
           name="management/meals"
           options={{
@@ -135,7 +143,6 @@ function RootNavigation() {
             title: 'Thư viện Component',
           }}
         />
-        </Stack.Protected>
       </Stack>
     </>
   );

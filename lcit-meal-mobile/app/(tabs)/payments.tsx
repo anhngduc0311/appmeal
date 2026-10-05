@@ -21,8 +21,8 @@ import {
   Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { File, Paths } from 'expo-file-system';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
@@ -109,10 +109,8 @@ export default function PaymentsScreen() {
       } else {
         const isSharingAvailable = await Sharing.isAvailableAsync();
         if (isSharingAvailable) {
-          const destinationFile = new File(Paths.cache, `qr_payment_${selectedPayment.id}.png`);
-          const downloadedFile = await File.downloadFileAsync(qrUrl, destinationFile, {
-            idempotent: true,
-          });
+          const fileUri = `${FileSystem.cacheDirectory}qr_payment_${selectedPayment.id}.png`;
+          const downloadedFile = await FileSystem.downloadAsync(qrUrl, fileUri);
           await Sharing.shareAsync(downloadedFile.uri, {
             mimeType: 'image/png',
             dialogTitle: 'Chia sẻ mã QR thanh toán',

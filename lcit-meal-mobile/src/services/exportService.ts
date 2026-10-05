@@ -5,7 +5,7 @@
  */
 
 import { Platform } from 'react-native';
-import { File, Paths } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { env } from '../config/env';
 import { STORAGE_KEYS } from '../config/constants';
@@ -79,7 +79,8 @@ export const exportService = {
    */
   async downloadAndShareFile(endpoint: string, filename: string): Promise<ExportResult> {
     const overriddenUrl = await storage.getItem(STORAGE_KEYS.API_URL_OVERRIDE);
-    const baseUrl = overriddenUrl || env.apiBaseUrl;
+    const rawBaseUrl = (overriddenUrl || env.apiBaseUrl).trim().replace(/\/+$/, '');
+    const baseUrl = rawBaseUrl.endsWith('/api') ? rawBaseUrl : `${rawBaseUrl}/api`;
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const fullUrl = `${baseUrl}${cleanEndpoint}`;
 
@@ -109,17 +110,16 @@ export const exportService = {
         return { success: true, message: `Đã tải xuống file ${filename}` };
       }
 
-      // Trên Android & iOS: Dùng File và Paths của expo-file-system
-      const destinationFile = new File(Paths.document, filename);
-      const downloadedFile = await File.downloadFileAsync(fullUrl, destinationFile, {
+      // Trên Android & iOS: Dùng FileSystem của expo-file-system
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+      const downloaded = await FileSystem.downloadAsync(fullUrl, fileUri, {
         headers,
-        idempotent: true,
       });
 
       // Mở chia sẻ file
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(downloadedFile.uri, {
+        await Sharing.shareAsync(downloaded.uri, {
           mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           dialogTitle: `Xuất file ${filename}`,
           UTI: 'com.microsoft.excel.xlsx',
@@ -128,7 +128,7 @@ export const exportService = {
 
       return {
         success: true,
-        filePath: downloadedFile.uri,
+        filePath: downloaded.uri,
         message: `Đã lưu file thành công vào thiết bị: ${filename}`,
       };
     } catch (error: unknown) {
