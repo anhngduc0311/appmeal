@@ -8,6 +8,9 @@
 >
 > Đặc tả API và việc còn lại: [SPEC.md](SPEC.md).
 
+build android
+npx --yes eas-cli build -p android --profile preview --non-interactive
+
 ## 1. Phạm vi và cách đọc
 
 API quản lý tài khoản, lịch bếp theo ngày, đăng ký ăn và khách, cắt suất, lịch nghỉ, thanh toán nhập thủ công, thông báo trong hệ thống, cấu hình và audit.

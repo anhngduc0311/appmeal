@@ -8,7 +8,9 @@
     "scheme": "lcitmealmobile",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "bundleIdentifier": "com.lcit.meal",
+      "icon": "./assets/images/icon.png",
+      "supportsTablet": true
     },
     "android": {
       "package": "com.lcit.meal",
