@@ -82,22 +82,27 @@ export async function apiClient<T>(
       signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
     // Xử lý 401 Unauthorized
     if (response.status === 401 && !skipAuth) {
       onUnauthorizedCallback?.();
       throw new ApiError(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
     }
 
+    if (response.status === 204) return null as unknown as T;
+
     let json: ApiResponse<T>;
     try {
       json = (await response.json()) as ApiResponse<T>;
-    } catch {
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') throw error;
       if (!response.ok) {
         throw new ApiError(response.status, `Lỗi máy chủ HTTP ${response.status}`);
       }
-      return null as unknown as T;
+      throw new ApiError(502, 'Máy chủ trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
+    }
+
+    if (!json || typeof json !== 'object' || typeof json.success !== 'boolean') {
+      throw new ApiError(502, 'Máy chủ trả về dữ liệu không hợp lệ. Vui lòng thử lại.');
     }
 
     if (!response.ok || !json.success) {
@@ -110,8 +115,6 @@ export async function apiClient<T>(
 
     return json.payload as T;
   } catch (error: unknown) {
-    clearTimeout(timeoutId);
-
     if (error instanceof ApiError) {
       throw error;
     }
@@ -125,6 +128,8 @@ export async function apiClient<T>(
       0,
       `Không thể kết nối đến máy chủ (${baseUrl}). Vui lòng kiểm tra kết nối mạng (WiFi/4G) hoặc cấu hình API URL.`
     );
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

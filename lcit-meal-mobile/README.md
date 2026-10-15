@@ -1,17 +1,17 @@
 # LCIT Meal Mobile — Ứng dụng Đăng ký & Quản lý Suất ăn Cán bộ
 
-Ứng dụng di động quản lý suất ăn cán bộ công nhân viên (Android, iOS và Web), được xây dựng trên nền tảng **React Native**, **Expo SDK 57** và **Expo Router**. Ứng dụng tuân thủ chuẩn thẩm mỹ cao cấp, giao diện tiếng Việt nhất quán, hệ thống phân quyền Role-Based chặt chẽ và tích hợp linh hoạt giữa chế độ **Offline Mock Demo** và **Backend API Thực tế**.
+Ứng dụng di động quản lý suất ăn cán bộ công nhân viên (Android, iOS và Web), được xây dựng trên nền tảng **React Native**, **Expo SDK 51** và **Expo Router**. Ứng dụng tuân thủ chuẩn thẩm mỹ cao cấp, giao diện tiếng Việt nhất quán, hệ thống phân quyền Role-Based chặt chẽ và tích hợp linh hoạt giữa chế độ **Offline Mock Demo** và **Backend API Thực tế**.
 
 ---
 
 ## 🚀 1. Công nghệ & Kiến trúc
 
-- **Framework**: [Expo SDK 57](https://expo.dev) & [React Native 0.86](https://reactnative.dev)
-- **Routing**: [Expo Router v57](https://docs.expo.dev/router/introduction) (File-based navigation)
+- **Framework**: [Expo SDK 51](https://expo.dev) & [React Native 0.74.5](https://reactnative.dev)
+- **Routing**: [Expo Router v3.5](https://docs.expo.dev/router/introduction) (File-based navigation)
 - **Data Fetching & State**: [TanStack React Query v5](https://tanstack.com/query/latest)
 - **Styling**: Vanilla React Native StyleSheet, Tokens chuẩn hóa (`colors`, `spacing`, `typography`, `radius`)
-- **Native Modules**: `expo-secure-store`, `expo-file-system`, `expo-sharing`, `expo-image`, `expo-symbols`
-- **Ngôn ngữ**: TypeScript 6.0 (Strict mode, 0 lint/typecheck errors)
+- **Native Modules**: `expo-secure-store`, `expo-file-system`, `expo-sharing`, `expo-image`
+- **Ngôn ngữ**: TypeScript 5.3 (Strict mode)
 
 ---
 
@@ -52,9 +52,21 @@ npm run lint
 # Kiểm tra kiểu dữ liệu tĩnh (TypeScript)
 npm run typecheck
 
-# Chạy kịch bản kiểm tra tự động các ca nghiệp vụ & phân quyền
-node ./scripts/verify-phase5.js
+# Test trực tiếp utility, API client, auth service và mock store
+npm test
+
+# Test service mobile với Express/MySQL trên schema riêng (Node.js >= 20)
+# MySQL và database nguồn trong lcit-meal-api/.env phải sẵn sàng
+npm run test:integration
+
+# Giữ API QA chạy để test giao diện; nhập stop để dọn schema và dừng
+node scripts/tests/mobile-api.cjs --serve
 ```
+
+Các test service dùng storage trong bộ nhớ để thay thế module native; không
+kiểm chứng SecureStore trên thiết bị. Entry point cũ `verify-phase5.js` chạy
+cùng bộ test trực tiếp source. Xem `scripts/tests/UI-CHECKLIST.md` cho kiểm
+tra giao diện web và checklist Android trước phát hành.
 
 ---
 
@@ -67,16 +79,16 @@ Tạo file `.env` (hoặc `.env.local`) tại thư mục gốc `lcit-meal-mobile
 # Dành cho Android Emulator: http://10.0.2.2:3000/api
 # Dành cho iOS Simulator / Web: http://localhost:3000/api
 # Dành cho thiết bị thật trong cùng mạng LAN: http://192.168.x.x:3000/api
-EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api
+EXPO_PUBLIC_API_URL=http://localhost:3000/api
 
 # Mặc định sử dụng chế độ Mock (true) hoặc kết nối API thật (false)
-EXPO_PUBLIC_USE_MOCK=true
+EXPO_PUBLIC_USE_MOCK=false
 
 # Thời gian chờ phản hồi tối đa (milliseconds)
 EXPO_PUBLIC_REQUEST_TIMEOUT_MS=15000
 ```
 
-> **Mẹo cấu hình nhanh**: Bạn có thể bật/tắt **Chế độ Mock** hoặc thay đổi trực tiếp **Địa chỉ IP máy chủ Backend** ngay trong ứng dụng tại màn hình **Tài khoản cá nhân** ➔ mục **Môi trường & Kết nối** mà không cần sửa code hay khởi động lại app.
+Màn hình tài khoản hiện không có mục đổi môi trường. Đổi các biến trên trong `.env`, rồi khởi động lại Expo. Tài khoản demo chỉ dùng trong chế độ mock hoặc schema QA; tài khoản API thật phụ thuộc dữ liệu máy chủ.
 
 ---
 
@@ -89,7 +101,7 @@ Hệ thống hỗ trợ 4 vai trò người dùng chuẩn hóa. Mật khẩu m�
 | **Admin** (Quản trị viên) | `admin` | `123456` | Toàn quyền: Quản lý lịch bếp, duyệt suất, thu tiền, quản lý người dùng, cấu hình hệ thống, xem nhật ký audit, kích hoạt tool admin. |
 | **Manager** (Quản lý bếp) | `manager` | `123456` | Quản lý lịch bếp, đăng ký/hủy suất hộ cán bộ, duyệt yêu cầu cắt suất, quản lý thu tiền ăn, xem danh sách cán bộ. |
 | **Employee** (Cán bộ nhân viên) | `user1` | `123456` | Xem lịch cá nhân, đăng ký suất/khách, gửi yêu cầu cắt suất trực tiếp hoặc theo khoảng ngày, xem khoản thanh toán & QR, đọc thông báo cá nhân. |
-| **Kitchen** (Nhân viên bếp) | `kitchen` | `123456` | Đăng ký suất cá nhân; các chức năng quản trị bị khóa theo chính sách nghiệp vụ. |
+| **Kitchen** (Nhân viên bếp) | `kitchen` | `123456` | Xem số suất bếp cần chuẩn bị; không đăng ký/cắt suất hoặc truy cập nghiệp vụ quản trị. |
 
 ---
 
@@ -99,12 +111,12 @@ Hệ thống hỗ trợ 4 vai trò người dùng chuẩn hóa. Mật khẩu m�
 lcit-meal-mobile/
 ├── app/                              # Định tuyến file-based (Expo Router)
 │   ├── (auth)/                       # Màn hình xác thực (Đăng nhập)
-│   ├── (tabs)/                       # 4 Tab chính cho nhân viên
+│   ├── (tabs)/                       # 5 Tab chính cho nhân viên
 │   │   ├── index.tsx                 # Trang chủ (Suất ăn hôm nay, thao tác nhanh)
 │   │   ├── schedule.tsx              # Lịch ăn trong tháng, chi tiết ngày
 │   │   ├── payments.tsx              # Khoản thanh toán cá nhân & QR đóng tiền
 │   │   ├── notifications.tsx         # Hộp thư thông báo cá nhân
-│   │   └── account.tsx               # Hồ sơ, đổi môi trường Mock/API, đăng xuất
+│   │   └── account.tsx               # Hồ sơ và đăng xuất
 │   ├── management/                   # Khu vực Quản trị & Quản lý (Role guarded)
 │   │   ├── index.tsx                 # Dashboard & KPI tổng quan, hàng chờ duyệt
 │   │   ├── meals.tsx                 # Quản lý lịch nấu & ngày nghỉ lễ
@@ -115,7 +127,7 @@ lcit-meal-mobile/
 │   │   ├── settings.tsx              # Cấu hình lịch thứ, giờ chốt, giá tiền, QR
 │   │   ├── audit.tsx                 # Nhật ký hệ thống (Audit logs - Read-only)
 │   │   └── admin-tools.tsx           # Công cụ kích hoạt tiến trình định kỳ
-│   ├── meal-details/                 # Chi tiết ngày ăn & đăng ký khách
+│   ├── meal/                         # Chi tiết ngày ăn & đăng ký khách
 │   ├── meal-options/                 # Yêu cầu cắt suất theo khoảng
 │   ├── profile/                      # Chỉnh sửa thông tin cá nhân & đổi mật khẩu
 │   └── _layout.tsx                   # Root Stack layout & Theme Provider
