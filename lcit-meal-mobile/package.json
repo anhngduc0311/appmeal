@@ -41,6 +41,8 @@
     "typescript": "~5.3.3"
   },
   "scripts": {
+    "test": "node --test scripts/tests/mobile.test.cjs",
+    "test:integration": "node scripts/tests/mobile-api.cjs",
     "start": "expo start --port 5173",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",

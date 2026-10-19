@@ -68,9 +68,14 @@ Các bảng chính:
 | `system_setting` | Cấu hình hệ thống dạng key–value |
 | `audit_log` | Nhật ký thao tác toàn hệ thống |
 
-> **Lưu ý:** bản source này **không kèm file schema SQL**. Cần lấy file
-> `qlsa.sql` (schema + dữ liệu seed) từ bản bàn giao trước hoặc export từ
-> database đang chạy, rồi import trước khi khởi động API.
+Schema và dữ liệu seed có tại `sql/qlsa.sql`. Import vào database `qlsa` trước
+khi chạy `npm run migrate`. Docker Compose ở thư mục gốc tự import file này
+khi khởi tạo volume MySQL mới; volume đã có dữ liệu không được import lại.
+
+`npm test` chạy integration test trên schema MySQL riêng, chỉ sao chép schema
+và cấu hình từ database trong `.env`, rồi tự xóa schema test khi hoàn tất.
+Tài khoản DB cần quyền tạo và xóa schema test. Test không sửa dữ liệu nghiệp vụ
+trong database nguồn.
 
 Dữ liệu demo: `node src/scripts/seedDumpDemo.js`.
 

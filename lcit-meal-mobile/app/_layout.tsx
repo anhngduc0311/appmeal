@@ -28,7 +28,7 @@ function RootNavigation() {
       // Nếu đã đăng nhập mà đang ở trang auth -> Điều hướng vào tabs chính
       router.replace('/(tabs)');
     }
-  }, [user, isLoading, segments]);
+  }, [user, isLoading, segments, router]);
 
   if (isLoading) {
     return (
