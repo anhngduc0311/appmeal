@@ -2,7 +2,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const USER_STATUS = require("../constants/UserStatus");
-const AUTH = require("../constants/Auth");
 const LOG_ACTION = require("../constants/LogAction");
 const AppError = require("../ultis/AppError");
 
@@ -79,10 +78,6 @@ class AuthService {
       },
 
       process.env.JWT_SECRET,
-
-      {
-        expiresIn: AUTH.TOKEN_EXPIRES_IN,
-      },
     );
   }
 

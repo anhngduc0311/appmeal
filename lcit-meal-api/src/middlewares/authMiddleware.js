@@ -29,7 +29,11 @@ const authMiddleware = async (req, res, next) => {
 
     const token = parts[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Phiên không giới hạn thời gian, kể cả token 7 ngày đã lưu từ bản cũ.
+    // Vẫn kiểm tra chữ ký, trạng thái tài khoản và token hiện tại trong DB.
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      ignoreExpiration: true,
+    });
 
     const user = await userRepository.get(decoded.id);
 
@@ -50,11 +54,13 @@ const authMiddleware = async (req, res, next) => {
 
     return next();
   } catch (error) {
-    return ApiResponse.error(
-      res,
-      "Token không hợp lệ hoặc đã hết hạn",
-      401,
-    );
+    if (error instanceof jwt.JsonWebTokenError) {
+      return ApiResponse.error(res, "Token không hợp lệ", 401);
+    }
+
+    // Lỗi DB/server không có nghĩa là phiên đã bị thu hồi.
+    // Trả lỗi server qua errorMiddleware để app không xóa phiên đăng nhập.
+    return next(error);
   }
 };
 
