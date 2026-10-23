@@ -31,7 +31,6 @@ import {
 } from '../../src/hooks/useMealsData';
 import { useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
 import {
-  formatBusinessDate,
   formatCurrency,
   formatDisplayDate,
 } from '../../src/utils/formatters';
@@ -39,6 +38,8 @@ import { colors } from '../../src/theme/colors';
 import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
 import ManagementDashboardScreen from '../management/index';
+import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
+import { isCancellationClosed } from '../../src/utils/cancellationDeadline';
 
 export default function HomeScreen() {
   const { role } = useAuth();
@@ -57,7 +58,8 @@ function PersonalHomeScreen() {
 
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
 
-  const todayStr = formatBusinessDate(new Date());
+  const { today: todayStr, now } = useCancellationDeadline();
+  const cancelClosed = isCancellationClosed(todayStr, now);
 
   // Queries từ TanStack React Query
   const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
@@ -100,7 +102,7 @@ function PersonalHomeScreen() {
       if (updatedReg && updatedReg.status === 'pending') {
         Alert.alert(
           'Đã gửi yêu cầu',
-          'Đã quá giờ đóng đăng ký, yêu cầu cắt suất của bạn đã được chuyển cho Quản lý xét duyệt.'
+          'Yêu cầu cắt suất đang chờ Quản lý xét duyệt.'
         );
       }
     } catch (err: unknown) {
@@ -135,7 +137,7 @@ function PersonalHomeScreen() {
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>BỮA TRƯA TẠI LCIT</Text>
           <Text style={[styles.heroTitle, wide && {fontSize: 36}]}>Trọn bữa ngon,{'\n'}vẹn ngày làm việc.</Text>
-          <View style={styles.cutoff}><Ionicons name="time-outline" size={16} color="#DCEAA0" /><Text style={styles.heroNote}>Chốt đăng ký & cắt suất lúc {cutoffTime}</Text></View>
+          <View style={styles.cutoff}><Ionicons name="time-outline" size={16} color="#DCEAA0" /><Text style={styles.heroNote}>Chốt đăng ký lúc {cutoffTime} · Cắt suất trước 08:00</Text></View>
         </View>
         {wide && <View style={styles.plateOuter}><View style={styles.plateInner}><Ionicons name="restaurant-outline" size={58} color="#DCEAA0" /></View></View>}
       </View>
@@ -170,7 +172,8 @@ function PersonalHomeScreen() {
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn hôm nay"
         message={`Bạn có chắc chắn muốn cắt suất ăn ngày ${formatDisplayDate(todayStr)}? Thao tác này sẽ cập nhật số lượng suất ăn cần nấu của nhà bếp.`}
-        confirmText="Đồng ý cắt suất"
+        confirmText={cancelClosed ? 'Quá hạn cắt suất' : 'Đồng ý cắt suất'}
+        confirmDisabled={cancelClosed}
         cancelText="Giữ lại"
         isDestructive
         iconName="close-circle-outline"

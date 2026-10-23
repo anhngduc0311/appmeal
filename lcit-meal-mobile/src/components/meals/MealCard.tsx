@@ -25,6 +25,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
+import { useCancellationDeadline } from '../../hooks/useCancellationDeadline';
 
 export interface MealCardProps {
   dateStr: string;
@@ -51,8 +52,9 @@ export const MealCard: React.FC<MealCardProps> = ({
   style,
 }) => {
   const isMealCancelled = !!meal?.isCancelled;
-  const isToday = formatBusinessDate(new Date()) === dateStr;
-  const isPast = new Date(dateStr).getTime() < new Date(formatBusinessDate(new Date())).getTime();
+  const { closed: cancelClosed, today } = useCancellationDeadline(dateStr);
+  const isToday = today === dateStr;
+  const isPast = formatBusinessDate(dateStr) < today;
 
   const regStatus = registration?.status;
   const isRegistered = regStatus === 'confirmed';
@@ -129,8 +131,8 @@ export const MealCard: React.FC<MealCardProps> = ({
             <>
               {onCancel && registration && (
                 <Button
-                  title="Cắt suất"
-                  disabled={actionsDisabled}
+                  title={cancelClosed ? 'Quá hạn cắt suất' : 'Cắt suất'}
+                  disabled={actionsDisabled || cancelClosed}
                   variant="outline"
                   size="sm"
                   leftIcon={

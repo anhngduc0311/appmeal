@@ -36,6 +36,11 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { FacilitySelector } from '../../src/components/common/FacilitySelector';
+import { useFacilities } from '../../src/hooks/useFacilities';
+import { useUsersList } from '../../src/hooks/useManagementUsers';
+import { FacilityFilter, facilityLabel, getFacility, matchesFacility, registrationPerson, summarizeFacilityMeals } from '../../src/utils/facilities';
+import { formatBusinessDate } from '../../src/utils/formatters';
 
 export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
@@ -43,6 +48,12 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
+  const { overrides, isLoading: loadingFacilities } = useFacilities();
+  const { data: facilityUsers = [], refetch: refetchUsers } = useUsersList();
+  const today = formatBusinessDate(new Date());
+  const { data: todayRegistrations = [], isLoading: loadingFacilityMeals, isError: facilityMealsError, refetch: refetchFacilityMeals } =
+    useManagementRegistrations({ from: today, to: today });
 
   // Quick action state
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
@@ -84,7 +95,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchHome(), refetchChart(), refetchRegs()]);
+    await Promise.all([refetchHome(), refetchChart(), refetchRegs(), refetchUsers(), refetchFacilityMeals()]);
     setRefreshing(false);
   };
 
@@ -101,10 +112,15 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
     refetchRegs();
   };
 
-  const todaySlots = homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 0;
-  const todayStaffCount = homeData?.todayStaff?.registered_staff_count ?? 0;
-  const todayGuestCount = homeData?.todayStaff?.total_guest_count ?? 0;
-  const pendingCount = pendingRegs.length || homeData?.pendingMealOptionCount || 0;
+  const facilitySummary = summarizeFacilityMeals(todayRegistrations, facilityUsers, overrides);
+  const selectedSummary = facilityFilter === 'all' ? null : facilitySummary[facilityFilter];
+  const facilityReady = !loadingFacilityMeals && !loadingFacilities && !facilityMealsError;
+  const cancelled = Boolean(homeData?.todayMeal?.isCancelled ?? homeData?.todayMeal?.is_cancelled);
+  const todaySlots = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.total) : '—') : homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 0;
+  const todayStaffCount = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.staff) : '—') : homeData?.todayStaff?.registered_staff_count ?? 0;
+  const todayGuestCount = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.guests) : '—') : homeData?.todayStaff?.total_guest_count ?? 0;
+  const scopedPending = pendingRegs.filter(record => matchesFacility(getFacility(registrationPerson(record, facilityUsers), overrides), facilityFilter));
+  const pendingCount = facilityFilter === 'all' ? pendingRegs.length || homeData?.pendingMealOptionCount || 0 : scopedPending.length;
   const outstandingAmount = homeData?.outstanding?.total_outstanding_amount ?? 0;
   const unpaidRecords = homeData?.outstanding?.unpaid_record_count ?? 0;
 
@@ -120,8 +136,9 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         showBack={isTab ? false : router.canGoBack()}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
         userRole={role || undefined}
+        style={{ alignItems: 'flex-start' }}
         rightAction={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
             <TouchableOpacity
               style={styles.refreshHeaderBtn}
               onPress={handleRefresh}
@@ -140,6 +157,8 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
                 <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
               </TouchableOpacity>
             )}
+            <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
+              style={{ width: wide ? 240 : 140, marginVertical: 0 }} />
           </View>
         }
       />
@@ -157,9 +176,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         }
       >
         {/* KPI Cards Overview */}
-        <View style={[styles.kpiContainer, wide && {flexDirection: 'row', gap: 16}]}>
+        {facilityMealsError && <Text style={styles.sectionSubtitle}>Chưa tải được số suất từng cơ sở. Nhấn làm mới để thử lại.</Text>}
+        <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/management/users')} style={{ minHeight: 44, justifyContent: 'center' }}>
+          <Text style={styles.viewAllText}>Xem danh sách và phân cơ sở →</Text>
+        </TouchableOpacity>
+        <View style={[styles.kpiContainer, wide && { flexDirection: 'row', gap: 16 }]}>
           {/* Card 1: Hôm nay */}
-          <Card variant="elevated" padding="md" style={[styles.kpiCardLarge, wide && {flex: 1}]}>
+          <Card variant="elevated" padding="md" style={[styles.kpiCardLarge, wide && { flex: 1 }]}>
             <View style={styles.kpiHeaderRow}>
               <View style={[styles.kpiIconBox, { backgroundColor: colors.primaryLight }]}>
                 <Ionicons name="restaurant" size={20} color={colors.primaryDark} />
@@ -167,7 +190,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Badge label="Hôm nay" variant="success" size="sm" />
             </View>
             <Text style={styles.kpiBigNumber}>{todaySlots}</Text>
-            <Text style={styles.kpiLabel}>Tổng suất cần nấu hôm nay</Text>
+            <Text style={styles.kpiLabel}>Tổng suất cần nấu hôm nay · {facilityLabel(facilityFilter)}</Text>
             <View style={styles.kpiSubRow}>
               <Text style={styles.kpiSubText}>
                 • Cán bộ: <Text style={styles.boldText}>{todayStaffCount}</Text>
@@ -179,7 +202,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
           </Card>
 
           {/* Card 2 & 3: Pending & Outstanding */}
-          <View style={[styles.kpiRowSmall, wide && {flex: 1.2}]}>
+          <View style={[styles.kpiRowSmall, wide && { flex: 1.2 }]}>
             <Card
               variant="elevated"
               padding="md"
@@ -205,7 +228,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Text style={[styles.kpiNumberSmall, { color: '#DC2626', fontSize: wide ? 26 : 20 }]}>
                 {formatCurrency(outstandingAmount)}
               </Text>
-              <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu</Text>
+              <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu · Toàn cơ quan</Text>
             </Card>
           </View>
         </View>
@@ -215,7 +238,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
           <View style={styles.chartHeader}>
             <View>
               <Text style={styles.sectionTitle}>Biểu đồ suất ăn thực tế</Text>
-              <Text style={styles.sectionSubtitle}>Chỉ tính các suất đã hoàn thành qua trưa</Text>
+              <Text style={styles.sectionSubtitle}>Toàn cơ quan · Chỉ tính các suất đã hoàn thành qua trưa</Text>
             </View>
 
             {/* Period selector */}
@@ -277,13 +300,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         </Card>
 
         {/* Hàng chờ duyệt nhanh (Pending queue) */}
-        {pendingRegs.length > 0 && (
+        {scopedPending.length > 0 && (
           <View style={styles.sectionWrapper}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.rowAlign}>
                 <Text style={styles.sectionTitle}>Hàng chờ duyệt cắt suất</Text>
                 <View style={styles.badgeCount}>
-                  <Text style={styles.badgeCountText}>{pendingRegs.length}</Text>
+                  <Text style={styles.badgeCountText}>{scopedPending.length}</Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -294,7 +317,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               </TouchableOpacity>
             </View>
 
-            {pendingRegs.slice(0, 3).map((item) => (
+            {scopedPending.slice(0, 3).map((item) => (
               <Card key={item.id} variant="elevated" padding="md" style={styles.pendingCard}>
                 <View style={styles.pendingCardHeader}>
                   <View style={styles.pendingAvatarBox}>
@@ -346,7 +369,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/meals' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: colors.primaryLight }]}>
@@ -360,7 +383,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/registrations' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF3C7' }]}>
@@ -374,7 +397,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/payments' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#DCFCE7' }]}>
@@ -388,7 +411,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/users' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#F3E8FF' }]}>
@@ -404,7 +427,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/notifications' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#E0F2FE' }]}>
@@ -419,7 +442,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && {width: '24%'}]}
+                style={[styles.menuGridItem, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/settings' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#FCE7F3' }]}>
@@ -435,7 +458,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && {width: '24%'}]}
+                style={[styles.menuGridItem, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/audit' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#F1F5F9' }]}>
@@ -450,7 +473,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/admin-tools' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF9C3' }]}>

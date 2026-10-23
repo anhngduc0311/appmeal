@@ -42,6 +42,9 @@ import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 import { User, UserRole } from '../../src/types';
+import { FacilitySelector } from '../../src/components/common/FacilitySelector';
+import { useFacilities } from '../../src/hooks/useFacilities';
+import { FacilityFilter, facilityLabel, getFacility, matchesFacility } from '../../src/utils/facilities';
 
 export default function ManagementUsersScreen() {
   const router = useRouter();
@@ -54,6 +57,9 @@ export default function ManagementUsersScreen() {
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
+  const { overrides, assignment, isLoading: loadingFacilities } = useFacilities();
+  const [facilityTarget, setFacilityTarget] = useState<User | null>(null);
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -138,7 +144,7 @@ export default function ManagementUsersScreen() {
       u.username.toLowerCase().includes(q) ||
       (u.email && u.email.toLowerCase().includes(q)) ||
       (u.phone && u.phone.includes(q));
-    return matchRole && matchQuery;
+    return matchRole && matchQuery && matchesFacility(getFacility(u, overrides), facilityFilter);
   });
 
   const handleCreateUser = async () => {
@@ -251,6 +257,7 @@ export default function ManagementUsersScreen() {
             <View style={styles.userInfoCol}>
               <Text style={styles.fullNameText}>{u.fullName}</Text>
               <Text style={styles.usernameText}>@{u.username}</Text>
+              <Text style={styles.usernameText}>{facilityLabel(getFacility(u, overrides))}</Text>
             </View>
 
             <View style={styles.badgesCol}>
@@ -280,6 +287,7 @@ export default function ManagementUsersScreen() {
           </View>
 
           {/* Admin Actions */}
+          {isAdmin && <Button title="Phân cơ sở" variant="ghost" disabled={loadingFacilities} onPress={() => setFacilityTarget(u)} />}
           {isAdmin && (
             <View style={styles.userFooter}>
               <TouchableOpacity
@@ -316,7 +324,7 @@ export default function ManagementUsersScreen() {
         </Card>
       );
     },
-    [isAdmin, currentUser?.id]
+    [isAdmin, currentUser?.id, overrides, loadingFacilities]
   );
 
   if (!hasAccess) {
@@ -354,6 +362,8 @@ export default function ManagementUsersScreen() {
         userRole={role || undefined}
       />
 
+      <FacilitySelector value={facilityFilter} onChange={setFacilityFilter} />
+      <Text style={styles.metaText}>Danh sách trong ảnh được xếp vào cơ sở 1. Các thay đổi phân cơ sở chỉ lưu trên thiết bị này, chưa đồng bộ sang máy khác.</Text>
       {/* Search Input */}
       <View style={styles.searchBarWrapper}>
         <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
@@ -433,6 +443,26 @@ export default function ManagementUsersScreen() {
           <Ionicons name="person-add" size={24} color={colors.textInverse} />
         </TouchableOpacity>
       )}
+
+      <Modal visible={facilityTarget !== null} transparent animationType="fade" onRequestClose={() => { if (!assignment.isPending) setFacilityTarget(null); }}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalDialog}>
+            <Text style={styles.fullNameText}>Phân cơ sở · {facilityTarget?.fullName}</Text>
+            <Text style={styles.metaText}>Lưu trên thiết bị này. Khách đi kèm được tính cùng cơ sở của cán bộ.</Text>
+            <FacilitySelector disabled={assignment.isPending}
+              value={facilityTarget ? getFacility(facilityTarget, overrides) ?? 'unassigned' : 'unassigned'}
+              onChange={async value => {
+                if (!facilityTarget || value === 'all') return;
+                try {
+                  await assignment.mutateAsync({ person: facilityTarget, facilityId: value === 'unassigned' ? null : value });
+                  setFacilityTarget(null);
+                } catch { /* Keep the dialog open and show the error below. */ }
+              }} />
+            {assignment.isError && <Text style={styles.metaText}>Chưa lưu được phân cơ sở. Vui lòng thử lại.</Text>}
+            <Button title="Đóng" variant="secondary" disabled={assignment.isPending} onPress={() => { assignment.reset(); setFacilityTarget(null); }} />
+          </View>
+        </View>
+      </Modal>
 
       {/* Modal Thêm Người Dùng Mới (Admin only) */}
       <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>

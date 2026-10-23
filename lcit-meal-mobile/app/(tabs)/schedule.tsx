@@ -32,18 +32,20 @@ import {
 } from '../../src/hooks/useMealsData';
 import {
   formatDisplayDate,
-  formatBusinessDate,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
+import { isCancellationClosed } from '../../src/utils/cancellationDeadline';
 
 export default function ScheduleScreen() {
   const router = useRouter();
   const [period, setPeriod] = useState<'upcoming' | 'history'>('upcoming');
   const [filterMode, setFilterMode] = useState<'all' | 'registered' | 'cancelled'>('all');
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [bannerVariant, setBannerVariant] = useState<'success' | 'error'>('success');
 
   // Dialogs
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
@@ -61,7 +63,7 @@ export default function ScheduleScreen() {
 
   const isLoading = loadingMeals || loadingRegs;
   const isRefreshing = refreshingMeals || refreshingRegs;
-  const today = formatBusinessDate(new Date());
+  const { today, now } = useCancellationDeadline();
 
   const handleRefresh = async () => {
     await Promise.all([refetchMeals(), refetchRegs()]);
@@ -70,9 +72,12 @@ export default function ScheduleScreen() {
   const handleRegister = async (mealId: number) => {
     try {
       await registerMutation.mutateAsync({ mealId, guestCount: 0 });
+      setBannerVariant('success');
       setBannerMessage('Đăng ký suất ăn thành công!');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Đăng ký suất ăn thất bại.';
+      setBannerVariant('error');
+      setBannerMessage(msg);
       Alert.alert('Thông báo', msg);
     }
   };
@@ -88,6 +93,7 @@ export default function ScheduleScreen() {
       const res = await cancelMutation.mutateAsync({ registrationId: selectedRegId });
       setCancelModalVisible(false);
       setSelectedRegId(null);
+      setBannerVariant('success');
 
       if (res && res.status === 'pending') {
         setBannerMessage('Yêu cầu cắt suất của bạn đã được gửi cho Quản lý xét duyệt.');
@@ -96,6 +102,8 @@ export default function ScheduleScreen() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Cắt suất ăn thất bại.';
+      setBannerVariant('error');
+      setBannerMessage(msg);
       Alert.alert('Lỗi thao tác', msg);
     }
   };
@@ -108,9 +116,12 @@ export default function ScheduleScreen() {
         toDate,
         note: 'Cắt suất theo khoảng ngày',
       });
+      setBannerVariant('success');
       setBannerMessage(`Đã tạo yêu cầu cắt suất từ ${formatDisplayDate(fromDate)} đến ${formatDisplayDate(toDate)} (Đang chờ Quản lý duyệt).`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Tạo yêu cầu cắt suất thất bại.';
+      setBannerVariant('error');
+      setBannerMessage(msg);
       Alert.alert('Lỗi thao tác', msg);
     }
   };
@@ -176,7 +187,7 @@ export default function ScheduleScreen() {
 
       {bannerMessage && (
         <ResultBanner
-          variant="success"
+          variant={bannerVariant}
           message={bannerMessage}
           onDismiss={() => setBannerMessage(null)}
         />
@@ -243,7 +254,8 @@ export default function ScheduleScreen() {
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
         message={`Bạn có chắc chắn muốn cắt suất ăn${cancelDate ? ` ngày ${formatDisplayDate(cancelDate)}` : ''}? Yêu cầu sẽ được xử lý theo quy định của nhà bếp.`}
-        confirmText="Xác nhận cắt"
+        confirmText={isCancellationClosed(cancelDate, now) ? 'Quá hạn cắt suất' : 'Xác nhận cắt'}
+        confirmDisabled={isCancellationClosed(cancelDate, now)}
         cancelText="Giữ lại"
         isDestructive
         iconName="trash-outline"

@@ -35,7 +35,6 @@ import {
 } from '../../src/hooks/useMealsData';
 import {
   formatFullDisplayDate,
-  formatBusinessDate,
   formatCurrency,
   compareBusinessDates,
 } from '../../src/utils/formatters';
@@ -43,6 +42,7 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
 
 export default function MealDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,6 +73,7 @@ export default function MealDetailScreen() {
   const registration = meal
     ? registrations.find((r) => r.mealId === meal.id || r.mealDate === meal.mealDate)
     : undefined;
+  const { closed: cancelClosed, today: todayStr } = useCancellationDeadline(meal?.mealDate);
 
   const handleRefresh = async () => {
     await Promise.all([refetchMeals(), refetchRegs()]);
@@ -94,7 +95,6 @@ export default function MealDetailScreen() {
   }
 
   const isMealCancelled = !!meal?.isCancelled;
-  const todayStr = formatBusinessDate(new Date());
   const isToday = meal?.mealDate === todayStr;
   const isPast = meal ? compareBusinessDates(meal.mealDate, todayStr) < 0 : false;
 
@@ -134,7 +134,7 @@ export default function MealDetailScreen() {
       if (updated && updated.status === 'pending') {
         setBannerMessage({
           variant: 'warning',
-          text: 'Đã quá giờ đóng đăng ký, yêu cầu cắt suất của bạn đã được chuyển cho Quản lý xét duyệt.',
+          text: 'Yêu cầu cắt suất đang chờ Quản lý xét duyệt.',
         });
       } else {
         setBannerMessage({
@@ -274,11 +274,11 @@ export default function MealDetailScreen() {
           {isRegistered || isPending ? (
             <View style={styles.btnStack}>
               <Button
-                title="Cắt suất ăn ngày này"
+                title={cancelClosed ? 'Quá hạn cắt suất (sau 08:00)' : 'Cắt suất ăn ngày này'}
                 variant="danger"
                 size="lg"
                 loading={cancelMutation.isPending}
-                disabled={cancelMutation.isPending}
+                disabled={cancelMutation.isPending || cancelClosed}
                 leftIcon={
                   <Ionicons
                     name="close-circle-outline"
@@ -318,7 +318,8 @@ export default function MealDetailScreen() {
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn"
         message={`Bạn đang thực hiện cắt suất ăn ngày ${meal ? formatFullDisplayDate(meal.mealDate) : ''}. Vui lòng xác nhận:`}
-        confirmText="Xác nhận cắt"
+        confirmText={cancelClosed ? 'Quá hạn cắt suất' : 'Xác nhận cắt'}
+        confirmDisabled={cancelClosed}
         cancelText="Giữ lại"
         isDestructive
         iconName="close-circle-outline"

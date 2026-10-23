@@ -21,12 +21,132 @@ test('Business dates retain calendar date across timezones and year boundaries',
   assert.equal(f.formatBusinessDate('invalid'), '');
   assert.equal(f.formatDisplayDate(null), '');
 });
+
+test('Cancellation closes exactly at 08:00 Vietnam time, independently of device timezone', () => {
+  const deadline = app.load('utils/cancellationDeadline.ts');
+  assert.equal(deadline.isCancellationClosed('2026-10-23', Date.parse('2026-10-23T00:59:59.999Z')), false);
+  assert.equal(deadline.isCancellationClosed('2026-10-23', Date.parse('2026-10-23T01:00:00Z')), true);
+  assert.equal(deadline.isCancellationClosed('2026-10-23', Date.parse('2026-10-23T08:00:00Z')), true);
+  assert.equal(deadline.isCancellationClosed('2026-10-24', Date.parse('2026-10-23T08:00:00Z')), false);
+  assert.equal(deadline.isCancellationClosed('2026-10-22', Date.parse('2026-10-23T00:00:00Z')), true);
+  assert.equal(deadline.isCancellationClosed(undefined), true);
+  assert.equal(deadline.vietnamToday(Date.parse('2026-12-31T18:00:00Z')), '2027-01-01');
+  assert.equal(deadline.nextCancellationClockChange(Date.parse('2026-10-23T00:59:59Z')), Date.parse('2026-10-23T01:00:00Z'));
+  assert.equal(deadline.nextCancellationClockChange(Date.parse('2026-10-23T01:00:00Z')), Date.parse('2026-10-23T17:00:00Z'));
+});
+
+test('Cancellation service rechecks cutoff after reading the meal, so an old dialog cannot submit late', async () => {
+  const { mealService } = app.load('services/mealService.ts');
+  const originalNow = Date.now;
+  let now = Date.parse('2026-10-23T00:59:59Z');
+  Date.now = () => now;
+  const writes = [];
+  global.fetch = async (url, config) => {
+    if (!config.method || config.method === 'GET') {
+      now = Date.parse('2026-10-23T01:00:00Z');
+      return respond(200, { success: true, payload: { id: 1, mealDate: '2026-10-23' } });
+    }
+    writes.push(url);
+    return respond(200, { success: true, payload: { id: 1 } });
+  };
+  try {
+    await assert.rejects(mealService.cancelRegistration(1), /Đã quá hạn cắt suất/);
+    assert.equal(writes.length, 0);
+  } finally { Date.now = originalNow; }
+});
+
+test('Cancellation is submitted before cutoff, while future meals remain available after cutoff', async () => {
+  const { mealService } = app.load('services/mealService.ts');
+  const originalNow = Date.now;
+  let now = Date.parse('2026-10-23T00:59:59Z');
+  let day = '2026-10-23';
+  Date.now = () => now;
+  const methods = [];
+  global.fetch = async (_url, config) => {
+    methods.push(config.method || 'GET');
+    return respond(200, { success: true, payload: { id: 1, mealDate: day, status: 'cancelled' } });
+  };
+  try {
+    await mealService.cancelRegistration(1);
+    assert.deepEqual(methods, ['GET', 'PATCH']);
+    methods.length = 0;
+    now = Date.parse('2026-10-23T02:00:00Z');
+    day = '2026-10-24';
+    await mealService.cancelRegistration(1);
+    assert.deepEqual(methods, ['GET', 'PATCH']);
+  } finally { Date.now = originalNow; }
+});
+
+test('Today, range and permanent cancellation requests cannot include a locked day', async () => {
+  const { mealService } = app.load('services/mealService.ts');
+  const originalNow = Date.now;
+  Date.now = () => Date.parse('2026-10-23T01:00:00Z');
+  const writes = [];
+  global.fetch = async (url) => {
+    writes.push(url);
+    return respond(200, { success: true, payload: { id: 1 } });
+  };
+  try {
+    for (const type of ['cancel_today', 'cancel_schedule', 'cancel_permanent']) {
+      await assert.rejects(mealService.createMealOption({ type, fromDate: '2026-10-23', toDate: '2026-10-25' }), /Đã quá hạn cắt suất/);
+    }
+    await assert.rejects(mealService.createMealOption({ type: 'cancel_today', fromDate: '2026-10-24', toDate: '2026-10-24' }), /Đã quá hạn cắt suất/);
+    assert.equal(writes.length, 0);
+    await mealService.createMealOption({ type: 'cancel_schedule', fromDate: '2026-10-24', toDate: '2026-10-25' });
+    assert.equal(writes.length, 1);
+  } finally { Date.now = originalNow; }
+});
 test('Role normalization handles backend objects, strings and role priority', () => {
   const { extractUserRole } = app.load('types/auth.ts');
   assert.equal(extractUserRole({ roles: [{ code: 'employee' }, { code: 'admin' }] }), 'admin');
   assert.equal(extractUserRole({ roles: ['employee', 'manager'] }), 'manager');
   assert.equal(extractUserRole({ roles: ['kitchen'] }), 'kitchen');
   assert.equal(extractUserRole({ role: 'manager', roles: ['employee'] }), 'manager');
+});
+
+test('Facility roster handles confirmed aliases without guessing other people or site 2', () => {
+  const f = app.load('utils/facilities.ts');
+  for (const fullName of ['Kim Mạnh Cường', 'Nguyễn T.Minh Phương', 'Nguyễn Đức Anh', 'Đàm Phan Hạnh']) {
+    assert.equal(f.getFacility({ fullName: fullName.normalize('NFD') }), 1);
+  }
+  assert.equal(f.getFacility({ fullName: 'Hoàng Minh Tuân' }), null);
+  assert.equal(f.getFacility({ fullName: 'Người khác' }), null);
+  assert.equal(f.getFacility({ id: 2, fullName: 'Kim Mạnh Cường' }, { 2: { name: 'Kim Mạnh Cường', facilityId: 2 } }), 2);
+  assert.equal(f.getFacility({ id: 2, fullName: 'Kim Mạnh Cường' }, { 2: { name: 'Kim Mạnh Cường', facilityId: null } }), null);
+  assert.equal(f.getFacility({ id: 2, fullName: 'Người mới' }, { 2: { name: 'Người cũ', facilityId: 2 } }), null);
+  assert.equal(f.matchesFacility(null, 'unassigned'), true);
+  assert.equal(f.matchesFacility(null, 2), false);
+});
+
+test('Facility totals exclude cancelled and pending meals and include guests at the host site', () => {
+  const f = app.load('utils/facilities.ts');
+  const users = [{ id: 1, fullName: 'Kim Mạnh Cường' }, { id: 2, fullName: 'Test' }];
+  const overrides = { 2: { name: 'Test', facilityId: 2 } };
+  const result = f.summarizeFacilityMeals([
+    { userId: 1, status: 'confirmed', guestCount: 2 },
+    { userId: 2, status: 'completed', guestCount: 1 },
+    { userId: 1, status: 'cancelled', guestCount: 4 },
+    { userId: 1, status: 'pending', guestCount: 5 },
+    { userId: 3, userName: 'Unknown', status: 'confirmed', guestCount: 0 },
+  ], users, overrides);
+  assert.deepEqual(result[1], { staff: 1, guests: 2, total: 3 });
+  assert.deepEqual(result[2], { staff: 1, guests: 1, total: 2 });
+  assert.deepEqual(result.unassigned, { staff: 1, guests: 0, total: 1 });
+});
+
+test('Local facility changes persist without HTTP writes and are isolated by API and mock mode', async () => {
+  const { facilityService } = app.load('services/facilityService.ts');
+  global.fetch = async () => { throw new Error('No network request expected'); };
+  const person = { id: 2, fullName: 'Kim Mạnh Cường' };
+  await facilityService.assign(person, 2);
+  assert.equal((await facilityService.load())[2].facilityId, 2);
+  assert.deepEqual(await facilityService.load(true), {});
+  await app.storage.setItem(keys.API_URL_OVERRIDE, 'https://another.example/api');
+  assert.deepEqual(await facilityService.load(), {});
+  await app.storage.removeItem(keys.API_URL_OVERRIDE);
+  await facilityService.assign(person, null);
+  assert.equal((await facilityService.load())[2].facilityId, null);
+  await assert.rejects(facilityService.assign({ id: 3 }, 1));
 });
 test('API normalizes override URL, attaches bearer token and unwraps payload', async () => {
   await app.storage.setItem(keys.API_URL_OVERRIDE, 'http://localhost:3000///');
