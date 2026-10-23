@@ -137,14 +137,48 @@ function PersonalHomeScreen() {
         rightAction={<TouchableOpacity accessibilityRole="button" accessibilityLabel="Thông báo" onPress={() => router.push('/(tabs)/notifications')} style={styles.notifBtn}><Ionicons name="notifications-outline" size={22} color={colors.text} /></TouchableOpacity>}
       />
       <View style={[styles.hero, wide && styles.heroWide]}>
+        <Ionicons
+          name="restaurant"
+          size={80}
+          color="rgba(255, 255, 255, 0.05)"
+          style={styles.heroWatermark}
+          pointerEvents="none"
+        />
         <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>BỮA TRƯA TẠI LCIT</Text>
-          <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>An tâm bữa trưa,{'\n'}trọn vẹn ngày làm việc.</Text>
-          <Text style={styles.heroNote}>Xem lịch ăn, điều chỉnh suất và theo dõi tiền ăn mỗi ngày.</Text>
+          <View style={styles.heroBadge}>
+            <Ionicons name="sparkles" size={11} color="#DCEAA0" />
+            <Text style={styles.heroBadgeText}>BỮA TRƯA TẠI LCIT</Text>
+          </View>
+          <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>
+            An tâm bữa trưa, trọn vẹn ngày làm việc.
+          </Text>
+          <Text style={styles.heroNote} numberOfLines={compact ? 1 : 2}>
+            Xem lịch ăn, điều chỉnh suất và theo dõi tiền ăn mỗi ngày.
+          </Text>
         </View>
-        <View style={[styles.deadlines, wide && styles.deadlinesWide]}>
-          <View style={styles.deadlineRow}><Ionicons name="time-outline" size={22} color="#DCEAA0" /><View><Text style={styles.deadlineLabel}>Chốt đăng ký</Text><Text style={styles.deadlineTime}>{cutoffTime}</Text></View></View>
-          <View style={styles.deadlineRow}><Ionicons name="alarm-outline" size={22} color="#DCEAA0" /><View><Text style={styles.deadlineLabel}>Cắt suất trước</Text><Text style={styles.deadlineTime}>08:00</Text></View></View>
+
+        <View style={[styles.deadlinesBar, wide && styles.deadlinesBarWide]}>
+          <View style={styles.deadlineCol}>
+            <View style={styles.deadlineIconBox}>
+              <Ionicons name="time" size={15} color="#DCEAA0" />
+            </View>
+            <View style={styles.deadlineInfo}>
+              <Text style={styles.deadlineLabel}>Chốt đăng ký</Text>
+              <Text style={styles.deadlineTime}>{cutoffTime}</Text>
+            </View>
+          </View>
+
+          <View style={styles.deadlinesDivider} />
+
+          <View style={styles.deadlineCol}>
+            <View style={[styles.deadlineIconBox, { backgroundColor: 'rgba(254, 243, 199, 0.15)' }]}>
+              <Ionicons name="alarm" size={15} color="#FDE68A" />
+            </View>
+            <View style={styles.deadlineInfo}>
+              <Text style={styles.deadlineLabel}>Cắt suất trước</Text>
+              <Text style={styles.deadlineTime}>08:00</Text>
+            </View>
+          </View>
         </View>
       </View>
       <View style={[styles.columns, wide && styles.columnsWide]}>
@@ -160,9 +194,23 @@ function PersonalHomeScreen() {
             style={styles.todayCard}
           /> : <Card padding="2xl" style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="cafe-outline" size={32} color={colors.primary} /></View><Text style={styles.actionTitle}>Hôm nay chưa có lịch ăn</Text><Text style={styles.emptyText}>Xem lịch ăn để chủ động sắp xếp những bữa trưa tiếp theo.</Text><Button title="Xem lịch ăn" variant="outline" onPress={() => router.push('/(tabs)/schedule')} /></Card>}
           <Text style={[styles.sectionTitle, {marginTop: 24, marginBottom: 16}]}>Thao tác nhanh</Text>
-          <View style={[styles.quickGrid, compact && styles.quickGridCompact]}>
-            <Card onPress={() => router.push('/(tabs)/schedule')} style={styles.quickCard} padding="xl"><View style={styles.actionIcon}><Ionicons name="calendar-outline" size={24} color={colors.primary} /></View><Text style={styles.actionTitle}>Lịch ăn</Text><Text style={styles.body}>Chủ động sắp xếp bữa trưa</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
-            <Card onPress={() => router.push('/meal-options' as any)} style={styles.quickCard} padding="xl"><View style={[styles.actionIcon, {backgroundColor: '#F4EBD8'}]}><Ionicons name="receipt-outline" size={24} color="#8A672C" /></View><Text style={styles.actionTitle}>Báo cắt suất</Text><Text style={styles.body}>Điều chỉnh những ngày vắng</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
+          <View style={styles.quickGrid}>
+            <Card onPress={() => router.push('/(tabs)/schedule')} style={styles.quickCard} padding="lg">
+              <View style={styles.actionIcon}>
+                <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+              </View>
+              <Text style={styles.actionTitle}>Lịch ăn</Text>
+              <Text style={styles.body}>Chủ động sắp xếp bữa trưa</Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.primary} style={{marginTop: 12}} />
+            </Card>
+            <Card onPress={() => router.push('/meal-options' as any)} style={styles.quickCard} padding="lg">
+              <View style={[styles.actionIcon, {backgroundColor: '#F4EBD8'}]}>
+                <Ionicons name="receipt-outline" size={22} color="#8A672C" />
+              </View>
+              <Text style={styles.actionTitle}>Báo cắt suất</Text>
+              <Text style={styles.body}>Điều chỉnh những ngày vắng</Text>
+              <Ionicons name="arrow-forward" size={18} color={colors.primary} style={{marginTop: 12}} />
+            </Card>
           </View>
         </View>
         <View style={[styles.sideColumn, wide && {width: 320}]}>
@@ -201,13 +249,37 @@ function PersonalHomeScreen() {
 
 const styles = StyleSheet.create({
   datePill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: radius.full, backgroundColor: colors.primary50 },
-  heroWide: { flexDirection: 'row', alignItems: 'center', padding: 30 },
-  heroTitleWide: { fontSize: 32, lineHeight: 42 },
-  deadlines: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, borderTopWidth: 1, borderTopColor: '#356252', paddingTop: 16 },
-  deadlinesWide: { flexDirection: 'column', borderTopWidth: 0, borderLeftWidth: 1, borderLeftColor: '#356252', paddingTop: 0, paddingLeft: 28, minWidth: 180 },
-  deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  deadlineLabel: { fontSize: 12, lineHeight: 18, color: '#C8DED3' },
-  deadlineTime: { fontSize: 22, lineHeight: 30, fontWeight: '700', color: colors.textInverse },
+  heroWide: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 22 },
+  heroTitleWide: { fontSize: 20, lineHeight: 26 },
+  deadlinesBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  deadlinesBarWide: { minWidth: 320 },
+  deadlineCol: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  deadlineIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: 'rgba(220, 234, 160, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deadlineInfo: { flex: 1 },
+  deadlineLabel: { fontSize: 11, lineHeight: 15, color: '#C8DED3', fontWeight: '500' },
+  deadlineTime: { fontSize: 15, lineHeight: 19, fontWeight: '700', color: colors.textInverse, letterSpacing: 0.2 },
+  deadlinesDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    marginHorizontal: 8,
+  },
   todayCard: { padding: 20, marginBottom: 0, borderRadius: 20 },
   quickGridCompact: { flexDirection: 'column' },
   paymentLoading: { paddingVertical: 24, gap: 12, alignItems: 'center' },
@@ -237,16 +309,35 @@ const styles = StyleSheet.create({
   },
   hero: {
     backgroundColor: colors.primaryDark,
-    borderRadius: radius['2xl'],
-    padding: 24,
-    marginBottom: 24,
-    gap: 24,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    gap: 14,
     overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
-  heroCopy: { flex: 1, minWidth: 0 },
-  eyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.8, color: '#DCEAA0', marginBottom: 10 },
-  heroTitle: { fontSize: 24, lineHeight: 34, fontWeight: '800', letterSpacing: -0.6, color: '#FFFFFF' },
-  heroNote: { fontSize: 13, lineHeight: 21, color: '#C8DED3', marginTop: 10, maxWidth: 430 },
+  heroWatermark: {
+    position: 'absolute',
+    right: -8,
+    top: -8,
+  },
+  heroCopy: { flex: 1, minWidth: 0, zIndex: 1 },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    backgroundColor: 'rgba(220, 234, 160, 0.14)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    marginBottom: 8,
+  },
+  heroBadgeText: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: '#DCEAA0' },
+  heroTitle: { fontSize: 16, lineHeight: 22, fontWeight: '700', letterSpacing: -0.3, color: '#FFFFFF' },
+  heroNote: { fontSize: 12, lineHeight: 17, color: '#C8DED3', marginTop: 3, maxWidth: 480 },
   columns: { gap: 28 },
   columnsWide: { flexDirection: 'row', alignItems: 'flex-start' },
   mainColumn: { flex: 1, minWidth: 0 },
@@ -258,16 +349,16 @@ const styles = StyleSheet.create({
   quickGrid: { flexDirection: 'row', gap: 12 },
   quickCard: { flex: 1, minWidth: 0, borderRadius: 18, backgroundColor: colors.surface, borderColor: colors.border },
   actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.lg,
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   actionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
-  body: { fontSize: 13, lineHeight: 19, color: colors.textSecondary },
+  body: { fontSize: 12, lineHeight: 17, color: colors.textSecondary },
   paymentCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,

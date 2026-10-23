@@ -47,7 +47,6 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
   const router = useRouter();
   const { width } = useWindowDimensions();
   const wide = width >= 850;
-  const compact = width < 420;
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
@@ -215,8 +214,8 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
           </TouchableOpacity>
         </View>
         <View style={styles.kpiContainer}>
-          {/* Card 2 & 3: Pending & Outstanding */}
-          <View style={[styles.kpiRowSmall, compact && styles.stacked, wide && { flex: 1.2 }]}>
+          {/* Card 2 & 3: Pending & Outstanding - Hiển thị thành 1 dòng (2 cột) */}
+          <View style={[styles.kpiRowSmall, wide && { flex: 1.2 }]}>
             <Card
               variant="elevated"
               padding="md"
@@ -239,10 +238,10 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <View style={[styles.kpiIconSmall, { backgroundColor: '#FEE2E2' }]}>
                 <Ionicons name="alert-circle" size={16} color="#DC2626" />
               </View>
-              <Text style={[styles.kpiNumberSmall, { color: '#DC2626', fontSize: wide ? 26 : 20 }]}>
+              <Text style={[styles.kpiNumberSmall, { color: '#DC2626', fontSize: wide ? 26 : 18 }]} numberOfLines={1}>
                 {formatCurrency(outstandingAmount)}
               </Text>
-              <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu · Toàn cơ quan</Text>
+              <Text style={styles.kpiSmallLabel} numberOfLines={2}>{unpaidRecords} khoản chưa thu · Toàn cơ quan</Text>
             </Card>
           </View>
         </View>
@@ -551,26 +550,26 @@ const styles = StyleSheet.create({
   kpiCardSmall: {
     flex: 1,
     minWidth: 0,
-    minHeight: 120,
-    padding: 14,
+    minHeight: 110,
+    padding: 12,
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   kpiIconSmall: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
   kpiNumberSmall: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: typography.weights.bold,
   },
   kpiSmallLabel: {
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
     color: colors.textSecondary,
     marginTop: 2,
   },

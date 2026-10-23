@@ -773,9 +773,7 @@ const styles = StyleSheet.create({
   gridLineDashed: {
     flex: 1,
     height: 1,
-    borderTopWidth: 1,
-    borderColor: '#E5ECE8',
-    borderStyle: 'dashed',
+    backgroundColor: '#EDF3EF',
   },
   gridLineSolid: {
     flex: 1,

@@ -533,7 +533,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    borderStyle: 'dashed',
     gap: spacing.xs,
   },
   emptyQrText: {
