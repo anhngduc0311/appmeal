@@ -4,7 +4,7 @@
  * Có Role Guard: Chỉ Admin và Manager được truy cập (chặn cả direct deep link).
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -41,6 +41,29 @@ import { useFacilities } from '../../src/hooks/useFacilities';
 import { useUsersList } from '../../src/hooks/useManagementUsers';
 import { FacilityFilter, facilityLabel, getFacility, matchesFacility, registrationPerson, summarizeFacilityMeals } from '../../src/utils/facilities';
 import { formatBusinessDate } from '../../src/utils/formatters';
+
+const vietnamTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
+  timeZone: 'Asia/Ho_Chi_Minh',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
+function VietnamClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <Text style={styles.vietnamClock} accessibilityLabel={"Giờ Việt Nam, UTC+7, " + vietnamTimeFormatter.format(now)}>
+     Time: {vietnamTimeFormatter.format(now)}
+    </Text>
+  );
+}
 
 export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
@@ -94,9 +117,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
   }
 
   const handleRefresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
-    await Promise.all([refetchHome(), refetchChart(), refetchRegs(), refetchUsers(), refetchFacilityMeals()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([refetchHome(), refetchChart(), refetchRegs(), refetchUsers(), refetchFacilityMeals()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleConfirmAction = async () => {
@@ -138,27 +165,37 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         userRole={role || undefined}
         style={{ alignItems: 'flex-start' }}
         rightAction={
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-            <TouchableOpacity
-              style={styles.refreshHeaderBtn}
-              onPress={handleRefresh}
-              activeOpacity={0.7}
-              accessibilityLabel="Làm mới dữ liệu"
-            >
-              <Ionicons name="refresh" size={20} color={colors.primaryDark} />
-            </TouchableOpacity>
-            {!isTab && (
+          <View style={styles.headerActions}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
               <TouchableOpacity
                 style={styles.refreshHeaderBtn}
-                onPress={() => router.push('/(tabs)/account')}
+                onPress={handleRefresh}
                 activeOpacity={0.7}
-                accessibilityLabel="Tài khoản cá nhân"
+                accessibilityRole="button"
+                accessibilityLabel="Làm mới dữ liệu"
+                accessibilityState={{ busy: refreshing, disabled: refreshing }}
+                disabled={refreshing}
               >
-                <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+                {refreshing ? (
+                  <ActivityIndicator size="small" color={colors.primaryDark} />
+                ) : (
+                  <Ionicons name="refresh" size={20} color={colors.primaryDark} />
+                )}
               </TouchableOpacity>
-            )}
-            <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
-              style={{ width: wide ? 240 : 140, marginVertical: 0 }} />
+              {!isTab && (
+                <TouchableOpacity
+                  style={styles.accountHeaderBtn}
+                  onPress={() => router.push('/(tabs)/account')}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Tài khoản cá nhân"
+                >
+                  <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+                </TouchableOpacity>
+              )}
+              <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
+                style={{ width: wide ? 240 : 140, marginVertical: 0 }} />
+            </View>
+            <VietnamClock />
           </View>
         }
       />
@@ -516,7 +553,28 @@ const styles = StyleSheet.create({
     padding: 2,
     paddingBottom: spacing['3xl'],
   },
+  headerActions: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
+  vietnamClock: {
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
   refreshHeaderBtn: {
+    width: 44,
+    height: 56,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+  },
+  accountHeaderBtn: {
     padding: spacing.xs,
   },
   kpiContainer: {
