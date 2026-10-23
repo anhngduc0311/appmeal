@@ -4,7 +4,7 @@
  * Có Role Guard: Chỉ Admin và Manager được truy cập (chặn cả direct deep link).
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -42,32 +42,11 @@ import { useUsersList } from '../../src/hooks/useManagementUsers';
 import { FacilityFilter, facilityLabel, getFacility, matchesFacility, registrationPerson, summarizeFacilityMeals } from '../../src/utils/facilities';
 import { formatBusinessDate } from '../../src/utils/formatters';
 
-const vietnamTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
-  timeZone: 'Asia/Ho_Chi_Minh',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
-
-function VietnamClock() {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <Text style={styles.vietnamClock} accessibilityLabel={"Giờ Việt Nam, UTC+7, " + vietnamTimeFormatter.format(now)}>
-     Time: {vietnamTimeFormatter.format(now)}
-    </Text>
-  );
-}
-
 export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
-  const wide = useWindowDimensions().width >= 850;
+  const { width } = useWindowDimensions();
+  const wide = width >= 850;
+  const compact = width < 420;
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
@@ -159,10 +138,9 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
     <ScreenContainer scrollable={false} backgroundColor={colors.background}>
       <Header
         title="Tổng quan quản lý"
-        subtitle={`Theo dõi hoạt động bữa ăn · ${user?.fullName || ''}`}
+        subtitle={`Hôm nay · ${formatBusinessDateDisplay(today)}`}
         showBack={isTab ? false : router.canGoBack()}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
-        userRole={role || undefined}
         style={{ alignItems: 'flex-start' }}
         rightAction={
           <View style={styles.headerActions}>
@@ -192,10 +170,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
                   <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
                 </TouchableOpacity>
               )}
-              <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
-                style={{ width: wide ? 240 : 140, marginVertical: 0 }} />
             </View>
-            <VietnamClock />
           </View>
         }
       />
@@ -214,20 +189,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
       >
         {/* KPI Cards Overview */}
         {facilityMealsError && <Text style={styles.sectionSubtitle}>Chưa tải được số suất từng cơ sở. Nhấn làm mới để thử lại.</Text>}
-        <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/management/users')} style={{ minHeight: 44, justifyContent: 'center' }}>
-          <Text style={styles.viewAllText}>Xem danh sách và phân cơ sở →</Text>
-        </TouchableOpacity>
-        <View style={[styles.kpiContainer, wide && { flexDirection: 'row', gap: 16 }]}>
           {/* Card 1: Hôm nay */}
-          <Card variant="elevated" padding="md" style={[styles.kpiCardLarge, wide && { flex: 1 }]}>
+          <Card variant="elevated" padding="md" style={styles.kpiCardLarge}>
             <View style={styles.kpiHeaderRow}>
-              <View style={[styles.kpiIconBox, { backgroundColor: colors.primaryLight }]}>
-                <Ionicons name="restaurant" size={20} color={colors.primaryDark} />
-              </View>
-              <Badge label="Hôm nay" variant="success" size="sm" />
+              <Text style={styles.kpiLabel}>Suất cần nấu hôm nay</Text>
+              <Badge label={facilityLabel(facilityFilter)} variant="success" size="sm" />
             </View>
-            <Text style={styles.kpiBigNumber}>{todaySlots}</Text>
-            <Text style={styles.kpiLabel}>Tổng suất cần nấu hôm nay · {facilityLabel(facilityFilter)}</Text>
+            <Text style={styles.kpiBigNumber}>{todaySlots}<Text style={styles.kpiUnit}> suất</Text></Text>
             <View style={styles.kpiSubRow}>
               <Text style={styles.kpiSubText}>
                 • Cán bộ: <Text style={styles.boldText}>{todayStaffCount}</Text>
@@ -238,8 +206,17 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             </View>
           </Card>
 
+        <View style={styles.filterBar}>
+          <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
+            style={{ flex: 1, maxWidth: 280, marginVertical: 0 }} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quản lý cán bộ và cơ sở" onPress={() => router.push('/management/users')} style={styles.facilityLink}>
+            <Ionicons name="people-outline" size={18} color={colors.primary} />
+            <Text style={styles.viewAllText}>Cán bộ</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.kpiContainer}>
           {/* Card 2 & 3: Pending & Outstanding */}
-          <View style={[styles.kpiRowSmall, wide && { flex: 1.2 }]}>
+          <View style={[styles.kpiRowSmall, compact && styles.stacked, wide && { flex: 1.2 }]}>
             <Card
               variant="elevated"
               padding="md"
@@ -272,8 +249,8 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 
         {/* Biểu đồ số lượng suất ăn & Cán bộ */}
         <Card variant="elevated" padding="md" style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <View>
+          <View style={[styles.chartHeader, !wide && styles.stacked]}>
+            <View style={styles.headingCopy}>
               <Text style={styles.sectionTitle}>Biểu đồ suất ăn thực tế</Text>
               <Text style={styles.sectionSubtitle}>Toàn cơ quan · Chỉ tính các suất đã hoàn thành qua trưa</Text>
             </View>
@@ -288,6 +265,9 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
                     key={p}
                     style={[styles.periodTab, isActive && styles.periodTabActive]}
                     onPress={() => setSelectedPeriod(p)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Xem biểu đồ theo ${label.toLowerCase()}`}
+                    accessibilityState={{ selected: isActive }}
                     activeOpacity={0.7}
                   >
                     <Text style={[styles.periodTabText, isActive && styles.periodTabTextActive]}>
@@ -303,14 +283,19 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <View style={styles.chartLoading}>
               <ActivityIndicator color={colors.primary} />
             </View>
+          ) : points.length === 0 ? (
+            <View style={styles.chartLoading}>
+              <Ionicons name="bar-chart-outline" size={32} color={colors.textMuted} />
+              <Text style={styles.sectionSubtitle}>Chưa có dữ liệu suất ăn trong kỳ này</Text>
+            </View>
           ) : (
-            <View style={styles.barChartWrapper}>
-              <View style={styles.chartBarsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.barChartWrapper}>
+              <View style={[styles.chartBarsContainer, { minWidth: Math.max(points.length * 62, Math.min(width - 100, 940)) }]}>
                 {points.map((pt, idx) => {
                   const heightPercent = maxSlots > 0 ? (pt.total_meal_slots / maxSlots) * 100 : 0;
                   const isZero = pt.total_meal_slots === 0;
                   return (
-                    <View key={idx} style={styles.barCol}>
+                    <View key={idx} style={styles.barCol} accessible accessibilityLabel={`${pt.meal_date}: ${pt.total_meal_slots} suất ăn`}>
                       <Text style={styles.barValueText}>
                         {pt.total_meal_slots > 0 ? pt.total_meal_slots : ''}
                       </Text>
@@ -332,7 +317,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
                   );
                 })}
               </View>
-            </View>
+            </ScrollView>
           )}
         </Card>
 
@@ -398,8 +383,8 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 
         {/* Menu Phân hệ Quản lý & Nghiệp vụ */}
         <View style={styles.sectionWrapper}>
-          <Text style={styles.sectionTitle}>Chức năng Nghiệp vụ Quản trị</Text>
-          <Text style={styles.sectionSubtitle}>Lựa chọn phân hệ cần quản lý bên dưới</Text>
+          <Text style={styles.sectionTitle}>Không gian quản trị</Text>
+          <Text style={styles.sectionSubtitle}>Truy cập nhanh các công việc thường ngày</Text>
 
           <View style={styles.gridMenu}>
             {/* Phân hệ 1: Lịch bếp & Ngày nghỉ */}
@@ -546,6 +531,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 }
 
 const styles = StyleSheet.create({
+  stacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  headingCopy: { flex: 1, minWidth: 0 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginVertical: 12 },
+  facilityLink: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
   content: {
     flex: 1,
   },
@@ -557,15 +549,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: spacing.xs,
   },
-  vietnamClock: {
-    fontSize: 11,
-    lineHeight: 16,
-    color: colors.textSecondary,
-    fontVariant: ['tabular-nums'],
-  },
   refreshHeaderBtn: {
     width: 44,
-    height: 56,
+    height: 44,
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
@@ -575,14 +561,18 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   accountHeaderBtn: {
-    padding: spacing.xs,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kpiContainer: {
-    marginBottom: spacing.md,
+    marginBottom: 16,
+    gap: 12,
   },
   kpiCardLarge: {
-    padding: 24,
-    marginBottom: spacing.sm,
+    padding: 18,
+    borderColor: colors.primaryDark,
     backgroundColor: colors.primaryDark,
   },
   kpiHeaderRow: {
@@ -591,15 +581,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  kpiIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  kpiUnit: { fontSize: 18, fontWeight: '500', color: '#D5E4D8' },
   kpiBigNumber: {
-    fontSize: 44,
+    fontSize: 52,
     fontWeight: typography.weights.extrabold,
     color: '#FFFFFF',
     marginTop: spacing.xs,
@@ -615,7 +599,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingTop: spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: '#356454',
+    flexWrap: 'wrap',
   },
   kpiSubText: {
     fontSize: typography.sizes.xs,
@@ -631,28 +616,32 @@ const styles = StyleSheet.create({
   },
   kpiCardSmall: {
     flex: 1,
-    padding: 20,
+    minWidth: 0,
+    minHeight: 120,
+    padding: 14,
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   kpiIconSmall: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
   kpiNumberSmall: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: typography.weights.bold,
   },
   kpiSmallLabel: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
   chartCard: {
+    padding: 20,
     marginBottom: spacing.lg,
     backgroundColor: colors.surface,
   },
@@ -661,26 +650,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: spacing.md,
+    gap: 16,
   },
   sectionTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   sectionSubtitle: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
   periodTabs: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     backgroundColor: colors.backgroundDark,
     borderRadius: radius.full,
     padding: 2,
   },
   periodTab: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingHorizontal: 16,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: radius.full,
   },
   periodTabActive: {
@@ -691,7 +684,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   periodTabText: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: 13,
     fontWeight: typography.weights.medium,
     color: colors.textMuted,
   },
@@ -706,29 +699,32 @@ const styles = StyleSheet.create({
   },
   barChartWrapper: {
     paddingTop: spacing.sm,
+    flexGrow: 1,
   },
   chartBarsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    height: 120,
+    height: 190,
+    flex: 1,
     paddingHorizontal: spacing.xs,
   },
   barCol: {
     flex: 1,
+    minWidth: 62,
     alignItems: 'center',
     height: '100%',
     justifyContent: 'flex-end',
   },
   barValueText: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: typography.weights.semibold,
     color: colors.textSecondary,
     marginBottom: 2,
   },
   barTrack: {
-    width: 14,
-    height: 80,
+    width: 24,
+    height: 140,
     backgroundColor: colors.backgroundDark,
     borderRadius: radius.full,
     justifyContent: 'flex-end',
@@ -739,7 +735,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   barLabelText: {
-    fontSize: 9,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 4,
   },
@@ -751,6 +747,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   rowAlign: {
     flexDirection: 'row',
@@ -795,12 +793,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pendingName: {
-    fontSize: typography.sizes.xs,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   pendingDate: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   pendingActions: {
@@ -811,16 +809,19 @@ const styles = StyleSheet.create({
   },
   actionBtnSmall: {
     minWidth: 80,
-    height: 32,
+    minHeight: 44,
   },
   gridMenu: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: 16,
   },
   menuGridItem: {
-    width: '48%',
+    width: '47%',
+    flexGrow: 1,
+    minHeight: 176,
+    padding: 18,
     backgroundColor: colors.surface,
     marginBottom: spacing.xs,
   },
