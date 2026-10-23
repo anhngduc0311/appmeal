@@ -28,6 +28,8 @@ import { PasswordInput } from '../../src/components/common/PasswordInput';
 import { ConfirmDialog } from '../../src/components/common/ConfirmDialog';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
 import { EmptyState } from '../../src/components/states/EmptyState';
+import { ErrorState } from '../../src/components/states/ErrorState';
+import { LoadingState } from '../../src/components/states/LoadingState';
 import { useAuth } from '../../src/providers/AuthProvider';
 import {
   useUsersList,
@@ -80,7 +82,7 @@ export default function ManagementUsersScreen() {
   const [usernameError, setUsernameError] = useState('');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
-  const { data: users = [], isLoading, refetch } = useUsersList();
+  const { data: users = [], isLoading, isError, refetch } = useUsersList();
 
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -130,14 +132,17 @@ export default function ManagementUsersScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
+    try {
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const filteredUsers = users.filter((u) => {
     const userRole = extractUserRole(u);
     const matchRole = roleFilter === 'all' || userRole === roleFilter;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     const matchQuery =
       !searchQuery ||
       u.fullName.toLowerCase().includes(q) ||
@@ -241,36 +246,26 @@ export default function ManagementUsersScreen() {
         <Card key={u.id} variant="elevated" padding="md" style={styles.userCard}>
           <View style={styles.userHeader}>
             <View style={styles.avatarCircle}>
-              <Ionicons
-                name={
-                  userRole === 'admin'
-                    ? 'shield-checkmark'
-                    : userRole === 'manager'
-                    ? 'briefcase'
-                    : 'person'
-                }
-                size={18}
-                color={colors.primaryDark}
-              />
+              <Text style={styles.avatarText}>{u.fullName.trim().split(/\s+/).slice(-2).map(part => part[0]).join('').toUpperCase()}</Text>
             </View>
 
             <View style={styles.userInfoCol}>
               <Text style={styles.fullNameText}>{u.fullName}</Text>
               <Text style={styles.usernameText}>@{u.username}</Text>
-              <Text style={styles.usernameText}>{facilityLabel(getFacility(u, overrides))}</Text>
             </View>
 
             <View style={styles.badgesCol}>
-              <Badge
-                label={getRoleDisplayName(userRole)}
-                variant={getRoleBadgeVariant(userRole)}
-                size="sm"
-              />
+              <Text style={[styles.statusPill, !isActive && styles.statusLocked]}>{isActive ? 'Hoạt động' : 'Đã khóa'}</Text>
             </View>
+          </View>
+          <View style={styles.identityRow}>
+            <Badge label={getRoleDisplayName(userRole)} variant={getRoleBadgeVariant(userRole)} size="sm" />
+            <Text style={styles.metaText}><Ionicons name="business-outline" size={13} /> {facilityLabel(getFacility(u, overrides))}</Text>
+            {u.id === currentUser?.id && <Text style={styles.selfLabel}>Bạn</Text>}
           </View>
 
           {/* Contact info */}
-          <View style={styles.metaRow}>
+          {(u.phone || u.email) && <View style={styles.metaRow}>
             {u.phone && (
               <Text style={styles.metaText}>
                 <Ionicons name="call-outline" size={12} color={colors.textMuted} /> {u.phone}
@@ -281,17 +276,19 @@ export default function ManagementUsersScreen() {
                 <Ionicons name="mail-outline" size={12} color={colors.textMuted} /> {u.email}
               </Text>
             )}
-            <Text style={[styles.metaText, { color: isActive ? '#15803D' : '#DC2626' }]}>
-              • {isActive ? 'Hoạt động' : 'Đã khóa'}
-            </Text>
-          </View>
+          </View>}
 
           {/* Admin Actions */}
-          {isAdmin && <Button title="Phân cơ sở" variant="ghost" disabled={loadingFacilities} onPress={() => setFacilityTarget(u)} />}
           {isAdmin && (
             <View style={styles.userFooter}>
+              <TouchableOpacity style={styles.actionBtnSmall} accessibilityRole="button" accessibilityLabel={`Phân cơ sở cho ${u.fullName}`} accessibilityState={{ disabled: loadingFacilities }} disabled={loadingFacilities} onPress={() => setFacilityTarget(u)}>
+                <Ionicons name="business-outline" size={16} color={loadingFacilities ? colors.textMuted : colors.primary} />
+                <Text style={styles.actionBtnText}>Phân cơ sở</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionBtnSmall}
+                accessibilityRole="button"
+                accessibilityLabel={`Chỉnh sửa ${u.fullName}`}
                 onPress={() => {
                   setSelectedUser(u);
                   setFormFullName(u.fullName);
@@ -307,12 +304,14 @@ export default function ManagementUsersScreen() {
                 activeOpacity={0.7}
               >
                 <Ionicons name="create-outline" size={16} color={colors.primary} />
-                <Text style={styles.actionBtnText}>Sửa / Đổi vai trò</Text>
+                <Text style={styles.actionBtnText}>Chỉnh sửa</Text>
               </TouchableOpacity>
 
               {u.id !== currentUser?.id && (
                 <TouchableOpacity
                   style={styles.deleteBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Xóa tài khoản ${u.fullName}`}
                   onPress={() => setDeleteTargetId(u.id)}
                   activeOpacity={0.7}
                 >
@@ -355,30 +354,37 @@ export default function ManagementUsersScreen() {
   const ListHeader = (
     <View>
       <Header
-        title="Quản lý Người Dùng & Vai Trò"
-        subtitle={isAdmin ? 'Tạo tài khoản, phân quyền Role và trạng thái' : 'Danh sách cán bộ cơ quan (Chỉ xem)'}
+        title="Người dùng"
+        subtitle={isAdmin ? 'Tài khoản & phân quyền' : 'Danh sách cán bộ · Chỉ xem'}
         showBack
         onBack={() => router.back()}
-        userRole={role || undefined}
+        rightAction={isAdmin ? (
+          <TouchableOpacity style={styles.addButton} onPress={handleOpenCreateModal} accessibilityRole="button" accessibilityLabel="Thêm người dùng mới">
+            <Ionicons name="add" size={20} color={colors.textInverse} />
+            <Text style={styles.addButtonText}>Thêm</Text>
+          </TouchableOpacity>
+        ) : undefined}
       />
 
-      <FacilitySelector value={facilityFilter} onChange={setFacilityFilter} />
-      <Text style={styles.metaText}>Danh sách trong ảnh được xếp vào cơ sở 1. Các thay đổi phân cơ sở chỉ lưu trên thiết bị này, chưa đồng bộ sang máy khác.</Text>
       {/* Search Input */}
       <View style={styles.searchBarWrapper}>
-        <Ionicons name="search" size={16} color={colors.textMuted} style={styles.searchIcon} />
         <Input
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="Tìm theo họ tên, tên đăng nhập, SĐT..."
-          style={styles.searchInput}
+          placeholder="Tìm tên, tài khoản, SĐT, email"
+          accessibilityLabel="Tìm kiếm người dùng"
+          autoCapitalize="none"
+          containerStyle={{ marginBottom: 0 }}
+          inputStyle={{ fontSize: 14 }}
+          leftIcon={<Ionicons name="search-outline" size={20} color={colors.textSecondary} />}
+          rightIcon={searchQuery ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn} accessibilityRole="button" accessibilityLabel="Xóa từ khóa tìm kiếm">
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          ) : undefined}
         />
-        {searchQuery ? (
-          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
-            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-        ) : null}
       </View>
+      <FacilitySelector value={facilityFilter} onChange={setFacilityFilter} style={{ marginVertical: 8 }} />
 
       {/* Role Filter Chips */}
       <View style={styles.chipsRow}>
@@ -396,6 +402,8 @@ export default function ManagementUsersScreen() {
                 key={c.id}
                 style={[styles.chip, isSelected && styles.chipSelected]}
                 onPress={() => setRoleFilter(c.id)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
@@ -406,20 +414,28 @@ export default function ManagementUsersScreen() {
           })}
         </ScrollView>
       </View>
+      <View style={styles.resultsRow}>
+        <Text style={styles.resultsText}>{isLoading || loadingFacilities ? 'Đang tải danh sách…' : isError ? 'Chưa tải được danh sách' : `${filteredUsers.length} người dùng · ${facilityLabel(facilityFilter)}`}</Text>
+        {(searchQuery || roleFilter !== 'all' || facilityFilter !== 'all') && (
+          <TouchableOpacity style={styles.resetButton} accessibilityRole="button" onPress={() => { setSearchQuery(''); setRoleFilter('all'); setFacilityFilter('all'); }}>
+            <Text style={styles.actionBtnText}>Bỏ lọc</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 
   return (
     <ScreenContainer scrollable={false} backgroundColor={colors.background}>
       <FlatList
-        data={filteredUsers}
+        data={loadingFacilities ? [] : filteredUsers}
         keyExtractor={(item) => String(item.id)}
         renderItem={renderUserItem}
         ListHeaderComponent={ListHeader}
         ListEmptyComponent={
-          <EmptyState
+          isLoading || loadingFacilities ? <LoadingState message="Đang tải người dùng…" /> : isError ? <ErrorState title="Chưa tải được người dùng" onRetry={handleRefresh} /> : <EmptyState
             title="Không tìm thấy người dùng nào"
-            description="Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc vai trò."
+            description="Thử đổi từ khóa, vai trò hoặc chọn cơ sở khác."
           />
         }
         showsVerticalScrollIndicator={false}
@@ -429,20 +445,8 @@ export default function ManagementUsersScreen() {
         initialNumToRender={15}
         maxToRenderPerBatch={10}
         windowSize={5}
+        keyboardShouldPersistTaps="handled"
       />
-
-      {/* Nút Thêm Người Dùng ở góc dưới bên phải (Floating Action Button) */}
-      {isAdmin && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={handleOpenCreateModal}
-          activeOpacity={0.85}
-          accessibilityLabel="Thêm người dùng mới"
-          accessibilityRole="button"
-        >
-          <Ionicons name="person-add" size={24} color={colors.textInverse} />
-        </TouchableOpacity>
-      )}
 
       <Modal visible={facilityTarget !== null} transparent animationType="fade" onRequestClose={() => { if (!assignment.isPending) setFacilityTarget(null); }}>
         <View style={styles.modalOverlay}>
@@ -470,12 +474,12 @@ export default function ManagementUsersScreen() {
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo tài khoản người dùng mới</Text>
-              <TouchableOpacity onPress={() => setIsCreateOpen(false)} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.deleteBtn} accessibilityRole="button" accessibilityLabel="Đóng biểu mẫu tạo tài khoản" onPress={() => setIsCreateOpen(false)} activeOpacity={0.7}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Input
                 label="Họ và tên cán bộ (bắt buộc)"
                 value={formFullName}
@@ -572,12 +576,12 @@ export default function ManagementUsersScreen() {
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chỉnh sửa tài khoản</Text>
-              <TouchableOpacity onPress={() => setIsEditOpen(false)} activeOpacity={0.7}>
+              <TouchableOpacity style={styles.deleteBtn} accessibilityRole="button" accessibilityLabel="Đóng biểu mẫu chỉnh sửa" onPress={() => setIsEditOpen(false)} activeOpacity={0.7}>
                 <Ionicons name="close" size={22} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               <Text style={styles.usernameInfo}>
                 Tài khoản: <Text style={styles.boldText}>@{selectedUser?.username}</Text>
               </Text>
@@ -697,83 +701,79 @@ export default function ManagementUsersScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: spacing.md,
-    paddingBottom: 88,
+    padding: 2,
+    paddingBottom: 24,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
+  addButton: {
+    flexDirection: 'row',
+    gap: 4,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 8,
-    shadowColor: colors.primaryDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    zIndex: 99,
   },
+  addButtonText: { color: colors.textInverse, fontSize: 13, fontWeight: '600' },
+  avatarText: { color: colors.primaryDark, fontSize: 14, fontWeight: '700' },
+  identityRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginTop: 8 },
+  selfLabel: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  statusPill: { color: '#166534', backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, fontSize: 11, fontWeight: '600' },
+  statusLocked: { color: '#991B1B', backgroundColor: '#FEF2F2' },
+  resultsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 44, marginBottom: 4 },
+  resultsText: { flex: 1, color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  resetButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
   searchBarWrapper: {
-    position: 'relative',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.xs,
-  },
-  searchIcon: {
-    position: 'absolute',
-    left: 24,
-    top: 22,
-    zIndex: 1,
-  },
-  searchInput: {
-    paddingLeft: 34,
-    height: 42,
+    marginTop: 4,
   },
   clearBtn: {
-    position: 'absolute',
-    right: 24,
-    top: 22,
-    zIndex: 1,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipsRow: {
     paddingVertical: spacing.xs,
   },
   chipsScroll: {
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
+    gap: 6,
   },
   chip: {
     paddingHorizontal: spacing.md,
-    paddingVertical: 5,
-    borderRadius: radius.full,
-    backgroundColor: colors.backgroundDark,
+    minHeight: 44,
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   chipSelected: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   chipTextSelected: {
-    color: colors.primaryDark,
+    color: colors.textInverse,
     fontWeight: typography.weights.bold,
   },
   userCard: {
-    marginBottom: spacing.xs,
+    marginBottom: 10,
+    padding: 14,
+    shadowOpacity: 0,
+    elevation: 0,
     backgroundColor: colors.surface,
   },
   userHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: spacing.xs,
   },
   avatarCircle: {
-    width: 36,
-    height: 36,
+    width: 42,
+    height: 42,
     borderRadius: radius.full,
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
@@ -782,14 +782,18 @@ const styles = StyleSheet.create({
   },
   userInfoCol: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   fullNameText: {
-    fontSize: typography.sizes.xs,
+    fontSize: 15,
+    lineHeight: 21,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   usernameText: {
-    fontSize: 10,
+    fontSize: 12,
+    lineHeight: 18,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -800,37 +804,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.md,
-    paddingVertical: 4,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    marginTop: 4,
+    paddingVertical: 6,
+    marginTop: 6,
   },
   metaText: {
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: 18,
+    flexShrink: 1,
     color: colors.textSecondary,
   },
   userFooter: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: spacing.xs,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
-    marginTop: spacing.xs,
+    marginTop: 10,
   },
   actionBtnSmall: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 4,
+    minHeight: 44,
+    paddingHorizontal: 4,
   },
   actionBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.primaryDark,
     fontWeight: typography.weights.semibold,
   },
   deleteBtn: {
-    padding: 6,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalOverlay: {
     flex: 1,
@@ -841,6 +851,7 @@ const styles = StyleSheet.create({
   },
   modalDialog: {
     width: '100%',
+    maxWidth: 540,
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
     padding: spacing.lg,
@@ -853,6 +864,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   modalTitle: {
+    flex: 1,
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.bold,
     color: colors.text,
@@ -877,12 +889,15 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   roleChip: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: radius.md,
     backgroundColor: colors.backgroundDark,
   },

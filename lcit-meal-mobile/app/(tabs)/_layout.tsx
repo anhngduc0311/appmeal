@@ -11,7 +11,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnseenNotificationCount } from '../../src/hooks/useNotificationsData';
 import { colors } from '../../src/theme/colors';
-import { typography } from '../../src/theme/typography';
 import { useAuth } from '../../src/providers/AuthProvider';
 
 export default function TabLayout() {
@@ -26,7 +25,7 @@ export default function TabLayout() {
     insets.bottom,
     Platform.OS === 'android' ? 16 : 8
   );
-  const tabHeight = 60 + bottomInset;
+  const tabHeight = 62 + bottomInset;
 
   return (
     <Tabs
@@ -36,11 +35,17 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarActiveBackgroundColor: colors.primary50,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 2,
+          marginBottom: Platform.OS === 'ios' ? 0 : 2,
+        },
         tabBarItemStyle: {
           borderRadius: 12,
           marginHorizontal: 3,
           marginVertical: 2,
-          paddingVertical: 2,
+          paddingVertical: 4,
         },
         tabBarStyle: {
           backgroundColor: colors.surface,
@@ -48,19 +53,12 @@ export default function TabLayout() {
           borderTopWidth: 1,
           height: tabHeight,
           paddingBottom: bottomInset,
-          paddingTop: 6,
+          paddingTop: 4,
           elevation: 8,
           shadowColor: colors.primaryDark,
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.04,
           shadowRadius: 6,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          lineHeight: 14,
-          fontWeight: typography.weights.semibold,
-          marginTop: 2,
-          includeFontPadding: false,
         },
       }}
     >
@@ -68,10 +66,11 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Trang chủ',
+          tabBarLabel: 'Trang chủ',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
-              size={22}
+              size={20}
               color={color}
             />
           ),
@@ -83,10 +82,11 @@ export default function TabLayout() {
         options={{
           href: (role === 'kitchen' || role === 'admin') ? null : '/schedule',
           title: 'Lịch ăn',
+          tabBarLabel: 'Lịch ăn',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'calendar' : 'calendar-outline'}
-              size={22}
+              size={20}
               color={color}
             />
           ),
@@ -98,10 +98,11 @@ export default function TabLayout() {
         options={{
           href: (role === 'kitchen' || role === 'admin') ? null : '/payments',
           title: 'Thanh toán',
+          tabBarLabel: 'Thanh toán',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'wallet' : 'wallet-outline'}
-              size={22}
+              size={20}
               color={color}
             />
           ),
@@ -113,6 +114,7 @@ export default function TabLayout() {
         options={{
           href: role === 'kitchen' ? null : '/notifications',
           title: 'Thông báo',
+          tabBarLabel: 'Thông báo',
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.status.cancelled.dot,
@@ -122,7 +124,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'notifications' : 'notifications-outline'}
-              size={22}
+              size={20}
               color={color}
             />
           ),
@@ -132,10 +134,11 @@ export default function TabLayout() {
         name="account"
         options={{
           title: 'Tài khoản',
+          tabBarLabel: 'Tài khoản',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}
-              size={22}
+              size={20}
               color={color}
             />
           ),

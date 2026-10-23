@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
+import { ManagementMealChart } from '../../src/components/management/ManagementMealChart';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
@@ -132,7 +133,6 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 
   // Chart data calculation
   const points = chartData?.data || homeData?.weeklyChart || [];
-  const maxSlots = Math.max(...points.map((p) => p.total_meal_slots || 0), 1);
 
   return (
     <ScreenContainer scrollable={false} backgroundColor={colors.background}>
@@ -248,78 +248,12 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         </View>
 
         {/* Biểu đồ số lượng suất ăn & Cán bộ */}
-        <Card variant="elevated" padding="md" style={styles.chartCard}>
-          <View style={[styles.chartHeader, !wide && styles.stacked]}>
-            <View style={styles.headingCopy}>
-              <Text style={styles.sectionTitle}>Biểu đồ suất ăn thực tế</Text>
-              <Text style={styles.sectionSubtitle}>Toàn cơ quan · Chỉ tính các suất đã hoàn thành qua trưa</Text>
-            </View>
-
-            {/* Period selector */}
-            <View style={styles.periodTabs}>
-              {(['week', 'month', 'year'] as const).map((p) => {
-                const isActive = selectedPeriod === p;
-                const label = p === 'week' ? 'Tuần' : p === 'month' ? 'Tháng' : 'Năm';
-                return (
-                  <TouchableOpacity
-                    key={p}
-                    style={[styles.periodTab, isActive && styles.periodTabActive]}
-                    onPress={() => setSelectedPeriod(p)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Xem biểu đồ theo ${label.toLowerCase()}`}
-                    accessibilityState={{ selected: isActive }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.periodTabText, isActive && styles.periodTabTextActive]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {isLoadingChart ? (
-            <View style={styles.chartLoading}>
-              <ActivityIndicator color={colors.primary} />
-            </View>
-          ) : points.length === 0 ? (
-            <View style={styles.chartLoading}>
-              <Ionicons name="bar-chart-outline" size={32} color={colors.textMuted} />
-              <Text style={styles.sectionSubtitle}>Chưa có dữ liệu suất ăn trong kỳ này</Text>
-            </View>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator contentContainerStyle={styles.barChartWrapper}>
-              <View style={[styles.chartBarsContainer, { minWidth: Math.max(points.length * 62, Math.min(width - 100, 940)) }]}>
-                {points.map((pt, idx) => {
-                  const heightPercent = maxSlots > 0 ? (pt.total_meal_slots / maxSlots) * 100 : 0;
-                  const isZero = pt.total_meal_slots === 0;
-                  return (
-                    <View key={idx} style={styles.barCol} accessible accessibilityLabel={`${pt.meal_date}: ${pt.total_meal_slots} suất ăn`}>
-                      <Text style={styles.barValueText}>
-                        {pt.total_meal_slots > 0 ? pt.total_meal_slots : ''}
-                      </Text>
-                      <View style={styles.barTrack}>
-                        <View
-                          style={[
-                            styles.barFill,
-                            {
-                              height: `${Math.max(heightPercent, 4)}%`,
-                              backgroundColor: isZero ? colors.borderLight : colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.barLabelText} numberOfLines={1}>
-                        {pt.meal_date.includes('(') ? pt.meal_date.split(' ')[0] : pt.meal_date}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          )}
-        </Card>
+        <ManagementMealChart
+          points={points}
+          isLoading={isLoadingChart}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
 
         {/* Hàng chờ duyệt nhanh (Pending queue) */}
         {scopedPending.length > 0 && (
@@ -640,18 +574,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  chartCard: {
-    padding: 20,
-    marginBottom: spacing.lg,
-    backgroundColor: colors.surface,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-    gap: 16,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: typography.weights.bold,
@@ -662,82 +584,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
-  },
-  periodTabs: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    backgroundColor: colors.backgroundDark,
-    borderRadius: radius.full,
-    padding: 2,
-  },
-  periodTab: {
-    paddingHorizontal: 16,
-    minHeight: 44,
-    justifyContent: 'center',
-    borderRadius: radius.full,
-  },
-  periodTabActive: {
-    backgroundColor: colors.surface,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  periodTabText: {
-    fontSize: 13,
-    fontWeight: typography.weights.medium,
-    color: colors.textMuted,
-  },
-  periodTabTextActive: {
-    color: colors.primaryDark,
-    fontWeight: typography.weights.bold,
-  },
-  chartLoading: {
-    height: 140,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  barChartWrapper: {
-    paddingTop: spacing.sm,
-    flexGrow: 1,
-  },
-  chartBarsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 190,
-    flex: 1,
-    paddingHorizontal: spacing.xs,
-  },
-  barCol: {
-    flex: 1,
-    minWidth: 62,
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'flex-end',
-  },
-  barValueText: {
-    fontSize: 12,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  barTrack: {
-    width: 24,
-    height: 140,
-    backgroundColor: colors.backgroundDark,
-    borderRadius: radius.full,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  barFill: {
-    width: '100%',
-    borderRadius: radius.full,
-  },
-  barLabelText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 4,
   },
   sectionWrapper: {
     marginBottom: spacing.lg,
