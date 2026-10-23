@@ -30,16 +30,17 @@ import {
 } from '../../src/hooks/useMealsData';
 import { MealOption, MealOptionType } from '../../src/types';
 import {
-  formatBusinessDate,
   formatDisplayDate,
 } from '../../src/utils/formatters';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
+import { CANCELLATION_CLOSED_MESSAGE, isCancellationClosed } from '../../src/utils/cancellationDeadline';
 
 export default function MealOptionsScreen() {
-  const todayStr = formatBusinessDate(new Date());
+  const { today: todayStr, now } = useCancellationDeadline();
 
   // Tab: 'create' | 'history'
   const [activeTab, setActiveTab] = useState<'create' | 'history'>('create');
@@ -58,6 +59,7 @@ export default function MealOptionsScreen() {
   // Queries & Mutations
   const { data: options = [], isLoading: loadingOptions, refetch: refetchOptions } = useMyMealOptions();
   const createMutation = useCreateMealOptionMutation();
+  const cancelClosed = isCancellationClosed(optionType === 'cancel_today' ? todayStr : fromDate, now);
 
   const handleSubmit = async () => {
     if (!fromDate) {
@@ -94,6 +96,7 @@ export default function MealOptionsScreen() {
       setActiveTab('history');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Tạo yêu cầu cắt suất thất bại.';
+      setBannerMessage({ variant: 'error', text: msg });
       Alert.alert('Lỗi thao tác', msg);
     }
   };
@@ -343,10 +346,10 @@ export default function MealOptionsScreen() {
                     color={optionType === 'cancel_today' ? colors.status.confirmed.dot : colors.status.pending.dot}
                   />
                   <Text style={styles.policyText}>
-                    {optionType === 'cancel_today' ? (
+                    {cancelClosed ? CANCELLATION_CLOSED_MESSAGE + ' Vui lòng chọn ngày bắt đầu từ ngày mai.' : optionType === 'cancel_today' ? (
                       <>
                         Yêu cầu cắt hôm nay sẽ được{' '}
-                        <Text style={styles.policyBold}>tự động duyệt ngay</Text> nếu thực hiện trước giờ chốt quy định.
+                        <Text style={styles.policyBold}>tự động duyệt ngay</Text> nếu thực hiện trước 08:00 sáng (giờ Việt Nam).
                       </>
                     ) : (
                       <>
@@ -359,11 +362,11 @@ export default function MealOptionsScreen() {
 
                 {/* Nút gửi yêu cầu */}
                 <Button
-                  title="Xác nhận gửi yêu cầu cắt suất"
+                  title={cancelClosed ? 'Quá hạn cắt suất' : 'Xác nhận gửi yêu cầu cắt suất'}
                   variant="primary"
                   size="lg"
                   loading={createMutation.isPending}
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || cancelClosed}
                   onPress={handleSubmit}
                   fullWidth
                   style={styles.submitBtn}

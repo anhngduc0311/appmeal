@@ -28,6 +28,7 @@ export interface ConfirmDialogProps {
   isDestructive?: boolean;
   variant?: 'primary' | 'danger' | 'secondary';
   loading?: boolean;
+  confirmDisabled?: boolean;
   iconName?: string;
   children?: React.ReactNode;
   onConfirm: () => void;
@@ -43,6 +44,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   isDestructive = false,
   variant,
   loading = false,
+  confirmDisabled = false,
   iconName,
   children,
   onConfirm,
@@ -96,6 +98,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 />
                 <Button
                   title={confirmText}
+                  disabled={confirmDisabled}
                   variant={isDanger ? 'danger' : 'primary'}
                   size="md"
                   loading={loading}

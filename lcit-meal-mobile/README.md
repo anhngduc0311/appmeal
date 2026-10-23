@@ -68,6 +68,33 @@ kiểm chứng SecureStore trên thiết bị. Entry point cũ `verify-phase5.js
 cùng bộ test trực tiếp source. Xem `scripts/tests/UI-CHECKLIST.md` cho kiểm
 tra giao diện web và checklist Android trước phát hành.
 
+### Phân cơ sở trên giao diện
+
+Danh sách trong ảnh được khai báo tại `src/utils/facilities.ts` và mặc định
+thuộc cơ sở 1, gồm các cách ghi tài khoản đã đối chiếu. Tên chưa khớp nằm ở
+“Chưa phân cơ sở”, không tự chuyển sang cơ sở 2. Admin vào Người dùng →
+Phân cơ sở để chọn cơ sở 1, cơ sở 2 hoặc bỏ phân nhóm.
+
+Thay đổi lưu trên thiết bị/trình duyệt hiện tại, tách theo API và chế độ demo;
+không ghi lên API, không đồng bộ sang máy khác và không đổi nơi ăn theo ngày.
+Xóa dữ liệu ứng dụng/trình duyệt sẽ mất các chỉnh sửa này.
+Tổng quan tính số suất hôm nay theo các đăng ký confirmed/completed và tính
+khách cùng cơ sở cán bộ đăng ký. Danh sách đăng ký/cắt suất và người dùng có
+bộ lọc cơ sở, mặc định là cơ sở 1 và không có lựa chọn “Tất cả cơ sở”.
+Biểu đồ và công nợ vẫn là toàn cơ quan. Nút xuất Excel được ẩn vì API chưa
+hỗ trợ xuất theo cơ sở, tránh xuất sai phạm vi đang xem.
+Tài khoản bếp vẫn xem tổng toàn cơ quan do API hiện tại không cấp quyền đọc
+danh sách đăng ký cho vai trò bếp.
+
+### Hạn cắt suất
+
+Ứng dụng khóa cắt suất của ngày ăn từ 08:00 sáng theo giờ Việt Nam. Nút và
+hộp xác nhận tự cập nhật khi đến giờ chốt; service kiểm tra lại trước khi gửi
+yêu cầu để chặn cả hộp thoại mở từ trước 08:00. Cắt theo khoảng/dài hạn bắt
+đầu từ ngày đã khóa cũng bị chặn; vẫn được chọn ngày tương lai.
+Đây là kiểm tra phía ứng dụng, dùng đồng hồ thiết bị; API hiện tại không được
+thay đổi nên quy tắc chưa được cưỡng chế với các ứng dụng khác hoặc lệnh gọi API trực tiếp.
+
 ---
 
 ## ⚙️ 3. Cấu hình Môi trường & Backend URL

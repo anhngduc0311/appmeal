@@ -6,6 +6,7 @@
 import { apiClient, extractDataList } from './apiClient';
 import { mockStore } from './mockStore';
 import { systemSettingService } from './systemSettingService';
+import { assertCancellationAllowed, vietnamToday } from '../utils/cancellationDeadline';
 import {
   Meal,
   MealRegistration,
@@ -286,8 +287,16 @@ export const mealService = {
     reason?: string,
     useMock = false
   ): Promise<MealRegistration> {
+    // Resolve the actual meal date and recheck immediately before the write, even
+    // if the confirmation dialog was opened before 08:00.
+    const registration = useMock
+      ? mockStore.getAllRegistrations().find(record => record.id === registrationId)
+      : await apiClient<MealRegistration>(`/meal-registrations/${registrationId}`);
+    if (!registration) throw new Error('Không tìm thấy suất ăn để cắt.');
+    assertCancellationAllowed(registration.mealDate || registration.meal?.mealDate);
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
+      assertCancellationAllowed(registration.mealDate || registration.meal?.mealDate);
       const res = mockStore.cancelMealRegistration(registrationId);
       if (!res) throw new Error('Không tìm thấy suất ăn để cắt.');
       return res;
@@ -411,8 +420,12 @@ export const mealService = {
    * Tạo yêu cầu cắt suất: POST /api/meal-options
    */
   async createMealOption(data: CreateMealOptionRequest, useMock = false): Promise<MealOption> {
+    // A range or permanent request may not cancel today's already locked meal.
+    assertCancellationAllowed(data.fromDate);
+    if (data.type === 'cancel_today') assertCancellationAllowed(vietnamToday());
     if (useMock) {
       await new Promise((res) => setTimeout(res, 300));
+      assertCancellationAllowed(data.type === 'cancel_today' ? vietnamToday() : data.fromDate);
       return mockStore.createMealOption(data.type, data.fromDate, data.toDate, data.note, data.userId);
     }
     return await apiClient<MealOption>('/meal-options', {

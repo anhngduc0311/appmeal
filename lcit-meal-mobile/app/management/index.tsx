@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
+import { ManagementMealChart } from '../../src/components/management/ManagementMealChart';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
@@ -36,13 +37,26 @@ import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
+import { FacilitySelector } from '../../src/components/common/FacilitySelector';
+import { useFacilities } from '../../src/hooks/useFacilities';
+import { useUsersList } from '../../src/hooks/useManagementUsers';
+import { FacilityFilter, facilityLabel, getFacility, matchesFacility, registrationPerson, summarizeFacilityMeals } from '../../src/utils/facilities';
+import { formatBusinessDate } from '../../src/utils/formatters';
 
 export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
-  const wide = useWindowDimensions().width >= 850;
+  const { width } = useWindowDimensions();
+  const wide = width >= 850;
+  const compact = width < 420;
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
   const [refreshing, setRefreshing] = useState(false);
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
+  const { overrides, isLoading: loadingFacilities } = useFacilities();
+  const { data: facilityUsers = [], refetch: refetchUsers } = useUsersList();
+  const today = formatBusinessDate(new Date());
+  const { data: todayRegistrations = [], isLoading: loadingFacilityMeals, isError: facilityMealsError, refetch: refetchFacilityMeals } =
+    useManagementRegistrations({ from: today, to: today });
 
   // Quick action state
   const [selectedRegId, setSelectedRegId] = useState<number | null>(null);
@@ -83,9 +97,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
   }
 
   const handleRefresh = async () => {
+    if (refreshing) return;
     setRefreshing(true);
-    await Promise.all([refetchHome(), refetchChart(), refetchRegs()]);
-    setRefreshing(false);
+    try {
+      await Promise.all([refetchHome(), refetchChart(), refetchRegs(), refetchUsers(), refetchFacilityMeals()]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleConfirmAction = async () => {
@@ -101,45 +119,58 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
     refetchRegs();
   };
 
-  const todaySlots = homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 0;
-  const todayStaffCount = homeData?.todayStaff?.registered_staff_count ?? 0;
-  const todayGuestCount = homeData?.todayStaff?.total_guest_count ?? 0;
-  const pendingCount = pendingRegs.length || homeData?.pendingMealOptionCount || 0;
+  const facilitySummary = summarizeFacilityMeals(todayRegistrations, facilityUsers, overrides);
+  const selectedSummary = facilityFilter === 'all' ? null : facilitySummary[facilityFilter];
+  const facilityReady = !loadingFacilityMeals && !loadingFacilities && !facilityMealsError;
+  const cancelled = Boolean(homeData?.todayMeal?.isCancelled ?? homeData?.todayMeal?.is_cancelled);
+  const todaySlots = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.total) : '—') : homeData?.todayStaff?.total_meal_slots ?? homeData?.todayMeal?.total_meal_slots ?? 0;
+  const todayStaffCount = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.staff) : '—') : homeData?.todayStaff?.registered_staff_count ?? 0;
+  const todayGuestCount = selectedSummary ? (facilityReady ? (cancelled ? 0 : selectedSummary.guests) : '—') : homeData?.todayStaff?.total_guest_count ?? 0;
+  const scopedPending = pendingRegs.filter(record => matchesFacility(getFacility(registrationPerson(record, facilityUsers), overrides), facilityFilter));
+  const pendingCount = facilityFilter === 'all' ? pendingRegs.length || homeData?.pendingMealOptionCount || 0 : scopedPending.length;
   const outstandingAmount = homeData?.outstanding?.total_outstanding_amount ?? 0;
   const unpaidRecords = homeData?.outstanding?.unpaid_record_count ?? 0;
 
   // Chart data calculation
   const points = chartData?.data || homeData?.weeklyChart || [];
-  const maxSlots = Math.max(...points.map((p) => p.total_meal_slots || 0), 1);
 
   return (
     <ScreenContainer scrollable={false} backgroundColor={colors.background}>
       <Header
         title="Tổng quan quản lý"
-        subtitle={`Theo dõi hoạt động bữa ăn · ${user?.fullName || ''}`}
+        subtitle={`Hôm nay · ${formatBusinessDateDisplay(today)}`}
         showBack={isTab ? false : router.canGoBack()}
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))}
-        userRole={role || undefined}
+        style={{ alignItems: 'flex-start' }}
         rightAction={
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TouchableOpacity
-              style={styles.refreshHeaderBtn}
-              onPress={handleRefresh}
-              activeOpacity={0.7}
-              accessibilityLabel="Làm mới dữ liệu"
-            >
-              <Ionicons name="refresh" size={20} color={colors.primaryDark} />
-            </TouchableOpacity>
-            {!isTab && (
+          <View style={styles.headerActions}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
               <TouchableOpacity
                 style={styles.refreshHeaderBtn}
-                onPress={() => router.push('/(tabs)/account')}
+                onPress={handleRefresh}
                 activeOpacity={0.7}
-                accessibilityLabel="Tài khoản cá nhân"
+                accessibilityRole="button"
+                accessibilityLabel="Làm mới dữ liệu"
+                accessibilityState={{ busy: refreshing, disabled: refreshing }}
+                disabled={refreshing}
               >
-                <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+                {refreshing ? (
+                  <ActivityIndicator size="small" color={colors.primaryDark} />
+                ) : (
+                  <Ionicons name="refresh" size={20} color={colors.primaryDark} />
+                )}
               </TouchableOpacity>
-            )}
+              {!isTab && (
+                <TouchableOpacity
+                  style={styles.accountHeaderBtn}
+                  onPress={() => router.push('/(tabs)/account')}
+                  activeOpacity={0.7}
+                  accessibilityLabel="Tài khoản cá nhân"
+                >
+                  <Ionicons name="person-circle-outline" size={24} color={colors.primaryDark} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         }
       />
@@ -157,17 +188,14 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
         }
       >
         {/* KPI Cards Overview */}
-        <View style={[styles.kpiContainer, wide && {flexDirection: 'row', gap: 16}]}>
+        {facilityMealsError && <Text style={styles.sectionSubtitle}>Chưa tải được số suất từng cơ sở. Nhấn làm mới để thử lại.</Text>}
           {/* Card 1: Hôm nay */}
-          <Card variant="elevated" padding="md" style={[styles.kpiCardLarge, wide && {flex: 1}]}>
+          <Card variant="elevated" padding="md" style={styles.kpiCardLarge}>
             <View style={styles.kpiHeaderRow}>
-              <View style={[styles.kpiIconBox, { backgroundColor: colors.primaryLight }]}>
-                <Ionicons name="restaurant" size={20} color={colors.primaryDark} />
-              </View>
-              <Badge label="Hôm nay" variant="success" size="sm" />
+              <Text style={styles.kpiLabel}>Suất cần nấu hôm nay</Text>
+              <Badge label={facilityLabel(facilityFilter)} variant="success" size="sm" />
             </View>
-            <Text style={styles.kpiBigNumber}>{todaySlots}</Text>
-            <Text style={styles.kpiLabel}>Tổng suất cần nấu hôm nay</Text>
+            <Text style={styles.kpiBigNumber}>{todaySlots}<Text style={styles.kpiUnit}> suất</Text></Text>
             <View style={styles.kpiSubRow}>
               <Text style={styles.kpiSubText}>
                 • Cán bộ: <Text style={styles.boldText}>{todayStaffCount}</Text>
@@ -178,8 +206,17 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             </View>
           </Card>
 
+        <View style={styles.filterBar}>
+          <FacilitySelector value={facilityFilter} onChange={setFacilityFilter}
+            style={{ flex: 1, maxWidth: 280, marginVertical: 0 }} />
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Quản lý cán bộ và cơ sở" onPress={() => router.push('/management/users')} style={styles.facilityLink}>
+            <Ionicons name="people-outline" size={18} color={colors.primary} />
+            <Text style={styles.viewAllText}>Cán bộ</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.kpiContainer}>
           {/* Card 2 & 3: Pending & Outstanding */}
-          <View style={[styles.kpiRowSmall, wide && {flex: 1.2}]}>
+          <View style={[styles.kpiRowSmall, compact && styles.stacked, wide && { flex: 1.2 }]}>
             <Card
               variant="elevated"
               padding="md"
@@ -205,85 +242,27 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Text style={[styles.kpiNumberSmall, { color: '#DC2626', fontSize: wide ? 26 : 20 }]}>
                 {formatCurrency(outstandingAmount)}
               </Text>
-              <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu</Text>
+              <Text style={styles.kpiSmallLabel}>{unpaidRecords} khoản chưa thu · Toàn cơ quan</Text>
             </Card>
           </View>
         </View>
 
         {/* Biểu đồ số lượng suất ăn & Cán bộ */}
-        <Card variant="elevated" padding="md" style={styles.chartCard}>
-          <View style={styles.chartHeader}>
-            <View>
-              <Text style={styles.sectionTitle}>Biểu đồ suất ăn thực tế</Text>
-              <Text style={styles.sectionSubtitle}>Chỉ tính các suất đã hoàn thành qua trưa</Text>
-            </View>
-
-            {/* Period selector */}
-            <View style={styles.periodTabs}>
-              {(['week', 'month', 'year'] as const).map((p) => {
-                const isActive = selectedPeriod === p;
-                const label = p === 'week' ? 'Tuần' : p === 'month' ? 'Tháng' : 'Năm';
-                return (
-                  <TouchableOpacity
-                    key={p}
-                    style={[styles.periodTab, isActive && styles.periodTabActive]}
-                    onPress={() => setSelectedPeriod(p)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.periodTabText, isActive && styles.periodTabTextActive]}>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {isLoadingChart ? (
-            <View style={styles.chartLoading}>
-              <ActivityIndicator color={colors.primary} />
-            </View>
-          ) : (
-            <View style={styles.barChartWrapper}>
-              <View style={styles.chartBarsContainer}>
-                {points.map((pt, idx) => {
-                  const heightPercent = maxSlots > 0 ? (pt.total_meal_slots / maxSlots) * 100 : 0;
-                  const isZero = pt.total_meal_slots === 0;
-                  return (
-                    <View key={idx} style={styles.barCol}>
-                      <Text style={styles.barValueText}>
-                        {pt.total_meal_slots > 0 ? pt.total_meal_slots : ''}
-                      </Text>
-                      <View style={styles.barTrack}>
-                        <View
-                          style={[
-                            styles.barFill,
-                            {
-                              height: `${Math.max(heightPercent, 4)}%`,
-                              backgroundColor: isZero ? colors.borderLight : colors.primary,
-                            },
-                          ]}
-                        />
-                      </View>
-                      <Text style={styles.barLabelText} numberOfLines={1}>
-                        {pt.meal_date.includes('(') ? pt.meal_date.split(' ')[0] : pt.meal_date}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </View>
-          )}
-        </Card>
+        <ManagementMealChart
+          points={points}
+          isLoading={isLoadingChart}
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
 
         {/* Hàng chờ duyệt nhanh (Pending queue) */}
-        {pendingRegs.length > 0 && (
+        {scopedPending.length > 0 && (
           <View style={styles.sectionWrapper}>
             <View style={styles.sectionHeaderRow}>
               <View style={styles.rowAlign}>
                 <Text style={styles.sectionTitle}>Hàng chờ duyệt cắt suất</Text>
                 <View style={styles.badgeCount}>
-                  <Text style={styles.badgeCountText}>{pendingRegs.length}</Text>
+                  <Text style={styles.badgeCountText}>{scopedPending.length}</Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -294,7 +273,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               </TouchableOpacity>
             </View>
 
-            {pendingRegs.slice(0, 3).map((item) => (
+            {scopedPending.slice(0, 3).map((item) => (
               <Card key={item.id} variant="elevated" padding="md" style={styles.pendingCard}>
                 <View style={styles.pendingCardHeader}>
                   <View style={styles.pendingAvatarBox}>
@@ -338,15 +317,15 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 
         {/* Menu Phân hệ Quản lý & Nghiệp vụ */}
         <View style={styles.sectionWrapper}>
-          <Text style={styles.sectionTitle}>Chức năng Nghiệp vụ Quản trị</Text>
-          <Text style={styles.sectionSubtitle}>Lựa chọn phân hệ cần quản lý bên dưới</Text>
+          <Text style={styles.sectionTitle}>Không gian quản trị</Text>
+          <Text style={styles.sectionSubtitle}>Truy cập nhanh các công việc thường ngày</Text>
 
           <View style={styles.gridMenu}>
             {/* Phân hệ 1: Lịch bếp & Ngày nghỉ */}
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/meals' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: colors.primaryLight }]}>
@@ -360,7 +339,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/registrations' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF3C7' }]}>
@@ -374,7 +353,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/payments' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#DCFCE7' }]}>
@@ -388,7 +367,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/users' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#F3E8FF' }]}>
@@ -404,7 +383,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/notifications' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#E0F2FE' }]}>
@@ -419,7 +398,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && {width: '24%'}]}
+                style={[styles.menuGridItem, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/settings' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#FCE7F3' }]}>
@@ -435,7 +414,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && {width: '24%'}]}
+                style={[styles.menuGridItem, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/audit' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#F1F5F9' }]}>
@@ -450,7 +429,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && {width: '24%'}]}
+              style={[styles.menuGridItem, wide && { width: '24%' }]}
               onPress={() => router.push('/management/admin-tools' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF9C3' }]}>
@@ -486,6 +465,13 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
 }
 
 const styles = StyleSheet.create({
+  stacked: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  headingCopy: { flex: 1, minWidth: 0 },
+  filterBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginVertical: 12 },
+  facilityLink: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
   content: {
     flex: 1,
   },
@@ -493,15 +479,34 @@ const styles = StyleSheet.create({
     padding: 2,
     paddingBottom: spacing['3xl'],
   },
+  headerActions: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
   refreshHeaderBtn: {
-    padding: spacing.xs,
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+  },
+  accountHeaderBtn: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   kpiContainer: {
-    marginBottom: spacing.md,
+    marginBottom: 16,
+    gap: 12,
   },
   kpiCardLarge: {
-    padding: 24,
-    marginBottom: spacing.sm,
+    padding: 18,
+    borderColor: colors.primaryDark,
     backgroundColor: colors.primaryDark,
   },
   kpiHeaderRow: {
@@ -510,15 +515,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xs,
   },
-  kpiIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  kpiUnit: { fontSize: 18, fontWeight: '500', color: '#D5E4D8' },
   kpiBigNumber: {
-    fontSize: 44,
+    fontSize: 52,
     fontWeight: typography.weights.extrabold,
     color: '#FFFFFF',
     marginTop: spacing.xs,
@@ -534,7 +533,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingTop: spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
+    borderTopColor: '#356454',
+    flexWrap: 'wrap',
   },
   kpiSubText: {
     fontSize: typography.sizes.xs,
@@ -550,117 +550,40 @@ const styles = StyleSheet.create({
   },
   kpiCardSmall: {
     flex: 1,
-    padding: 20,
+    minWidth: 0,
+    minHeight: 120,
+    padding: 14,
     justifyContent: 'center',
     backgroundColor: colors.surface,
   },
   kpiIconSmall: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
   kpiNumberSmall: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: typography.weights.bold,
   },
   kpiSmallLabel: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
   },
-  chartCard: {
-    marginBottom: spacing.lg,
-    backgroundColor: colors.surface,
-  },
-  chartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.md,
-  },
   sectionTitle: {
-    fontSize: typography.sizes.sm,
+    fontSize: 18,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   sectionSubtitle: {
-    fontSize: typography.sizes['2xs'],
+    fontSize: 13,
+    lineHeight: 20,
     color: colors.textSecondary,
     marginTop: 2,
-  },
-  periodTabs: {
-    flexDirection: 'row',
-    backgroundColor: colors.backgroundDark,
-    borderRadius: radius.full,
-    padding: 2,
-  },
-  periodTab: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.full,
-  },
-  periodTabActive: {
-    backgroundColor: colors.surface,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  periodTabText: {
-    fontSize: typography.sizes['2xs'],
-    fontWeight: typography.weights.medium,
-    color: colors.textMuted,
-  },
-  periodTabTextActive: {
-    color: colors.primaryDark,
-    fontWeight: typography.weights.bold,
-  },
-  chartLoading: {
-    height: 140,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  barChartWrapper: {
-    paddingTop: spacing.sm,
-  },
-  chartBarsContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: 120,
-    paddingHorizontal: spacing.xs,
-  },
-  barCol: {
-    flex: 1,
-    alignItems: 'center',
-    height: '100%',
-    justifyContent: 'flex-end',
-  },
-  barValueText: {
-    fontSize: 9,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  barTrack: {
-    width: 14,
-    height: 80,
-    backgroundColor: colors.backgroundDark,
-    borderRadius: radius.full,
-    justifyContent: 'flex-end',
-    overflow: 'hidden',
-  },
-  barFill: {
-    width: '100%',
-    borderRadius: radius.full,
-  },
-  barLabelText: {
-    fontSize: 9,
-    color: colors.textMuted,
-    marginTop: 4,
   },
   sectionWrapper: {
     marginBottom: spacing.lg,
@@ -670,6 +593,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   rowAlign: {
     flexDirection: 'row',
@@ -714,12 +639,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pendingName: {
-    fontSize: typography.sizes.xs,
+    fontSize: 14,
     fontWeight: typography.weights.bold,
     color: colors.text,
   },
   pendingDate: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   pendingActions: {
@@ -730,16 +655,19 @@ const styles = StyleSheet.create({
   },
   actionBtnSmall: {
     minWidth: 80,
-    height: 32,
+    minHeight: 44,
   },
   gridMenu: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginTop: spacing.xs,
+    marginTop: 16,
   },
   menuGridItem: {
-    width: '48%',
+    width: '47%',
+    flexGrow: 1,
+    minHeight: 176,
+    padding: 18,
     backgroundColor: colors.surface,
     marginBottom: spacing.xs,
   },

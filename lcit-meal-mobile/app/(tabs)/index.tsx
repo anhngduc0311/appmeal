@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
   useWindowDimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -31,7 +32,6 @@ import {
 } from '../../src/hooks/useMealsData';
 import { useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
 import {
-  formatBusinessDate,
   formatCurrency,
   formatDisplayDate,
 } from '../../src/utils/formatters';
@@ -39,6 +39,8 @@ import { colors } from '../../src/theme/colors';
 import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
 import ManagementDashboardScreen from '../management/index';
+import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
+import { isCancellationClosed } from '../../src/utils/cancellationDeadline';
 
 export default function HomeScreen() {
   const { role } = useAuth();
@@ -52,17 +54,20 @@ export default function HomeScreen() {
 
 function PersonalHomeScreen() {
   const router = useRouter();
-  const wide = useWindowDimensions().width >= 850;
+  const { width, fontScale } = useWindowDimensions();
+  const wide = width >= 850;
+  const compact = width < 420 || fontScale > 1.3;
   const { user, role, useMockData } = useAuth();
 
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
 
-  const todayStr = formatBusinessDate(new Date());
+  const { today: todayStr, now } = useCancellationDeadline();
+  const cancelClosed = isCancellationClosed(todayStr, now);
 
   // Queries từ TanStack React Query
-  const { data: meals = [], isLoading: loadingMeals, refetch: refetchMeals } = useMeals();
-  const { data: registrations = [], isLoading: loadingRegs, refetch: refetchRegs } = useMyRegistrations();
-  const { data: paymentSummary, isLoading: loadingPayments, refetch: refetchPayments } = useMyPaymentSummary();
+  const { data: meals = [], isLoading: loadingMeals, isError: mealsError, refetch: refetchMeals } = useMeals();
+  const { data: registrations = [], isLoading: loadingRegs, isError: regsError, refetch: refetchRegs } = useMyRegistrations();
+  const { data: paymentSummary, isLoading: loadingPayments, isError: paymentsError, refetch: refetchPayments } = useMyPaymentSummary();
   const { data: scheduleConfig } = useScheduleConfig();
 
   // Mutations
@@ -100,7 +105,7 @@ function PersonalHomeScreen() {
       if (updatedReg && updatedReg.status === 'pending') {
         Alert.alert(
           'Đã gửi yêu cầu',
-          'Đã quá giờ đóng đăng ký, yêu cầu cắt suất của bạn đã được chuyển cho Quản lý xét duyệt.'
+          'Yêu cầu cắt suất đang chờ Quản lý xét duyệt.'
         );
       }
     } catch (err: unknown) {
@@ -123,31 +128,39 @@ function PersonalHomeScreen() {
       <View style={styles.brandRow}>
         <View style={styles.brandIcon}><Ionicons name="restaurant" size={18} color={colors.textInverse} /></View>
         <Text style={styles.brand}>LCIT <Text style={styles.brandLight}>MEAL</Text></Text>
-        <Text style={styles.brandCaption}>BỮA TRƯA MỖI NGÀY</Text>
+        <View style={styles.datePill}><Ionicons name="calendar-outline" size={14} color={colors.primary} /><Text style={styles.brandCaption}>{formatDisplayDate(todayStr)}</Text></View>
       </View>
       <Header
         title={`Xin chào, ${user?.fullName?.split(' ').slice(-1)[0] || 'Bạn'}`}
-        subtitle="Một ngày làm việc tốt bắt đầu từ một bữa ăn ngon."
+        subtitle="Bữa trưa của bạn, mọi thứ trong tầm tay."
         userRole={role || 'employee'} isMockMode={useMockData}
         rightAction={<TouchableOpacity accessibilityRole="button" accessibilityLabel="Thông báo" onPress={() => router.push('/(tabs)/notifications')} style={styles.notifBtn}><Ionicons name="notifications-outline" size={22} color={colors.text} /></TouchableOpacity>}
       />
-      <View style={styles.hero}>
+      <View style={[styles.hero, wide && styles.heroWide]}>
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>BỮA TRƯA TẠI LCIT</Text>
-          <Text style={[styles.heroTitle, wide && {fontSize: 36}]}>Trọn bữa ngon,{'\n'}vẹn ngày làm việc.</Text>
-          <View style={styles.cutoff}><Ionicons name="time-outline" size={16} color="#DCEAA0" /><Text style={styles.heroNote}>Chốt đăng ký & cắt suất lúc {cutoffTime}</Text></View>
+          <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>An tâm bữa trưa,{'\n'}trọn vẹn ngày làm việc.</Text>
+          <Text style={styles.heroNote}>Xem lịch ăn, điều chỉnh suất và theo dõi tiền ăn mỗi ngày.</Text>
         </View>
-        {wide && <View style={styles.plateOuter}><View style={styles.plateInner}><Ionicons name="restaurant-outline" size={58} color="#DCEAA0" /></View></View>}
+        <View style={[styles.deadlines, wide && styles.deadlinesWide]}>
+          <View style={styles.deadlineRow}><Ionicons name="time-outline" size={22} color="#DCEAA0" /><View><Text style={styles.deadlineLabel}>Chốt đăng ký</Text><Text style={styles.deadlineTime}>{cutoffTime}</Text></View></View>
+          <View style={styles.deadlineRow}><Ionicons name="alarm-outline" size={22} color="#DCEAA0" /><View><Text style={styles.deadlineLabel}>Cắt suất trước</Text><Text style={styles.deadlineTime}>08:00</Text></View></View>
+        </View>
       </View>
       <View style={[styles.columns, wide && styles.columnsWide]}>
         <View style={styles.mainColumn}>
           <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Suất ăn hôm nay</Text><TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(tabs)/schedule')} style={styles.textLink}><Text style={styles.link}>Xem lịch ăn →</Text></TouchableOpacity></View>
-          {todayMeal ? <MealCard dateStr={todayStr} meal={todayMeal} registration={todayReg}
+          {loadingMeals || loadingRegs ? <Card padding="2xl" style={styles.empty}><ActivityIndicator color={colors.primary} /><Text style={styles.body}>Đang tải suất ăn của bạn…</Text></Card>
+          : mealsError || regsError ? <Card padding="xl" style={styles.empty}><Ionicons name="cloud-offline-outline" size={30} color={colors.textSecondary} /><Text style={styles.actionTitle}>Chưa tải được suất ăn</Text><Button title="Thử lại" variant="outline" onPress={handleRefresh} /></Card>
+          : todayMeal ? <MealCard dateStr={todayStr} meal={todayMeal} registration={todayReg}
             onPress={() => router.push(`/meal/${todayMeal.id}` as any)} onRegister={handleRegisterToday}
             onCancel={() => setCancelModalVisible(true)}
-          /> : <Card padding="2xl" style={styles.empty}><Ionicons name="cafe-outline" size={32} color={colors.primary} /><Text style={styles.body}>Hôm nay nhà bếp không bố trí lịch nấu ăn.</Text></Card>}
-          <Text style={[styles.sectionTitle, {marginTop: 18, marginBottom: 16}]}>Tiện ích của bạn</Text>
-          <View style={styles.quickGrid}>
+            registering={registerMutation.isPending}
+            actionsDisabled={registerMutation.isPending || cancelMutation.isPending}
+            style={styles.todayCard}
+          /> : <Card padding="2xl" style={styles.empty}><View style={styles.emptyIcon}><Ionicons name="cafe-outline" size={32} color={colors.primary} /></View><Text style={styles.actionTitle}>Hôm nay chưa có lịch ăn</Text><Text style={styles.emptyText}>Xem lịch ăn để chủ động sắp xếp những bữa trưa tiếp theo.</Text><Button title="Xem lịch ăn" variant="outline" onPress={() => router.push('/(tabs)/schedule')} /></Card>}
+          <Text style={[styles.sectionTitle, {marginTop: 24, marginBottom: 16}]}>Thao tác nhanh</Text>
+          <View style={[styles.quickGrid, compact && styles.quickGridCompact]}>
             <Card onPress={() => router.push('/(tabs)/schedule')} style={styles.quickCard} padding="xl"><View style={styles.actionIcon}><Ionicons name="calendar-outline" size={24} color={colors.primary} /></View><Text style={styles.actionTitle}>Lịch ăn</Text><Text style={styles.body}>Chủ động sắp xếp bữa trưa</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
             <Card onPress={() => router.push('/meal-options' as any)} style={styles.quickCard} padding="xl"><View style={[styles.actionIcon, {backgroundColor: '#F4EBD8'}]}><Ionicons name="receipt-outline" size={24} color="#8A672C" /></View><Text style={styles.actionTitle}>Báo cắt suất</Text><Text style={styles.body}>Điều chỉnh những ngày vắng</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={{marginTop: 16}} /></Card>
           </View>
@@ -155,13 +168,16 @@ function PersonalHomeScreen() {
         <View style={[styles.sideColumn, wide && {width: 320}]}>
           <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Thanh toán</Text></View>
           <Card padding="2xl" style={styles.paymentCard}>
-            <View style={styles.paymentTop}><Text style={styles.paymentLabel}>TIỀN ĂN CỦA BẠN</Text><Ionicons name="wallet-outline" size={22} color={colors.primary} /></View>
-            <Text style={styles.paymentAmount}>{formatCurrency(totalUnpaidAmount)}</Text>
-            <Text style={styles.body}>{unpaidCount > 0 ? `${unpaidCount} kỳ chưa thanh toán` : 'Các khoản thanh toán đã hoàn tất'}</Text>
+            <View style={styles.paymentTop}><Text style={styles.paymentLabel}>CHƯA THANH TOÁN</Text><Ionicons name="wallet-outline" size={22} color={colors.primary} /></View>
+            {loadingPayments ? <View style={styles.paymentLoading}><ActivityIndicator color={colors.primary} /><Text style={styles.body}>Đang tải thanh toán…</Text></View>
+            : paymentsError ? <Text style={styles.paymentError}>Chưa tải được số dư. Mở thanh toán để kiểm tra lại.</Text>
+            : <><Text style={styles.paymentAmount}>{formatCurrency(totalUnpaidAmount)}</Text>
+            <View style={[styles.paymentStatus, unpaidCount > 0 && styles.paymentStatusUnpaid]}><Ionicons name={unpaidCount > 0 ? 'time-outline' : 'checkmark-circle-outline'} size={16} color={unpaidCount > 0 ? '#9A3412' : colors.primary} /><Text style={[styles.statusText, unpaidCount > 0 && styles.statusTextUnpaid]}>{unpaidCount > 0 ? `${unpaidCount} kỳ cần thanh toán` : 'Đã hoàn tất thanh toán'}</Text></View></>}
             <View style={styles.divider} />
             <Text style={[styles.body, {marginBottom: 20}]}>Theo dõi tiền ăn và chuyển khoản thuận tiện bằng mã QR.</Text>
             <Button title="Xem thanh toán" onPress={() => router.push('/(tabs)/payments')} fullWidth rightIcon={<Ionicons name="arrow-forward" size={18} color="white" />} />
           </Card>
+          <View style={styles.reminder}><Ionicons name="information-circle-outline" size={22} color={colors.primary} /><View style={styles.reminderCopy}><Text style={styles.actionTitle}>Có kế hoạch nghỉ?</Text><Text style={styles.body}>Báo cắt suất trước 08:00 để nhà bếp chuẩn bị đúng số lượng nhé.</Text></View></View>
           {(role === 'admin' || role === 'manager') && <Card onPress={() => router.push('/management')} padding="xl" style={styles.managementCard}><Ionicons name="grid-outline" size={24} color={colors.primary} /><Text style={styles.actionTitle}>Trung tâm quản lý</Text><Text style={styles.body}>Suất ăn, lịch bếp và thu tiền toàn đơn vị →</Text></Card>}
         </View>
       </View>
@@ -170,7 +186,8 @@ function PersonalHomeScreen() {
         visible={cancelModalVisible}
         title="Xác nhận cắt suất ăn hôm nay"
         message={`Bạn có chắc chắn muốn cắt suất ăn ngày ${formatDisplayDate(todayStr)}? Thao tác này sẽ cập nhật số lượng suất ăn cần nấu của nhà bếp.`}
-        confirmText="Đồng ý cắt suất"
+        confirmText={cancelClosed ? 'Quá hạn cắt suất' : 'Đồng ý cắt suất'}
+        confirmDisabled={cancelClosed}
         cancelText="Giữ lại"
         isDestructive
         iconName="close-circle-outline"
@@ -183,15 +200,35 @@ function PersonalHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, marginBottom: 12 },
+  datePill: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: radius.full, backgroundColor: colors.primary50 },
+  heroWide: { flexDirection: 'row', alignItems: 'center', padding: 30 },
+  heroTitleWide: { fontSize: 32, lineHeight: 42 },
+  deadlines: { flexDirection: 'row', flexWrap: 'wrap', gap: 18, borderTopWidth: 1, borderTopColor: '#356252', paddingTop: 16 },
+  deadlinesWide: { flexDirection: 'column', borderTopWidth: 0, borderLeftWidth: 1, borderLeftColor: '#356252', paddingTop: 0, paddingLeft: 28, minWidth: 180 },
+  deadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  deadlineLabel: { fontSize: 12, lineHeight: 18, color: '#C8DED3' },
+  deadlineTime: { fontSize: 22, lineHeight: 30, fontWeight: '700', color: colors.textInverse },
+  todayCard: { padding: 20, marginBottom: 0, borderRadius: 20 },
+  quickGridCompact: { flexDirection: 'column' },
+  paymentLoading: { paddingVertical: 24, gap: 12, alignItems: 'center' },
+  paymentError: { fontSize: 13, lineHeight: 20, color: colors.textSecondary, marginTop: 20 },
+  paymentStatus: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, backgroundColor: colors.primaryLight, borderRadius: 10, padding: 8, marginTop: 8 },
+  paymentStatusUnpaid: { backgroundColor: '#FFF1E6' },
+  statusText: { flexShrink: 1, fontSize: 12, lineHeight: 18, fontWeight: '600', color: colors.primary },
+  statusTextUnpaid: { color: '#9A3412' },
+  reminder: { flexDirection: 'row', gap: 10, padding: 16, backgroundColor: colors.primary50, borderRadius: 16 },
+  reminderCopy: { flex: 1, minWidth: 0 },
+  emptyIcon: { width: 60, height: 60, borderRadius: 20, backgroundColor: colors.primary50, alignItems: 'center', justifyContent: 'center' },
+  emptyText: { fontSize: 13, lineHeight: 21, color: colors.textSecondary, textAlign: 'center', maxWidth: 300 },
+  brandRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 10, paddingBottom: 18, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   brandIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
   brand: { fontSize: 16, fontWeight: '800', letterSpacing: 1.2, color: colors.primaryDark },
   brandLight: { fontWeight: '400', color: colors.primary },
-  brandCaption: { marginLeft: 'auto', fontSize: 10, letterSpacing: 1.2, fontWeight: '600', color: colors.textSecondary },
+  brandCaption: { fontSize: 12, fontWeight: '600', color: colors.primary },
   notifBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.full,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -203,55 +240,23 @@ const styles = StyleSheet.create({
     borderRadius: radius['2xl'],
     padding: 24,
     marginBottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 24,
     overflow: 'hidden',
   },
-  heroCopy: { flex: 1 },
+  heroCopy: { flex: 1, minWidth: 0 },
   eyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.8, color: '#DCEAA0', marginBottom: 10 },
   heroTitle: { fontSize: 24, lineHeight: 34, fontWeight: '800', letterSpacing: -0.6, color: '#FFFFFF' },
-  cutoff: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radius.full,
-    alignSelf: 'flex-start',
-  },
-  heroNote: { fontSize: 12, color: '#E4EFE7', fontWeight: '500' },
-  plateOuter: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 1,
-    borderColor: 'rgba(220, 234, 160, 0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 24,
-  },
-  plateInner: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 10,
-    borderColor: '#185743',
-    backgroundColor: '#0F4434',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  columns: { gap: 20 },
+  heroNote: { fontSize: 13, lineHeight: 21, color: '#C8DED3', marginTop: 10, maxWidth: 430 },
+  columns: { gap: 28 },
   columnsWide: { flexDirection: 'row', alignItems: 'flex-start' },
   mainColumn: { flex: 1, minWidth: 0 },
   sideColumn: { gap: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36, marginBottom: 10 },
+  sectionHeader: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 44, marginBottom: 12 },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, letterSpacing: -0.3 },
-  textLink: { minHeight: 36, justifyContent: 'center' },
+  textLink: { minHeight: 44, justifyContent: 'center' },
   link: { fontSize: 13, fontWeight: '600', color: colors.primary },
   quickGrid: { flexDirection: 'row', gap: 12 },
-  quickCard: { flex: 1, backgroundColor: colors.surface, borderColor: colors.border },
+  quickCard: { flex: 1, minWidth: 0, borderRadius: 18, backgroundColor: colors.surface, borderColor: colors.border },
   actionIcon: {
     width: 44,
     height: 44,
@@ -264,12 +269,12 @@ const styles = StyleSheet.create({
   actionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 4 },
   body: { fontSize: 13, lineHeight: 19, color: colors.textSecondary },
   paymentCard: {
-    backgroundColor: '#F3F7F2',
-    borderColor: '#DFE8E1',
-    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 20,
   },
   paymentTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  paymentLabel: { fontSize: 11, letterSpacing: 1.2, fontWeight: '700', color: colors.primaryDark },
+  paymentLabel: { flex: 1, fontSize: 10, lineHeight: 16, letterSpacing: 1, fontWeight: '700', color: colors.textSecondary },
   paymentAmount: { fontSize: 28, fontWeight: '800', letterSpacing: -0.8, color: colors.primaryDark, marginTop: 14, marginBottom: 4 },
   divider: { height: 1, backgroundColor: '#DFE8E1', marginVertical: 16 },
   managementCard: {

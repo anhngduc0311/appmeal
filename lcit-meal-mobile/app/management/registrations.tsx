@@ -54,6 +54,9 @@ import { spacing } from '../../src/theme/spacing';
 import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 import { MealOptionType, MealRegistration, MealOption } from '../../src/types';
+import { FacilitySelector } from '../../src/components/common/FacilitySelector';
+import { useFacilities } from '../../src/hooks/useFacilities';
+import { FacilityFilter, facilityLabel, getFacility, matchesFacility } from '../../src/utils/facilities';
 
 export default function ManagementRegistrationsScreen() {
   const router = useRouter();
@@ -69,6 +72,8 @@ export default function ManagementRegistrationsScreen() {
   const [notice, setNotice] = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
+  const { overrides } = useFacilities();
 
   // Modals state
   const [isRegisterOnBehalfOpen, setIsRegisterOnBehalfOpen] = useState(false);
@@ -130,7 +135,7 @@ export default function ManagementRegistrationsScreen() {
   const getPerson = useCallback((record: MealRegistration | MealOption) => {
     const person = users.find((u) => u.id === record.userId);
     return {
-      name: record.user?.fullName || record.userName || person?.fullName || `Cán bộ #${record.userId}`,
+      name: person?.fullName || record.user?.fullName || record.userName || `Cán bộ #${record.userId}`,
       account: record.user?.username || person?.username,
     };
   }, [users]);
@@ -188,8 +193,11 @@ export default function ManagementRegistrationsScreen() {
   };
 
   const datedRegs = allRegistrations.filter((r) => !selectedDate || formatBusinessDate(r.mealDate || r.meal?.mealDate) === selectedDate);
-  const searchedRegs = datedRegs.filter(matchesSearch);
-  const searchedOptions = allOptions.filter(matchesSearch);
+  const matchesRecordFacility = (record: MealRegistration | MealOption) => matchesFacility(
+    getFacility({ id: record.userId, fullName: users.find(person => person.id === record.userId)?.fullName || getPerson(record).name }, overrides), facilityFilter,
+  );
+  const searchedRegs = datedRegs.filter(matchesSearch).filter(matchesRecordFacility);
+  const searchedOptions = allOptions.filter(matchesSearch).filter(matchesRecordFacility);
   const filteredRegs = searchedRegs.filter((r) => statusFilter === 'all' || r.status === statusFilter)
     .sort((a, b) => Number(b.status === 'pending') - Number(a.status === 'pending') || (b.mealDate || '').localeCompare(a.mealDate || '') || a.id - b.id);
   const filteredOptions = searchedOptions.filter((o) => statusFilter === 'all' || o.status === statusFilter)
@@ -205,6 +213,7 @@ export default function ManagementRegistrationsScreen() {
   const pendingCount = scope.filter((item) => item.status === 'pending').length;
   const availableMeals = meals.filter((m) => !m.isCancelled && m.mealDate >= today).sort((a, b) => a.mealDate.localeCompare(b.mealDate));
   const selectableUsers = users.filter((u) => {
+    if (!matchesFacility(getFacility(u, overrides), facilityFilter)) return false;
     if (!userSearch.trim()) return true;
     const q = normalizeSearch(userSearch);
     const cleanQ = q.replace(/^[@#]/, '').replace(/^cb/, '').trim();
@@ -242,6 +251,10 @@ export default function ManagementRegistrationsScreen() {
   };
 
   const handleExport = async () => {
+    if (facilityFilter !== 'all') {
+      setNotice({ variant: 'error', message: 'Xuất Excel theo cơ sở hiện chưa được hỗ trợ.' });
+      return;
+    }
     setIsExporting(true);
     try {
       const res = await exportService.exportMealRegistrations(
@@ -299,6 +312,7 @@ export default function ManagementRegistrationsScreen() {
             </View>
             <View style={styles.itemInfo}>
               <Text style={styles.userName}>{getPerson(reg).name}</Text>
+              <Text style={styles.userUsername}>{facilityLabel(getFacility({ id: reg.userId, fullName: getPerson(reg).name }, overrides))}</Text>
               <Text style={styles.userUsername}>{getPerson(reg).account ? `@${getPerson(reg).account}` : `Mã cán bộ: ${reg.userId}`}</Text>
             </View>
             <Badge
@@ -383,7 +397,7 @@ export default function ManagementRegistrationsScreen() {
         </Card>
       );
     },
-    [confirmRegMutation, getPerson]
+    [confirmRegMutation, getPerson, overrides]
   );
 
   const renderOptionItem = useCallback(({ item: opt }: { item: MealOption }) => {
@@ -403,7 +417,7 @@ export default function ManagementRegistrationsScreen() {
           </View>
           <View style={styles.itemInfo}>
             <Text style={styles.userName}>{getPerson(opt).name}</Text>
-            <Text style={styles.userUsername}>{typeLabel}</Text>
+            <Text style={styles.userUsername}>{typeLabel} · {facilityLabel(getFacility({ id: opt.userId, fullName: getPerson(opt).name }, overrides))}</Text>
           </View>
           <Badge
             label={
@@ -453,7 +467,7 @@ export default function ManagementRegistrationsScreen() {
         )}
       </Card>
     );
-  }, [getPerson]);
+  }, [getPerson, overrides]);
 
   if (!hasAccess) {
     return (
@@ -476,7 +490,7 @@ export default function ManagementRegistrationsScreen() {
         showBack
         onBack={() => router.back()}
         userRole={role || undefined}
-        rightAction={activeTab === 'registrations' && (
+        rightAction={activeTab === 'registrations' && facilityFilter === 'all' && (
           <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel="Xuất Excel theo ngày và trạng thái đang chọn"
@@ -494,6 +508,8 @@ export default function ManagementRegistrationsScreen() {
         )}
       />
 
+      <FacilitySelector value={facilityFilter} onChange={value => { setFacilityFilter(value); setSelectedUserId(0); }} />
+      <Text style={styles.resultCount}>Phân cơ sở theo danh sách trên thiết bị này. Xuất Excel theo cơ sở hiện chưa được hỗ trợ.</Text>
       {/* Tabs */}
       <View style={styles.tabBarWrapper}>
         <View style={styles.tabBar}>
