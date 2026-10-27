@@ -38,6 +38,7 @@ import {
 import { colors } from '../../src/theme/colors';
 import { radius } from '../../src/theme/radius';
 import { KitchenHome } from '../../src/components/meals/KitchenHome';
+import { KitchenManagerHome } from '../../src/components/management/KitchenManagerHome';
 import ManagementDashboardScreen from '../management/index';
 import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
 import { isCancellationClosed } from '../../src/utils/cancellationDeadline';
@@ -48,6 +49,8 @@ export default function HomeScreen() {
   if (role === 'admin') {
     return <ManagementDashboardScreen isTab />;
   }
+
+  if (role === 'manager') return <KitchenManagerHome />;
 
   return role === 'kitchen' ? <KitchenHome /> : <PersonalHomeScreen />;
 }

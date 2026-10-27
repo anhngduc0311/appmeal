@@ -65,8 +65,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Trang chủ',
-          tabBarLabel: 'Trang chủ',
+          title: role === 'manager' ? 'Điều hành bếp' : 'Trang chủ',
+          tabBarLabel: role === 'manager' ? 'Điều hành' : 'Trang chủ',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -81,8 +81,8 @@ export default function TabLayout() {
         name="schedule"
         options={{
           href: (role === 'kitchen' || role === 'admin') ? null : '/schedule',
-          title: 'Lịch ăn',
-          tabBarLabel: 'Lịch ăn',
+          title: role === 'manager' ? 'Lịch bếp' : 'Lịch ăn',
+          tabBarLabel: role === 'manager' ? 'Lịch bếp' : 'Lịch ăn',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'calendar' : 'calendar-outline'}

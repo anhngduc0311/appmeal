@@ -30,6 +30,7 @@ import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { EmptyState } from '../../src/components/states/EmptyState';
 import { useAuth } from '../../src/providers/AuthProvider';
+import ManagementPaymentsScreen from '../management/payments';
 import { useMyPayments, useMyPaymentSummary } from '../../src/hooks/usePaymentsData';
 import { useScheduleConfig } from '../../src/hooks/useMealsData';
 import { Payment } from '../../src/types';
@@ -46,6 +47,11 @@ import { radius } from '../../src/theme/radius';
 import { shadows } from '../../src/theme/shadows';
 
 export default function PaymentsScreen() {
+  const { role } = useAuth();
+  return role === 'manager' ? <ManagementPaymentsScreen /> : <PersonalPaymentsScreen />;
+}
+
+function PersonalPaymentsScreen() {
   const { user } = useAuth();
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);

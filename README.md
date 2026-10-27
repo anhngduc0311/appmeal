@@ -199,7 +199,7 @@ Mật khẩu mặc định cho toàn bộ các tài khoản thử nghiệm là: 
 
 ## 📚 Tài liệu tham khảo liên quan
 
-- 📘 [Tài liệu Hướng dẫn Sử dụng Chi tiết (HUONG_DAN_SU_DUNG.md)](./HUONG_DAN_SU_DUNG.md): Hướng dẫn từng bước thao tác giao diện cho 4 vai trò.
+- 📘 [Hướng dẫn sử dụng theo vai trò](./HUONG_DAN_SU_DUNG.md): Ba tài liệu riêng cho Nhân viên, Bếp/Quản lý bếp và Admin, kèm ảnh đối chiếu trực tiếp trên ứng dụng.
 - 🏛️ [Tài liệu Kiến trúc Hệ thống (architecture.md)](./architecture.md): Sơ đồ luồng xử lý, thiết kế cơ sở dữ liệu, quy chuẩn cấu trúc thư mục.
 - 📋 [Tài liệu Đặc tả Kỹ thuật & Nghiệp vụ (SPEC.md)](./SPEC.md): Đặc tả chi tiết từng API endpoint, validation và danh mục GAP.
 - 🔌 [Tài liệu Backend API README (lcit-meal-api/README.md)](./lcit-meal-api/README.md): Hướng dẫn phát triển, testing và triển khai dịch vụ Backend.

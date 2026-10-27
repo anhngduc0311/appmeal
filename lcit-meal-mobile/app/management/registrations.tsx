@@ -17,7 +17,7 @@ import {
   Alert,
   FlatList,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
@@ -60,19 +60,20 @@ import { FacilityFilter, facilityLabel, getFacility, matchesFacility } from '../
 
 export default function ManagementRegistrationsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ date?: string; status?: string; facility?: string }>();
   const { user, role, isMockMode } = useAuth();
   const [activeTab, setActiveTab] = useState<'registrations' | 'options'>('registrations');
   const [refreshing, setRefreshing] = useState(false);
 
   // Filters state
   const today = formatBusinessDate(new Date());
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(params.date === 'all' ? '' : formatBusinessDate(params.date) || today);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [userSearch, setUserSearch] = useState('');
   const [notice, setNotice] = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
+  const [statusFilter, setStatusFilter] = useState<string>(params.status === 'pending' ? 'pending' : 'all');
+  const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(params.facility === 'all' ? 'all' : params.facility === '2' ? 2 : params.facility === 'unassigned' ? 'unassigned' : 1);
   const { overrides } = useFacilities();
 
   // Modals state

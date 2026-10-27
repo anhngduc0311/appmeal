@@ -134,3 +134,76 @@ storage/*
 !storage/.gitkeep
 user_data/
 */user_data/
+
+# =========================================
+# Video generation & Media production
+# =========================================
+# Video production directories & tools
+video-output/
+*/video-output/
+douyin_editor/
+*/douyin_editor/
+tts/
+*/tts/
+
+# Video script drafts
+KICH_BAN_VIDEO*.md
+kich_ban_video*.md
+
+# Video media files
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+*.wmv
+*.m4v
+*.ts
+*.mts
+
+# Audio files (voiceovers, TTS, BGM)
+*.mp3
+*.wav
+*.aac
+*.flac
+*.m4a
+*.ogg
+*.opus
+*.wma
+
+# Subtitles & Captions
+*.srt
+*.vtt
+*.ass
+*.ssa
+*.sub
+
+# Video pipeline workspace & temporary folders
+workspace_temp/
+*/workspace_temp/
+downloads/
+*/downloads/
+output/
+*/output/
+clips/
+*/clips/
+frames/
+*/frames/
+
+# AI models & weights (Whisper, UVR, OpenVoice, etc.)
+models/
+*/models/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.bin
+
+# Python caches & build specs (from video generator scripts)
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+*.spec
+

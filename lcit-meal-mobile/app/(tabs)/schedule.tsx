@@ -39,8 +39,15 @@ import { typography } from '../../src/theme/typography';
 import { radius } from '../../src/theme/radius';
 import { useCancellationDeadline } from '../../src/hooks/useCancellationDeadline';
 import { isCancellationClosed } from '../../src/utils/cancellationDeadline';
+import { useAuth } from '../../src/providers/AuthProvider';
+import ManagementMealsScreen from '../management/meals';
 
 export default function ScheduleScreen() {
+  const { role } = useAuth();
+  return role === 'manager' ? <ManagementMealsScreen /> : <PersonalScheduleScreen />;
+}
+
+function PersonalScheduleScreen() {
   const router = useRouter();
   const [period, setPeriod] = useState<'upcoming' | 'history'>('upcoming');
   const [filterMode, setFilterMode] = useState<'all' | 'registered' | 'cancelled'>('all');
