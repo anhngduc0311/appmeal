@@ -1,3 +1,4 @@
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Tab Screen - Thanh toán cá nhân (Payments) - T16, T23
  * Hiển thị danh sách các khoản tiền ăn cá nhân, trạng thái thanh toán,
@@ -24,6 +25,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { ScreenContainer } from '../../src/components/common/ScreenContainer';
+import { ModalCard } from '../../src/components/common/ModalCard';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
 import { Badge } from '../../src/components/common/Badge';
@@ -52,6 +55,7 @@ export default function PaymentsScreen() {
 }
 
 function PersonalPaymentsScreen() {
+  const { compact } = useResponsiveLayout();
   const { user } = useAuth();
 
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
@@ -314,9 +318,9 @@ function PersonalPaymentsScreen() {
         onRequestClose={() => setQrModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setQrModalVisible(false)}>
-          <View style={styles.modalBackdrop}>
+          <ModalBackdrop style={styles.modalBackdrop}>
             <TouchableWithoutFeedback>
-              <View style={[styles.qrCard, shadows.xl]}>
+              <ModalCard style={[styles.qrCard, shadows.xl]}>
                 <View style={styles.qrHeader}>
                   <Text style={styles.qrTitle}>Mã QR Chuyển khoản</Text>
                   <TouchableOpacity
@@ -387,7 +391,7 @@ function PersonalPaymentsScreen() {
                     </View>
 
                     {/* Share / Save QR action buttons */}
-                    <View style={styles.qrActionButtons}>
+                    <View style={[styles.qrActionButtons, compact && { flexDirection: 'column' }]}>
                       <Button
                         title={isSharingQr ? 'Đang chia sẻ...' : 'Lưu / Chia sẻ mã QR'}
                         variant="secondary"
@@ -407,9 +411,9 @@ function PersonalPaymentsScreen() {
                     </View>
                   </>
                 )}
-              </View>
+              </ModalCard>
             </TouchableWithoutFeedback>
-          </View>
+          </ModalBackdrop>
         </TouchableWithoutFeedback>
       </Modal>
     </ScreenContainer>
@@ -426,6 +430,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   summaryHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -491,6 +497,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   itemTopRow: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -507,6 +515,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemBottomRow: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -556,6 +566,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   qrTitle: {
+    flex: 1,
+    minWidth: 0,
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.bold,
     color: colors.text,

@@ -1,0 +1,36 @@
+{
+  "checks": [
+    {
+      "type": "confirm",
+      "width": 320,
+      "height": 568,
+      "overflow": []
+    },
+    {
+      "type": "date",
+      "width": 320,
+      "height": 568,
+      "overflow": [],
+      "applyVisible": true
+    },
+    {
+      "type": "confirm",
+      "width": 320,
+      "height": 320,
+      "overflow": []
+    },
+    {
+      "type": "date",
+      "width": 320,
+      "height": 320,
+      "overflow": [],
+      "applyVisible": true
+    },
+    {
+      "type": "qr",
+      "overflow": [],
+      "buttonVisible": true
+    }
+  ],
+  "errors": []
+}

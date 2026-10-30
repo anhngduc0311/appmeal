@@ -1,3 +1,4 @@
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Nhật Ký Hệ Thống / Audit Logs (Admin Only)
  * T35: Danh sách, bộ lọc, chi tiết actor/action/target/result; chỉ đọc.
@@ -236,7 +237,7 @@ export default function ManagementAuditScreen() {
 
       {/* Modal Chi tiết Audit Log */}
       <Modal visible={!!selectedLog} transparent animationType="fade" onRequestClose={() => setSelectedLog(null)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chi tiết Nhật ký #{selectedLog?.id}</Text>
@@ -316,7 +317,7 @@ export default function ManagementAuditScreen() {
               style={styles.closeBtn}
             />
           </View>
-        </View>
+        </ModalBackdrop>
       </Modal>
     </ScreenContainer>
   );
@@ -440,6 +441,8 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

@@ -22,6 +22,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export interface ScreenContainerProps {
   children: React.ReactNode;
@@ -59,6 +60,8 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   keyboardDismissMode = 'on-drag',
 }) => {
   const insets = useSafeAreaInsets();
+  const { horizontalPadding } = useResponsiveLayout();
+  const responsiveContent: ViewStyle = { paddingHorizontal: horizontalPadding };
 
   const containerPadding: ViewStyle = {
     paddingTop: disableTopPadding ? 0 : insets.top,
@@ -95,6 +98,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
             style={styles.scrollView}
             contentContainerStyle={[
               styles.scrollContent,
+              responsiveContent,
               contentContainerStyle,
             ]}
             keyboardShouldPersistTaps={keyboardShouldPersistTaps}
@@ -116,7 +120,7 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
             {children}
           </ScrollView>
         ) : (
-          <View style={[styles.staticContent, contentContainerStyle]}>
+          <View style={[styles.staticContent, responsiveContent, contentContainerStyle]}>
             {children}
           </View>
         )}
@@ -128,9 +132,11 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    minWidth: 0,
   },
   keyboardAvoid: {
     flex: 1,
+    minHeight: 0,
   },
   scrollView: {
     flex: 1,

@@ -1,3 +1,4 @@
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Quản lý Đăng Ký Suất Ăn & Duyệt Cắt Suất (Admin & Manager)
  * T30, T36: Tìm/lọc/phân trang danh sách suất ăn, duyệt/từ chối pending (tách biệt registration và meal-option),
@@ -699,7 +700,7 @@ export default function ManagementRegistrationsScreen() {
         title="Chọn ngày xem suất ăn" onSelectSingle={setSelectedDate} onClose={() => setDatePickerOpen(false)} />
       {/* Modal Đăng Ký Hộ Cán Bộ */}
       <Modal visible={isRegisterOnBehalfOpen} transparent animationType="slide" onRequestClose={() => setIsRegisterOnBehalfOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <ScrollView style={styles.modalDialog} contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Đăng ký suất ăn hộ cán bộ</Text>
@@ -789,12 +790,12 @@ export default function ManagementRegistrationsScreen() {
               />
             </View>
           </ScrollView>
-        </View>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Cắt Suất Hộ Cán Bộ - Tích hợp DatePickerInput */}
       <Modal visible={isOptionOnBehalfOpen} transparent animationType="slide" onRequestClose={() => setIsOptionOnBehalfOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <ScrollView style={styles.modalDialog} contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo yêu cầu cắt suất hộ</Text>
@@ -909,7 +910,7 @@ export default function ManagementRegistrationsScreen() {
               />
             </View>
           </ScrollView>
-        </View>
+        </ModalBackdrop>
       </Modal>
 
       {/* Confirm Dialogs */}
@@ -1017,6 +1018,8 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   tabBtn: {
+    flexWrap: 'wrap',
+    minWidth: 0,
     minHeight: 48,
     paddingHorizontal: spacing.xs,
     flex: 1,
@@ -1035,6 +1038,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   tabBtnText: {
+    flexShrink: 1,
+    textAlign: 'center',
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.medium,
     color: colors.textMuted,
@@ -1047,6 +1052,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   actionButtonsRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.xs,
@@ -1138,6 +1144,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   itemActionsRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.xs,
     justifyContent: 'flex-end',
@@ -1165,6 +1172,7 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

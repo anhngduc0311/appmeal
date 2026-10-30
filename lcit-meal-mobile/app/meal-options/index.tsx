@@ -440,6 +440,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   tabBtn: {
+    flexWrap: 'wrap',
+    minWidth: 0,
     flex: 1,
     paddingVertical: spacing.sm,
     alignItems: 'center',
@@ -455,6 +457,8 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabBtnText: {
+    flexShrink: 1,
+    textAlign: 'center',
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
     color: colors.textSecondary,

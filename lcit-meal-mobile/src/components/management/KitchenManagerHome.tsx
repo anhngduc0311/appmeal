@@ -1,3 +1,4 @@
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,7 @@ const actions = [
 
 export function KitchenManagerHome() {
   const router = useRouter();
+  const { compact } = useResponsiveLayout();
   const { user, role } = useAuth();
   const { today } = useCancellationDeadline();
   const [date, setDate] = useState(today);
@@ -84,7 +86,7 @@ export function KitchenManagerHome() {
         <Text style={styles.heroLabel}>Suất cần chuẩn bị</Text>
         <Text style={styles.total}>{total.toLocaleString('vi-VN')}<Text style={styles.unit}> suất</Text></Text>
         <Text style={styles.heroDetail}>{facilityLabel(facility)} · {formatDisplayDate(date)}</Text>
-        <View style={styles.breakdown}><View style={styles.metric}><Ionicons name="people-outline" size={20} color="#D8EBAF" /><View><Text style={styles.metricLabel}>Cán bộ</Text><Text style={styles.metricValue}>{staffCount}</Text></View></View><View style={[styles.metric, styles.guestMetric]}><Ionicons name="person-add-outline" size={20} color="#F7D88A" /><View><Text style={styles.metricLabel}>Khách mời</Text><Text style={styles.metricValue}>{guests}</Text></View></View></View>
+        <View style={[styles.breakdown, compact && { flexDirection: 'column', gap: 16 }]}><View style={styles.metric}><Ionicons name="people-outline" size={20} color="#D8EBAF" /><View><Text style={styles.metricLabel}>Cán bộ</Text><Text style={styles.metricValue}>{staffCount}</Text></View></View><View style={[styles.metric, styles.guestMetric, compact && { borderLeftWidth: 0, paddingLeft: 0 }]}><Ionicons name="person-add-outline" size={20} color="#F7D88A" /><View><Text style={styles.metricLabel}>Khách mời</Text><Text style={styles.metricValue}>{guests}</Text></View></View></View>
         <Text style={styles.status}>{cancelled ? 'Bếp nghỉ phục vụ ngày này' : !meal ? 'Chưa có lịch phục vụ ngày này' : 'Số suất theo đăng ký hiện tại'}</Text>
       </View>}
 
@@ -94,7 +96,7 @@ export function KitchenManagerHome() {
       </Card>
 
       <Text style={styles.sectionTitle}>Quản lý bếp ăn</Text>
-      <View style={styles.grid}>{actions.map(action => <Card key={action.path} padding="lg" style={styles.action} onPress={() => router.push(action.path === '/management/registrations' ? { pathname: action.path, params: { date, facility: String(facility) } } : action.path)}><View style={styles.actionIcon}><Ionicons name={action.icon} size={23} color={colors.primary} /></View><Text style={styles.actionTitle}>{action.title}</Text><Text style={styles.detail}>{action.detail}</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={styles.actionArrow} /></Card>)}</View>
+      <View style={styles.grid}>{actions.map(action => <Card key={action.path} padding="lg" style={[styles.action, compact && { flexBasis: '100%', minWidth: 0 }]} onPress={() => router.push(action.path === '/management/registrations' ? { pathname: action.path, params: { date, facility: String(facility) } } : action.path)}><View style={styles.actionIcon}><Ionicons name={action.icon} size={23} color={colors.primary} /></View><Text style={styles.actionTitle}>{action.title}</Text><Text style={styles.detail}>{action.detail}</Text><Ionicons name="arrow-forward" size={19} color={colors.primary} style={styles.actionArrow} /></Card>)}</View>
       <Text style={styles.footnote}>Kéo xuống để cập nhật dữ liệu bếp ăn.</Text>
       {pickerOpen && <DatePickerModal visible mode="single" initialDate={date} title="Chọn ngày điều hành bếp" onSelectSingle={setDate} onClose={() => setPickerOpen(false)} />}
     </ScreenContainer>
@@ -102,7 +104,7 @@ export function KitchenManagerHome() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20, marginBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
+  brandRow: { flexWrap: 'wrap', gap: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20, marginBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 }, brandIcon: { padding: 7, borderRadius: 10, backgroundColor: colors.primary },
   brandText: { fontSize: 16, fontWeight: '800', color: colors.primaryDark, letterSpacing: 1 }, brandLight: { fontWeight: '400' },
   mode: { backgroundColor: colors.primaryLight, paddingHorizontal: 9, paddingVertical: 6, borderRadius: 20 }, modeText: { fontSize: 9, fontWeight: '800', color: colors.primary },
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginVertical: 16 }, filter: { paddingHorizontal: 11, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }, filterActive: { backgroundColor: colors.primary, borderColor: colors.primary }, filterText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' }, filterTextActive: { color: 'white' },
   hero: { backgroundColor: colors.primaryDark, borderRadius: 24, padding: 24 }, heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }, eyebrow: { color: '#D8EBAF', letterSpacing: 1.6, fontSize: 10, fontWeight: '800' },
   heroLabel: { color: '#E1F2E8', fontSize: 16, fontWeight: '600' }, total: { color: 'white', fontSize: 60, lineHeight: 76, fontWeight: '800', letterSpacing: -2 }, unit: { fontSize: 18, fontWeight: '500', letterSpacing: 0 }, heroDetail: { color: '#B6D3C5', fontSize: 12 },
-  breakdown: { flexDirection: 'row', marginTop: 22, padding: 14, backgroundColor: '#073326', borderRadius: 14 }, metric: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, guestMetric: { borderLeftWidth: 1, borderLeftColor: '#315448', paddingLeft: 16 }, metricLabel: { color: '#BED8CB', fontSize: 11 }, metricValue: { fontSize: 23, fontWeight: '800', color: 'white', marginTop: 3 }, status: { color: '#BED8CB', fontSize: 11, marginTop: 14 },
+  breakdown: { flexDirection: 'row', marginTop: 22, padding: 14, backgroundColor: '#073326', borderRadius: 14 }, metric: { minWidth: 0, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }, guestMetric: { borderLeftWidth: 1, borderLeftColor: '#315448', paddingLeft: 16 }, metricLabel: { color: '#BED8CB', fontSize: 11 }, metricValue: { fontSize: 23, fontWeight: '800', color: 'white', marginTop: 3 }, status: { color: '#BED8CB', fontSize: 11, marginTop: 14 },
   pending: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, marginBottom: 26, borderColor: '#EADDBF', backgroundColor: '#FFFCF5' }, pendingIcon: { padding: 10, borderRadius: 13, backgroundColor: '#F8ECCE' }, pendingCopy: { flex: 1 }, pendingTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 14 }, grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, action: { flexGrow: 1, flexBasis: '46%', minWidth: 135 }, actionIcon: { alignSelf: 'flex-start', backgroundColor: colors.primaryLight, padding: 10, borderRadius: 12, marginBottom: 14 }, actionTitle: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 5 }, detail: { fontSize: 12, lineHeight: 18, color: colors.textSecondary }, actionArrow: { marginTop: 16 }, footnote: { textAlign: 'center', color: colors.textMuted, fontSize: 11, marginTop: 22, marginBottom: 10 },
 });

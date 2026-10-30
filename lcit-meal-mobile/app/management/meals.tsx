@@ -1,3 +1,5 @@
+import { ModalCard } from '../../src/components/common/ModalCard';
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Quản lý Lịch Bếp & Ngày Nghỉ Lễ (Admin & Manager)
  * T29: Danh sách, tạo/sửa lịch ăn, chi tiết tổng suất, hủy/mở bếp (dialog cảnh báo tác động) và quản lý nghỉ lễ.
@@ -385,8 +387,8 @@ export default function ManagementMealsScreen() {
 
       {/* Modal Xem Tổng Suất Ăn (Summary) */}
       <Modal visible={summaryMealId !== null} transparent animationType="fade" onRequestClose={() => setSummaryMealId(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tổng hợp suất ăn ngày</Text>
               <TouchableOpacity onPress={() => setSummaryMealId(null)} activeOpacity={0.7}>
@@ -433,14 +435,14 @@ export default function ManagementMealsScreen() {
               onPress={() => setSummaryMealId(null)}
               style={styles.modalCloseBtn}
             />
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Tạo Ngày Bếp Mới - Tích hợp DatePickerInput */}
       <Modal visible={isCreateMealOpen} transparent animationType="slide" onRequestClose={() => setIsCreateMealOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Thêm ngày nấu ăn mới</Text>
               <TouchableOpacity onPress={() => setIsCreateMealOpen(false)} activeOpacity={0.7}>
@@ -478,14 +480,14 @@ export default function ManagementMealsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Sửa Thực Đơn */}
       <Modal visible={isEditMealOpen} transparent animationType="slide" onRequestClose={() => setIsEditMealOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Sửa thực đơn ngày bếp</Text>
               <TouchableOpacity onPress={() => setIsEditMealOpen(false)} activeOpacity={0.7}>
@@ -520,14 +522,14 @@ export default function ManagementMealsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Hủy Bếp (Dialog cảnh báo tác động) */}
       <Modal visible={cancelTargetMeal !== null} transparent animationType="fade" onRequestClose={() => setCancelTargetMeal(null)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.impactWarningBox}>
               <Ionicons name="alert-circle" size={28} color="#DC2626" />
               <Text style={styles.impactTitle}>Cảnh báo tác động Hủy bếp</Text>
@@ -563,8 +565,8 @@ export default function ManagementMealsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Confirm Dialog Mở Lại Bếp */}
@@ -583,8 +585,8 @@ export default function ManagementMealsScreen() {
 
       {/* Modal Thêm Ngày Nghỉ Lễ - Tích hợp DatePickerInput */}
       <Modal visible={isCreateHolidayOpen} transparent animationType="slide" onRequestClose={() => setIsCreateHolidayOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo sự kiện nghỉ lễ / Tết</Text>
               <TouchableOpacity onPress={() => setIsCreateHolidayOpen(false)} activeOpacity={0.7}>
@@ -641,8 +643,8 @@ export default function ManagementMealsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
     </ScreenContainer>
   );
@@ -681,6 +683,8 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   tabBtn: {
+    flexWrap: 'wrap',
+    minWidth: 0,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -697,6 +701,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   tabBtnText: {
+    flexShrink: 1,
+    textAlign: 'center',
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.medium,
     color: colors.textMuted,
@@ -781,6 +787,8 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

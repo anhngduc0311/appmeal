@@ -8,7 +8,6 @@ import {
   View,
   Text,
   StyleSheet,
-  useWindowDimensions,
   Keyboard,
   Platform,
   TouchableWithoutFeedback,
@@ -27,11 +26,12 @@ import { useAuth } from '../../src/providers/AuthProvider';
 import { colors } from '../../src/theme/colors';
 import { spacing } from '../../src/theme/spacing';
 import { radius } from '../../src/theme/radius';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuth();
-  const wide = useWindowDimensions().width >= 850;
+  const { wide, compact } = useResponsiveLayout();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -160,7 +160,7 @@ export default function LoginScreen() {
         {/* Form Đăng nhập */}
         <Card
           variant="elevated"
-          padding={!wide && isKeyboardActive ? 'lg' : '2xl'}
+          padding={compact || (!wide && isKeyboardActive) ? 'lg' : '2xl'}
           style={styles.formCard}
         >
           <Text style={styles.formEyebrow}>CHÀO MỪNG TRỞ LẠI</Text>

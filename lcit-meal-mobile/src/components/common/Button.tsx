@@ -121,8 +121,7 @@ export const Button: React.FC<ButtonProps> = ({
       case 'sm':
         return {
           container: {
-            height: 40,
-            minHeight: 40,
+            minHeight: 44,
             paddingHorizontal: spacing.md,
             borderRadius: radius.md,
           },
@@ -134,7 +133,6 @@ export const Button: React.FC<ButtonProps> = ({
       case 'lg':
         return {
           container: {
-            height: 52,
             minHeight: 52,
             paddingHorizontal: spacing['2xl'],
             borderRadius: radius.xl,
@@ -148,7 +146,6 @@ export const Button: React.FC<ButtonProps> = ({
       default:
         return {
           container: {
-            height: spacing.minTouchTarget, // 48px
             minHeight: spacing.minTouchTarget,
             paddingHorizontal: spacing.lg,
             borderRadius: radius.lg,
@@ -210,6 +207,9 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   baseContainer: {
+    maxWidth: '100%',
+    minWidth: 0,
+    flexShrink: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -221,6 +221,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   baseText: {
+    flexShrink: 1,
     fontWeight: typography.weights.semibold,
     textAlign: 'center',
     letterSpacing: -0.2,

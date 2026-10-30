@@ -440,6 +440,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   sectionHeaderRow: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
@@ -487,10 +489,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   rowInputs: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm,
   },
   halfCol: {
+    minWidth: 180,
     flex: 1,
   },
   qrActionSection: {
@@ -507,6 +511,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
   },
   qrPreviewHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',

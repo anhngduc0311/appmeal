@@ -160,6 +160,7 @@ kich_ban_video*.md
 *.wmv
 *.m4v
 *.ts
+!lcit-meal-mobile/src/hooks/useResponsiveLayout.ts
 *.mts
 
 # Audio files (voiceovers, TTS, BGM)

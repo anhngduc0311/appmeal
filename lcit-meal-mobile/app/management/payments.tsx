@@ -1,3 +1,5 @@
+import { ModalCard } from '../../src/components/common/ModalCard';
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Quản lý Thanh Toán Tiền Ăn (Admin & Manager)
  * T31, T36: Danh sách/lọc thanh toán, tạo/sửa khoản thu thủ công, đánh dấu đã thanh toán (kèm chứng từ theo API thực tế)
@@ -452,7 +454,7 @@ export default function ManagementPaymentsScreen() {
 
       {/* Modal Tạo Khoản Thu - Tích hợp DatePickerInput & Searchable Dropdown */}
       <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo khoản thanh toán mới</Text>
@@ -623,13 +625,13 @@ export default function ManagementPaymentsScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Sửa Khoản Thu - Tích hợp DatePickerInput */}
       <Modal visible={isEditOpen} transparent animationType="slide" onRequestClose={() => setIsEditOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Sửa khoản thanh toán</Text>
               <TouchableOpacity onPress={() => setIsEditOpen(false)} activeOpacity={0.7}>
@@ -686,14 +688,14 @@ export default function ManagementPaymentsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Mark Paid */}
       <Modal visible={isMarkPaidOpen} transparent animationType="slide" onRequestClose={() => setIsMarkPaidOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Xác nhận đã thanh toán</Text>
               <TouchableOpacity onPress={() => setIsMarkPaidOpen(false)} activeOpacity={0.7}>
@@ -742,8 +744,8 @@ export default function ManagementPaymentsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Confirm Delete */}
@@ -792,12 +794,14 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   kpiRow: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.xs,
   },
   kpiCard: {
+    minWidth: 120,
     flex: 1,
     backgroundColor: colors.surface,
     alignItems: 'center',
@@ -880,6 +884,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   amountRow: {
+    flexWrap: 'wrap',
+    gap: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -911,6 +917,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   paymentFooter: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -954,6 +962,8 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

@@ -147,6 +147,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   label: {
+    flexShrink: 1,
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.semibold,
     color: colors.text,
@@ -159,8 +160,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 50,
-    minHeight: spacing.minTouchTarget,
+    minHeight: 50,
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderWidth: 1,
@@ -182,10 +182,10 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: '100%',
+    minWidth: 0,
     fontSize: typography.sizes.base,
     color: colors.text,
-    paddingVertical: 0,
+    paddingVertical: spacing.md,
     includeFontPadding: false,
   },
   inputMultiline: {

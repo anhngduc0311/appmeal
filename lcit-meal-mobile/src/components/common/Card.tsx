@@ -55,6 +55,7 @@ export const Card: React.FC<CardProps> = ({
 
 const styles = StyleSheet.create({
   base: {
+    minWidth: 0,
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
     overflow: 'hidden',

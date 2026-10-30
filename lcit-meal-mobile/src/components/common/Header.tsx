@@ -20,6 +20,7 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { radius } from '../../theme/radius';
 import { UserRole } from '../../types';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export interface HeaderProps {
   title: string;
@@ -43,6 +44,7 @@ export const Header: React.FC<HeaderProps> = ({
   style,
 }) => {
   const router = useRouter();
+  const { compact } = useResponsiveLayout();
 
   const handleBack = () => {
     if (onBack) {
@@ -55,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <View style={[styles.container, style]}>
+    <View style={[styles.container, compact && styles.containerCompact, style]}>
       <View style={styles.leftRow}>
         {showBack && (
           <TouchableOpacity
@@ -89,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
         </View>
       </View>
 
-      <View style={styles.rightRow}>
+      <View style={[styles.rightRow, compact && styles.rightRowCompact]}>
         {rightAction}
       </View>
     </View>
@@ -97,6 +99,14 @@ export const Header: React.FC<HeaderProps> = ({
 };
 
 const styles = StyleSheet.create({
+  containerCompact: {
+    flexWrap: 'wrap',
+    rowGap: spacing.sm,
+  },
+  rightRowCompact: {
+    marginLeft: 0,
+    maxWidth: '100%',
+  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -110,11 +120,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    minWidth: 180,
     gap: spacing.sm,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
+    flexShrink: 0,
     borderRadius: radius.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -124,9 +136,11 @@ const styles = StyleSheet.create({
   },
   titleWrapper: {
     flex: 1,
+    minWidth: 0,
   },
   titleRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.xs,
   },
@@ -160,6 +174,8 @@ const styles = StyleSheet.create({
   },
   rightRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexShrink: 1,
     alignItems: 'center',
     gap: spacing.sm,
     marginLeft: spacing.sm,

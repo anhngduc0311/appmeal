@@ -1,3 +1,4 @@
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 /**
  * Management Dashboard Screen
  * T27, T28: Bảng điều khiển quản lý tổng quan, KPI suất ăn & khách, Biểu đồ chu kỳ, Hàng chờ duyệt và Menu phân hệ
@@ -46,6 +47,7 @@ import { formatBusinessDate } from '../../src/utils/formatters';
 export default function ManagementDashboardScreen({ isTab = false }: { isTab?: boolean } = {}) {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const { compact } = useResponsiveLayout();
   const wide = width >= 850;
   const { user, role } = useAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'year'>('week');
@@ -324,7 +326,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/meals' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: colors.primaryLight }]}>
@@ -338,7 +340,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/registrations' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF3C7' }]}>
@@ -352,7 +354,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/payments' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#DCFCE7' }]}>
@@ -366,7 +368,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/users' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#F3E8FF' }]}>
@@ -382,7 +384,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/notifications' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#E0F2FE' }]}>
@@ -397,7 +399,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && { width: '24%' }]}
+                style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/settings' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#FCE7F3' }]}>
@@ -413,7 +415,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
               <Card
                 variant="elevated"
                 padding="md"
-                style={[styles.menuGridItem, wide && { width: '24%' }]}
+                style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
                 onPress={() => router.push('/management/audit' as any)}
               >
                 <View style={[styles.menuGridIcon, { backgroundColor: '#F1F5F9' }]}>
@@ -428,7 +430,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Card
               variant="elevated"
               padding="md"
-              style={[styles.menuGridItem, wide && { width: '24%' }]}
+              style={[styles.menuGridItem, compact && { width: '100%' }, wide && { width: '24%' }]}
               onPress={() => router.push('/management/admin-tools' as any)}
             >
               <View style={[styles.menuGridIcon, { backgroundColor: '#FEF9C3' }]}>
@@ -469,7 +471,13 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   headingCopy: { flex: 1, minWidth: 0 },
-  filterBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginVertical: 12 },
+  filterBar: {
+    flexWrap: 'wrap',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginVertical: 12 },
   facilityLink: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
   content: {
     flex: 1,
@@ -647,6 +655,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   pendingActions: {
+    flexWrap: 'wrap',
     flexDirection: 'row',
     gap: spacing.xs,
     justifyContent: 'flex-end',

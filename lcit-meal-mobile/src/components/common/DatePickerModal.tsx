@@ -1,3 +1,4 @@
+import { ModalBackdrop } from './ModalBackdrop';
 /**
  * Common Component - DatePickerModal
  * Modal chọn ngày / khoảng ngày dạng Lịch tháng tương tác hoàn chỉnh (Interactive Calendar)
@@ -15,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
+import { ModalCard } from './ModalCard';
 import {
   formatBusinessDate,
   formatDisplayDate,
@@ -268,9 +270,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.backdrop}>
+        <ModalBackdrop style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={[styles.modalCard, shadows.xl]}>
+            <ModalCard style={[styles.modalCard, shadows.xl]}>
               {/* Header */}
               <View style={styles.header}>
                 <Text style={styles.title}>
@@ -432,9 +434,9 @@ export const DatePickerModal: React.FC<DatePickerModalProps> = ({
                   style={styles.btn}
                 />
               </View>
-            </View>
+            </ModalCard>
           </TouchableWithoutFeedback>
-        </View>
+        </ModalBackdrop>
       </TouchableWithoutFeedback>
     </Modal>
   );

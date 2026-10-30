@@ -1,3 +1,5 @@
+import { ModalCard } from '../../src/components/common/ModalCard';
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Quản lý Người Dùng & Vai Trò (Admin & Manager)
  * T32: Danh sách người dùng cho manager/admin; tạo/sửa/trạng thái/role chỉ cho admin;
@@ -449,8 +451,8 @@ export default function ManagementUsersScreen() {
       />
 
       <Modal visible={facilityTarget !== null} transparent animationType="fade" onRequestClose={() => { if (!assignment.isPending) setFacilityTarget(null); }}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <Text style={styles.fullNameText}>Phân cơ sở · {facilityTarget?.fullName}</Text>
             <Text style={styles.metaText}>Lưu trên thiết bị này. Khách đi kèm được tính cùng cơ sở của cán bộ.</Text>
             <FacilitySelector disabled={assignment.isPending}
@@ -464,13 +466,13 @@ export default function ManagementUsersScreen() {
               }} />
             {assignment.isError && <Text style={styles.metaText}>Chưa lưu được phân cơ sở. Vui lòng thử lại.</Text>}
             <Button title="Đóng" variant="secondary" disabled={assignment.isPending} onPress={() => { assignment.reset(); setFacilityTarget(null); }} />
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Thêm Người Dùng Mới (Admin only) */}
       <Modal visible={isCreateOpen} transparent animationType="slide" onRequestClose={() => setIsCreateOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Tạo tài khoản người dùng mới</Text>
@@ -567,12 +569,12 @@ export default function ManagementUsersScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </ModalBackdrop>
       </Modal>
 
       {/* Modal Sửa Người Dùng (Admin only) */}
       <Modal visible={isEditOpen} transparent animationType="slide" onRequestClose={() => setIsEditOpen(false)}>
-        <View style={styles.modalOverlay}>
+        <ModalBackdrop style={styles.modalOverlay}>
           <View style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chỉnh sửa tài khoản</Text>
@@ -681,7 +683,7 @@ export default function ManagementUsersScreen() {
               </View>
             </ScrollView>
           </View>
-        </View>
+        </ModalBackdrop>
       </Modal>
 
       {/* Confirm Delete */}
@@ -858,6 +860,8 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
   },
   modalHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',

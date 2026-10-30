@@ -1,3 +1,5 @@
+import { ModalCard } from '../../src/components/common/ModalCard';
+import { ModalBackdrop } from '../../src/components/common/ModalBackdrop';
 /**
  * Soạn & Phát Thông Báo (Admin & Manager)
  * T33: Soạn/gửi thông báo theo người nhận hoặc broadcast đúng contract;
@@ -403,8 +405,8 @@ export default function ManagementNotificationsScreen() {
 
       {/* Modal Xem Trước Trước Khi Gửi (Review & Preview Modal) */}
       <Modal visible={isPreviewOpen} transparent animationType="slide" onRequestClose={() => setIsPreviewOpen(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalDialog}>
+        <ModalBackdrop style={styles.modalOverlay}>
+          <ModalCard style={styles.modalDialog}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalDialogTitle}>Xem lại thông báo trước khi phát</Text>
               <TouchableOpacity onPress={() => setIsPreviewOpen(false)} activeOpacity={0.7}>
@@ -447,8 +449,8 @@ export default function ManagementNotificationsScreen() {
                 style={styles.modalBtnHalf}
               />
             </View>
-          </View>
-        </View>
+          </ModalCard>
+        </ModalBackdrop>
       </Modal>
 
       {/* Confirm Delete Dialog */}
@@ -482,6 +484,8 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   tabBtn: {
+    flexWrap: 'wrap',
+    minWidth: 0,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -498,6 +502,8 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   tabBtnText: {
+    flexShrink: 1,
+    textAlign: 'center',
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.medium,
     color: colors.textMuted,
@@ -524,6 +530,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   formTitle: {
+    flexShrink: 1,
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.bold,
     color: colors.text,
@@ -571,6 +578,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   scopeBtn: {
+    flexShrink: 1,
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -588,6 +596,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   scopeBtnText: {
+    flexShrink: 1,
     fontSize: typography.sizes.xs,
     color: colors.textSecondary,
     fontWeight: typography.weights.medium,
@@ -624,6 +633,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
   },
   userItemCheckText: {
+    flexShrink: 1,
     fontSize: 11,
     color: colors.textSecondary,
   },
@@ -693,12 +703,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   modalHeader: {
+    flexWrap: 'wrap',
+    gap: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: spacing.md,
   },
   modalDialogTitle: {
+    flexShrink: 1,
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.bold,
     color: colors.text,

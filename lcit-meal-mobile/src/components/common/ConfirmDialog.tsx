@@ -1,3 +1,4 @@
+import { ModalBackdrop } from './ModalBackdrop';
 /**
  * Common Component - ConfirmDialog
  * Hộp thoại xác nhận thao tác (Cắt suất, Đăng xuất, Lưu thay đổi...)
@@ -13,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
+import { ModalCard } from './ModalCard';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -51,6 +54,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
 }) => {
   const isDanger = isDestructive || variant === 'danger';
+  const { compact } = useResponsiveLayout();
 
   return (
     <Modal
@@ -60,9 +64,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onRequestClose={onCancel}
     >
       <TouchableWithoutFeedback onPress={onCancel}>
-        <View style={styles.backdrop}>
+        <ModalBackdrop style={styles.backdrop}>
           <TouchableWithoutFeedback>
-            <View style={[styles.dialogCard, shadows.lg]}>
+            <ModalCard style={[styles.dialogCard, shadows.lg, compact && { padding: spacing.lg }]}>
               {iconName && (
                 <View
                   style={[
@@ -87,7 +91,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
               {children && <View style={styles.customContentBox}>{children}</View>}
 
-              <View style={styles.buttonRow}>
+              <View style={[styles.buttonRow, compact && { flexDirection: 'column' }]}>
                 <Button
                   title={cancelText}
                   variant="secondary"
@@ -106,9 +110,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                   style={styles.actionButton}
                 />
               </View>
-            </View>
+            </ModalCard>
           </TouchableWithoutFeedback>
-        </View>
+        </ModalBackdrop>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -168,6 +172,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   actionButton: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 0,
   },
 });

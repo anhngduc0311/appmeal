@@ -5,18 +5,20 @@
  */
 
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform, Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnseenNotificationCount } from '../../src/hooks/useNotificationsData';
 import { colors } from '../../src/theme/colors';
 import { useAuth } from '../../src/providers/AuthProvider';
+import { useResponsiveLayout } from '../../src/hooks/useResponsiveLayout';
 
 export default function TabLayout() {
   const { role } = useAuth();
   const { data: unreadCount = 0 } = useUnseenNotificationCount();
   const insets = useSafeAreaInsets();
+  const { fontScale } = useResponsiveLayout();
 
   // Đảm bảo không bị phím điều hướng Android (3 nút hoặc thanh cử chỉ) che mất:
   // - Nếu insets.bottom có giá trị (Android 3 nút ~48dp, cử chỉ ~16-24dp, iOS ~34dp) -> dùng insets.bottom
@@ -25,13 +27,22 @@ export default function TabLayout() {
     insets.bottom,
     Platform.OS === 'android' ? 16 : 8
   );
-  const tabHeight = 62 + bottomInset;
+  const tabHeight = 74 + Math.max(0, fontScale - 1) * 32 + bottomInset;
+  const tabLabel = (label: string) => function TabLabel({ color }: { color: string }) {
+    return (
+      <Text style={{ color, fontSize: 11, fontWeight: '600', textAlign: 'center', flexShrink: 1, marginTop: 2 }}>
+        {label}
+      </Text>
+    );
+  };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
+        tabBarLabelPosition: 'below-icon',
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarActiveBackgroundColor: colors.primary50,
@@ -66,7 +77,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: role === 'manager' ? 'Điều hành bếp' : 'Trang chủ',
-          tabBarLabel: role === 'manager' ? 'Điều hành' : 'Trang chủ',
+          tabBarLabel: tabLabel(role === 'manager' ? 'Điều hành' : 'Trang chủ'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -82,7 +93,7 @@ export default function TabLayout() {
         options={{
           href: (role === 'kitchen' || role === 'admin') ? null : '/schedule',
           title: role === 'manager' ? 'Lịch bếp' : 'Lịch ăn',
-          tabBarLabel: role === 'manager' ? 'Lịch bếp' : 'Lịch ăn',
+          tabBarLabel: tabLabel(role === 'manager' ? 'Lịch bếp' : 'Lịch ăn'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'calendar' : 'calendar-outline'}
@@ -98,7 +109,7 @@ export default function TabLayout() {
         options={{
           href: (role === 'kitchen' || role === 'admin') ? null : '/payments',
           title: 'Thanh toán',
-          tabBarLabel: 'Thanh toán',
+          tabBarLabel: tabLabel('Thanh toán'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'wallet' : 'wallet-outline'}
@@ -114,7 +125,7 @@ export default function TabLayout() {
         options={{
           href: role === 'kitchen' ? null : '/notifications',
           title: 'Thông báo',
-          tabBarLabel: 'Thông báo',
+          tabBarLabel: tabLabel('Thông báo'),
           tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.status.cancelled.dot,
@@ -134,7 +145,7 @@ export default function TabLayout() {
         name="account"
         options={{
           title: 'Tài khoản',
-          tabBarLabel: 'Tài khoản',
+          tabBarLabel: tabLabel('Tài khoản'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}
