@@ -153,6 +153,14 @@ export default function ManagementUsersScreen() {
       (u.phone && u.phone.includes(q));
     return matchRole && matchQuery && matchesFacility(getFacility(u, overrides), facilityFilter);
   });
+  const roleCounts = filteredUsers.reduce<Record<UserRole, number>>((counts, user) => {
+    counts[extractUserRole(user)] += 1;
+    return counts;
+  }, { employee: 0, kitchen: 0, manager: 0, admin: 0 });
+  const peopleSummary = ([
+    ['employee', 'cán bộ'], ['kitchen', 'bếp'], ['manager', 'quản lý'], ['admin', 'admin'],
+  ] as const).filter(([role]) => roleCounts[role] > 0)
+    .map(([role, label]) => `${roleCounts[role]} ${label}`).join(' · ') || '0 tài khoản';
 
   const handleCreateUser = async () => {
     if (!formFullName.trim() || !formUsername.trim() || !formPassword.trim()) {
@@ -417,7 +425,7 @@ export default function ManagementUsersScreen() {
         </ScrollView>
       </View>
       <View style={styles.resultsRow}>
-        <Text style={styles.resultsText}>{isLoading || loadingFacilities ? 'Đang tải danh sách…' : isError ? 'Chưa tải được danh sách' : `${filteredUsers.length} người dùng · ${facilityLabel(facilityFilter)}`}</Text>
+        <Text style={styles.resultsText}>{isLoading || loadingFacilities ? 'Đang tải danh sách…' : isError ? 'Chưa tải được danh sách' : `${peopleSummary} · ${facilityLabel(facilityFilter)}`}</Text>
         {(searchQuery || roleFilter !== 'all' || facilityFilter !== 'all') && (
           <TouchableOpacity style={styles.resetButton} accessibilityRole="button" onPress={() => { setSearchQuery(''); setRoleFilter('all'); setFacilityFilter('all'); }}>
             <Text style={styles.actionBtnText}>Bỏ lọc</Text>

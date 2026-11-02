@@ -6,6 +6,7 @@ const USER_STATUS = require("../constants/UserStatus");
 const USER_SELECT_FIELDS = `
     u.id,
     u.full_name,
+    u.facility_id,
     u.username,
     u.password_hash,
     u.auth_key,

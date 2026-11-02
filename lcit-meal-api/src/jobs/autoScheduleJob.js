@@ -1,4 +1,5 @@
 const cron = require("node-cron");
+const { canAutoRegister } = require('./autoRegistrationEligibility');
 
 const MealRepository = require("../repos/MealRepository");
 const MealRegistrationRepository = require("../repos/MealRegistrationRepository");
@@ -146,7 +147,7 @@ async function runAutoSchedule(targetMonth) {
       ? new Set(enabledScheduleDays)
       : null;
 
-  const activeUsers = users.filter((u) => u.status === "1");
+  const activeUsers = users.filter(canAutoRegister);
 
   let createdMeals = 0;
   let createdRegistrations = 0;

@@ -19,6 +19,7 @@ export interface User {
   id: number;
   username: string;
   fullName: string;
+  facilityId?: 1 | 2 | null;
   email?: string | null;
   phone?: string | null;
   status: UserStatus;

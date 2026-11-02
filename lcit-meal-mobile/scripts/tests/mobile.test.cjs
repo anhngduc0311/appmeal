@@ -134,6 +134,7 @@ test('Facility roster handles confirmed aliases without guessing other people or
   assert.equal(f.getFacility({ fullName: 'Hoàng Minh Tuân' }), 1);
   assert.equal(f.getFacility({ fullName: 'Bùi Thị Hải Hà (còi)' }), 1);
   assert.equal(f.getFacility({ fullName: 'Người khác' }), null);
+  assert.equal(f.getFacility({ fullName: 'Quản lý bếp Cơ sở 1', facilityId: 1 }), 1);
   assert.equal(f.getFacility({ id: 2, fullName: 'Kim Mạnh Cường' }, { 2: { name: 'Kim Mạnh Cường', facilityId: 2 } }), 2);
   assert.equal(f.getFacility({ id: 2, fullName: 'Kim Mạnh Cường' }, { 2: { name: 'Kim Mạnh Cường', facilityId: null } }), null);
   assert.equal(f.getFacility({ id: 2, fullName: 'Người mới' }, { 2: { name: 'Người cũ', facilityId: 2 } }), null);

@@ -2,7 +2,7 @@ import type { MealRegistration } from '../types';
 
 export type FacilityId = 1 | 2;
 export type FacilityFilter = 'all' | 'unassigned' | FacilityId;
-export type FacilityPerson = { id?: number; fullName?: string };
+export type FacilityPerson = { id?: number; fullName?: string; facilityId?: FacilityId | null };
 export type FacilityOverrides = Record<string, { name: string; facilityId: FacilityId | null }>;
 
 // Administrator's roster and visible columns in the November 2026 source sheet.
@@ -28,6 +28,7 @@ export function getFacility(person: FacilityPerson, overrides: FacilityOverrides
   const override = person.id === undefined ? undefined : overrides[String(person.id)];
   // A reused account ID must not inherit the previous person's local assignment.
   if (override && normalizeFacilityName(override.name) === name) return override.facilityId;
+  if (person.facilityId === 1 || person.facilityId === 2) return person.facilityId;
   return facility1Names.has(name) ? 1 : null;
 }
 
