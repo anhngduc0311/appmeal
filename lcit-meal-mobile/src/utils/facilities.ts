@@ -5,18 +5,18 @@ export type FacilityFilter = 'all' | 'unassigned' | FacilityId;
 export type FacilityPerson = { id?: number; fullName?: string };
 export type FacilityOverrides = Record<string, { name: string; facilityId: FacilityId | null }>;
 
-// Photo supplied by the administrator. Keep accents to avoid matching different people.
-// Only the two confirmed account aliases are included; Tuân is not guessed to be Tuấn.
+// Administrator's roster and visible columns in the November 2026 source sheet.
+// Keep accents and explicitly listed account aliases when matching people.
 export const FACILITY_1_NAMES = [
   'Kim Mạnh Cường', 'Vũ Lê Duy', 'Trần Duy Khánh', 'Bùi Minh Hiệp',
   'Đinh Thị Hằng', 'Đinh Thị Hải', 'Tô Ngọc Anh', 'Dương Quang Huy',
-  'Nguyễn Thế Hùng', 'Hoàng Minh Tuấn', 'Đàm Phan Hạnh', 'Trần Minh Đức',
+  'Nguyễn Thế Hùng', 'Hoàng Minh Tuấn', 'Hoàng Minh Tuân', 'Đàm Phan Hạnh', 'Trần Minh Đức',
   'Hoàng Đức Thắng', 'Đỗ Hồng Quân', 'Đỗ Minh Ngọc', 'Nguyễn Thắng Nghĩa',
   'Nguyễn Hải Vinh', 'Hoàng Văn Quang', 'Vũ Đức Hiếu', 'Nguyễn Đức Trọng',
   'Nguyễn Việt Hà', 'Lê Duy Long', 'Nguyễn Tiến Đạt', 'Nguyễn Thành Long',
   'Nguyễn Quang Việt', 'Trịnh Đức Thọ', 'Bùi Thị Hương Giang',
   'Nguyễn Công Tuấn Dũng', 'Nguyễn Thị Minh Phương', 'Nguyễn T.Minh Phương',
-  'Bùi Thị Hải Hà', 'Bùi Thị Hải Hà (cũ)', 'Đức Anh (mới)', 'Nguyễn Đức Anh',
+  'Bùi Thị Hải Hà', 'Bùi Thị Hải Hà (cũ)', 'Bùi Thị Hải Hà (còi)', 'Đức Anh (mới)', 'Nguyễn Đức Anh',
 ];
 
 export const normalizeFacilityName = (name: string) =>

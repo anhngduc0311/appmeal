@@ -372,11 +372,10 @@ class MealRegistrationRepository {
   async completeConfirmedByDate(dateStr) {
     const [result] = await pool.query(
       `
-      UPDATE meal_registration mr
-      JOIN meal m ON m.id = mr.meal_id
-      SET mr.status = 'completed'
-      WHERE m.meal_date = ?
-        AND mr.status = 'confirmed'
+      UPDATE meal_registration
+      SET status = 'completed'
+      WHERE meal_id IN (SELECT id FROM meal WHERE meal_date = ? AND is_cancelled = 0 AND status = 'active')
+        AND status = 'confirmed'
     `,
       [dateStr],
     );

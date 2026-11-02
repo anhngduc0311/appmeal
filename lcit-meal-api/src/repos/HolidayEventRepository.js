@@ -129,12 +129,15 @@ class HolidayEventRepository {
       const restoredRegistrations = [];
       for (const meal of meals) {
         await db.query('UPDATE meal SET is_cancelled=0, cancelled_by=NULL WHERE id=?', [meal.id]);
-        const [registrations] = await db.query(`SELECT DISTINCT mr.id, mr.user_id, hr.previous_status
+        const [registrations] = await db.query(`SELECT mr.id, mr.user_id,
+          (SELECT hr.previous_status FROM holiday_event_registration hr
+            JOIN holiday_event h ON h.id=hr.event_id
+            WHERE hr.registration_id=mr.id AND h.status='inactive' ORDER BY hr.event_id LIMIT 1) AS previous_status
           FROM meal_registration mr
-          JOIN holiday_event_registration hr ON hr.registration_id=mr.id
-          JOIN holiday_event h ON h.id=hr.event_id
           JOIN meal m ON m.id=mr.meal_id
-          WHERE mr.meal_id=? AND mr.status='cancelled' AND h.status='inactive'
+          WHERE mr.meal_id=? AND mr.status='cancelled'
+            AND EXISTS (SELECT 1 FROM holiday_event_registration hr JOIN holiday_event h ON h.id=hr.event_id
+              WHERE hr.registration_id=mr.id AND h.status='inactive')
             AND NOT EXISTS (SELECT 1 FROM meal_option mo WHERE mo.user_id=mr.user_id
               AND mo.status='approved' AND m.meal_date BETWEEN mo.from_date AND mo.to_date)
           FOR UPDATE`, [meal.id]);
@@ -143,11 +146,11 @@ class HolidayEventRepository {
           restoredRegistrations.push({id:r.id,userId:r.user_id});
         }
         // Consume snapshots so a later voluntary cancellation cannot be undone.
-        await db.query(`DELETE hr FROM holiday_event_registration hr
-          JOIN holiday_event h ON h.id=hr.event_id JOIN meal_registration mr ON mr.id=hr.registration_id
-          WHERE h.status='inactive' AND mr.meal_id=?`, [meal.id]);
-        await db.query(`DELETE hm FROM holiday_event_meal hm JOIN holiday_event h ON h.id=hm.event_id
-          WHERE h.status='inactive' AND hm.meal_id=?`, [meal.id]);
+        await db.query(`DELETE FROM holiday_event_registration
+          WHERE event_id IN (SELECT id FROM holiday_event WHERE status='inactive')
+          AND registration_id IN (SELECT id FROM meal_registration WHERE meal_id=?)`, [meal.id]);
+        await db.query(`DELETE FROM holiday_event_meal
+          WHERE event_id IN (SELECT id FROM holiday_event WHERE status='inactive') AND meal_id=?`, [meal.id]);
       }
       return { restored: await this.get(id,db), restoredMealCount: meals.length, restoredRegistrations };
     });

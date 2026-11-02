@@ -1,0 +1,16 @@
+appmeal.34.126.188.117.sslip.io {
+  encode zstd gzip
+  @api path /api/* /healthz /uploads/*
+  handle @api {
+    reverse_proxy 127.0.0.1:3000
+  }
+  handle {
+    root * /opt/appmeal/web
+    try_files {path} {path}.html {path}/index.html /index.html
+    file_server
+  }
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+  }
+}

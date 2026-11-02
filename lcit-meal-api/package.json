@@ -4,6 +4,9 @@
   "main": "src/server.js",
   "scripts": {
     "migrate": "node scripts/migrate.cjs",
+    "migrate:postgres": "node scripts/migrate-postgres.cjs",
+    "bootstrap:admin": "node scripts/bootstrap-admin.cjs",
+    "test:postgres": "node scripts/tests/postgres.cjs",
     "test": "node scripts/test-workflows.cjs",
     "test:auth": "node --test scripts/tests/auth.test.cjs",
     "dev": "nodemon src/server.js",
@@ -23,6 +26,7 @@
     "multer": "^2.3.0",
     "mysql2": "^3.24.2",
     "node-cron": "^4.6.0",
+    "pg": "^8.23.1",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

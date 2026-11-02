@@ -3,7 +3,9 @@ import { ScrollView, StyleSheet, View, ViewProps } from 'react-native';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 /** Keep long dialogs reachable on short screens and with enlarged text. */
-export function ModalCard({ children, style, ...props }: ViewProps) {
+export const ModalCard = React.forwardRef<View, ViewProps>(function ModalCard(
+  { children, style, ...props }, ref,
+) {
   const { modalMaxHeight } = useResponsiveLayout();
   const {
     padding, paddingHorizontal, paddingVertical,
@@ -13,7 +15,7 @@ export function ModalCard({ children, style, ...props }: ViewProps) {
   } = StyleSheet.flatten(style) || {};
 
   return (
-    <View {...props} style={[frame, { maxHeight: modalMaxHeight, flexShrink: 1 }]}>
+    <View {...props} ref={ref} style={[frame, { maxHeight: modalMaxHeight, flexShrink: 1 }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
@@ -29,7 +31,7 @@ export function ModalCard({ children, style, ...props }: ViewProps) {
       </ScrollView>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   scroll: { flexShrink: 1, width: '100%' },

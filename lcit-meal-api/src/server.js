@@ -6,7 +6,7 @@ const mealCompletionJob = require("./jobs/mealCompletionJob");
 const SystemSettingRepository = require("./repos/SystemSettingRepository");
 const MealScheduleConfigRepository = require("./repos/MealScheduleConfigRepository");
 
-app.listen(env.port, async () => {
+app.listen(env.port, env.host, async () => {
   console.log(`Server running on port ${env.port}`);
   try {
     const systemSettingRepo = new SystemSettingRepository();
