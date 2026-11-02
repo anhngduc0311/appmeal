@@ -55,6 +55,28 @@ test('Cancellation service rechecks cutoff after reading the meal, so an old dia
   } finally { Date.now = originalNow; }
 });
 
+test('Management cancellation delegates to server permission checks after the personal cutoff', async () => {
+  const { mealService } = app.load('services/mealService.ts');
+  const originalNow = Date.now;
+  Date.now = () => Date.parse('2026-10-23T03:00:00Z');
+  const calls = [];
+  global.fetch = async (url, config) => {
+    calls.push({ url, method: config.method });
+    return respond(200, { success: true, payload: { id: 42, status: 'cancelled' } });
+  };
+  try {
+    const result = await mealService.cancelRegistrationOnBehalf(42);
+    assert.equal(result.status, 'cancelled');
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /\/meal-registrations\/42\/cancel$/);
+    assert.equal(calls[0].method, 'PATCH');
+    global.fetch = async () => respond(409, { success: false, error: { code: 409, message: 'Suất ăn đã hoàn thành' } });
+    await assert.rejects(mealService.cancelRegistrationOnBehalf(42), /Suất ăn đã hoàn thành/);
+    global.fetch = async () => respond(403, { success: false, error: { code: 403, message: 'Không có quyền thao tác' } });
+    await assert.rejects(mealService.cancelRegistrationOnBehalf(42), /Không có quyền thao tác/);
+  } finally { Date.now = originalNow; }
+});
+
 test('Cancellation is submitted before cutoff, while future meals remain available after cutoff', async () => {
   const { mealService } = app.load('services/mealService.ts');
   const originalNow = Date.now;

@@ -22,6 +22,7 @@ import { ScreenContainer } from '../../src/components/common/ScreenContainer';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
 import { ManagementMealChart } from '../../src/components/management/ManagementMealChart';
+import { AdminNonDiners } from '../../src/components/management/AdminNonDiners';
 import { Badge } from '../../src/components/common/Badge';
 import { Button } from '../../src/components/common/Button';
 import { ForbiddenState } from '../../src/components/states/ForbiddenState';
@@ -54,7 +55,7 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
   const [refreshing, setRefreshing] = useState(false);
   const [facilityFilter, setFacilityFilter] = useState<FacilityFilter>(1);
   const { overrides, isLoading: loadingFacilities } = useFacilities();
-  const { data: facilityUsers = [], refetch: refetchUsers } = useUsersList();
+  const { data: facilityUsers = [], isLoading: loadingUsers, isError: usersError, refetch: refetchUsers } = useUsersList();
   const today = formatBusinessDate(new Date());
   const { data: todayRegistrations = [], isLoading: loadingFacilityMeals, isError: facilityMealsError, refetch: refetchFacilityMeals } =
     useManagementRegistrations({ from: today, to: today });
@@ -215,6 +216,10 @@ export default function ManagementDashboardScreen({ isTab = false }: { isTab?: b
             <Text style={styles.viewAllText}>Cán bộ</Text>
           </TouchableOpacity>
         </View>
+        {role === 'admin' && <AdminNonDiners key={`${today}-${facilityFilter}`}
+          records={todayRegistrations.filter(record => matchesFacility(getFacility(registrationPerson(record, facilityUsers), overrides), facilityFilter))}
+          disabled={!facilityReady || loadingUsers || usersError || cancelled || !homeData?.todayMeal}
+          facility={facilityLabel(facilityFilter)} date={formatBusinessDateDisplay(today)} />}
         <View style={styles.kpiContainer}>
           {/* Card 2 & 3: Pending & Outstanding - Hiển thị thành 1 dòng (2 cột) */}
           <View style={[styles.kpiRowSmall, wide && { flex: 1.2 }]}>
